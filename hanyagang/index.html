@@ -1021,7 +1021,8 @@ S.observe_ok = {
   text:[
     {t:"你站定，让眼睛适应雾。细节浮出来，没有一处让你安心。", cls:"amber"},
     {t:"每一扇亮灯的窗后，都有人。他们不动，只是看着你——你数出至少七个轮廓，没有一个拉上窗帘。教堂的尖顶歪了将近十度，顶上的十字架被人取了下来，断口是新的。"},
-    {t:"码头木板上钉着一块褪色的告示：『日落后禁止靠近海面。违者由港务会处置。』落款没有名字，只有一个盘绕的、像打了结的浪的符号。"}
+    {t:"码头木板上钉着一块褪色的告示：『日落后禁止靠近海面。违者由港务会处置。』落款没有名字，只有一个盘绕的、像打了结的浪的符号。"},
+    {t:"你还注意到，这镇子墙上贴得最多的，不是日历，不是通缉令，是潮汐表——码头、店铺、电线杆，一张接一张，密密麻麻地标着每一天涨潮退潮的时辰。整座寒鸦港，不是按日子活的，是按潮水活的。", cls:"amber"}
   ],
   set:{seen_sigil:true, town_wrong:true},
   choices:[
@@ -2429,10 +2430,17 @@ function applyHP(loss, reason){
   sysLine(`▸ 你受伤了：HP −${loss}（${reason}）`, 'bad');
 }
 /* 同化槽：接触井水/海水/涨潮池久留等推进；到临界解锁"非人"专属分支与结局 */
+const TAINT_MS = [
+  [25, '你留意到自己指缝之间，起了一层薄得几乎看不见的蹼。'],
+  [50, '你在颈侧摸到了三道浅浅的、正在成形的裂口——像旧疤，又像没长全的鳃。'],
+  [75, '海的声音再没停过。你开始能在黑暗里看清东西，也开始，不那么需要呼吸了。']
+];
 function addTaint(n, reason){
-  flags.taint = Math.min(100, (flags.taint||0) + n);
+  const before = flags.taint||0;
+  flags.taint = Math.min(100, before + n);
   renderSheet();
   if(reason){ try{ sysLine(`▸ 侵染加深：同化 +${n}（${reason}）`, 'san'); }catch(e){} }
+  for(const [th,msg] of TAINT_MS){ if(before<th && flags.taint>=th){ try{ sysLine('▸ 身体的变化：'+msg, 'san'); }catch(e){} try{ Atmo.dread(0.6); }catch(e){} } }
   try{ Atmo.dread(0.2 + n*0.02); }catch(e){}
 }
 const CLUE_KEYS=['clue_journal','clue_church','clue_hall','clue_well','clue_light','clue_covenant','clue_wreck','clue_ledger','clue_market','clue_chain'];
