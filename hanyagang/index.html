@@ -1226,6 +1226,7 @@ S.dawn = {
     {label:"去镇上那间还亮着灯的医馆，会会传闻里唯一『还算个人』的老医生。", tag:"前往", goto:"loc_apothecary", if:()=>!flags.did_apoth},
     {label:"钻进码头边那家『半淹的锚』酒馆，听听醉汉嘴里的实话。", tag:"前往", goto:"loc_tavern", if:()=>!flags.did_tavern},
     {label:"镇角那栋还飘着孩子念谣声的育婴堂——寒鸦港，竟也还养着孩子。", tag:"前往", goto:"loc_school", if:()=>!flags.did_school},
+    {label:"退潮时，去滩涂尽头那副巨大的锈色船骸——『寒鸦号』，镇名的由来。", tag:"前往", goto:"loc_wreck", if:()=>!flags.did_wreck},
     {label:"天黑了。带上查到的一切，独自走上岬角的灯塔，做个了断。（线索越多，胜算越大——尤其务必去过灯塔或读过埃德温的笔记）", tag:"推进", goto:"nightfall"}
   ]
 };
@@ -1509,6 +1510,40 @@ S.lizzy_promise = {
   choices:[
     {label:"揣好那颗石子，回到调查——今晚，你多了一件必须做到的事。", tag:"▸", goto:"dawn"}
   ]
+};
+
+/* ===================== 新增地点 · 寒鸦号残骸（镇名由来 / 献祭由来已久） ===================== */
+S.loc_wreck = {
+  banner:"harbor", loc:"寒鸦港 · 寒鸦号残骸",
+  text:[
+    {t:"退潮时，滩涂尽头会露出一副巨大的、锈成暗红的肋骨——那是『寒鸦号』，一艘搁浅了几十年的捕鲸船，这座镇子的名字，就是从它来的。船身早被海水啃空，甲板塌陷，只剩龙骨还倔强地指着灰天。镇上没有人肯靠近它。", cls:"amber"},
+    {t:"你踩着滑腻长满藤壶的船板，钻进倾塌的船长室。海水与霉烂几乎毁掉了一切——唯有一本铜皮包角的航海日志，卡在舱壁的夹缝里，奇迹般地，还能一页页揭开。", cls:"amber"}
+  ],
+  set:{did_wreck:true},
+  choices:[
+    {label:"（侦查）就着破舱板漏进来的天光，辨读那本泡胀的航海日志。", tag:"侦查", check:{skill:"侦查",target:60,success:"wreck_log",fail:"wreck_log_slow"}},
+    {label:"这船让你脊背发凉。爬出去，离开滩涂。", tag:"▸", goto:"dawn"}
+  ]
+};
+S.wreck_log = {
+  banner:"harbor", loc:"寒鸦号 · 船长室",
+  text:[
+    {t:"日志的字迹到最后几页越来越乱。船长记载：那一年他们遭了前所未有的丰渔，鲸群自己撞上门来，多到船舱都装不下；可就在同一个大潮之夜，全体船员被镇上『请』去海边『观礼』——回来的，只剩他一个，而且他发誓，回来的那些人，眼睛都变了。", cls:"amber"},
+    {t:"最后一页，写着他把船故意搁浅在滩上的缘由：『我要让这条船烂在这儿，烂成镇子的名字，好叫后世每一个来的人，都看见它、都问上一句：寒鸦港的鸦，究竟从哪儿来？——但愿有那么一个人，能顺着这个问题，一直问到底。』", cls:"dlg"},
+    {t:"【线索】献祭换来的『丰饶』是真的，代价也是真的，而且由来已久——这镇子每一次的『大丰』，都浸着一船、一村人的性命。", cls:"amber"}
+  ],
+  san:{loss:2, reason:"读到一船人如何在一夜『丰渔』里被换成了非人"},
+  set:{did_wreck:true, clue_wreck:true, clue_hundred:true},
+  choices:[ {label:"合上日志，钻出船舱。", tag:"▸", goto:"dawn"} ]
+};
+S.wreck_log_slow = {
+  banner:"harbor", loc:"寒鸦号 · 船长室",
+  text:[
+    {t:"日志泡得太烂，大半字迹糊成了墨团。你耐着性子、就着微光辨认了许久，只勉强拼出零星几句：『……多到装不下……被请去观礼……回来的眼睛变了……我要让这船烂成镇子的名字……』——已经够了。这镇子的『丰饶』，一直是用人换的，一船一村地换。", cls:"amber"}
+  ],
+  san:{loss:2, reason:"从泡烂的航海日志里拼出献祭由来已久的真相"},
+  set:{did_wreck:true, clue_wreck:true},
+  choices:[ {label:"合上日志，钻出船舱。", tag:"▸", goto:"dawn"} ]
 };
 
 S.loc_room = {
@@ -2228,7 +2263,8 @@ function addTaint(n, reason){
   if(reason){ try{ sysLine(`▸ 侵染加深：同化 +${n}（${reason}）`, 'san'); }catch(e){} }
   try{ Atmo.dread(0.2 + n*0.02); }catch(e){}
 }
-function clueCount(){ return ['clue_journal','clue_church','clue_hall','clue_well','clue_light'].filter(k=>flags[k]).length; }
+const CLUE_KEYS=['clue_journal','clue_church','clue_hall','clue_well','clue_light','clue_covenant','clue_wreck','clue_ledger','clue_market','clue_chain'];
+function clueCount(){ return CLUE_KEYS.filter(k=>flags[k]).length; }
 
 async function go(key){
   if(key==='__restart'){ PC.san=65; PC.hp=11; for(const k in flags) delete flags[k];
@@ -2247,7 +2283,7 @@ async function go(key){
   if(cur.san) applySAN(cur.san.loss, cur.san.reason);
   if(cur.hp) applyHP(cur.hp.loss, cur.hp.reason);
   if(cur.onEnter) try{ cur.onEnter(); }catch(e){}
-  if(clueCount()>0 && !cur.end){ el('loc').textContent = cur.loc + '　· 线索 '+clueCount()+'/5'; }
+  if(clueCount()>0 && !cur.end){ el('loc').textContent = cur.loc + '　· 线索 '+clueCount()+'/'+CLUE_KEYS.length; }
   renderChoices();
   save();
 }
