@@ -70,6 +70,7 @@
   .bar > i{display:block;height:100%;transition:width .6s ease}
   .bar.san > i{background:linear-gradient(90deg,#3a5a7a,var(--san))}
   .bar.hp > i{background:linear-gradient(90deg,#5a2020,var(--blood2))}
+  .bar.taint > i{background:linear-gradient(90deg,#243a24,#5f8f4a);box-shadow:0 0 8px rgba(95,143,74,.4) inset}
   .sect{margin-top:16px;border-top:1px dashed var(--edge);padding-top:10px}
   .sect h3{font-size:11px;color:var(--dim);letter-spacing:2px;margin:0 0 7px}
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:2px 10px;font-size:12.5px}
@@ -321,6 +322,10 @@
     <div class="bar-wrap">
       <div class="bar-label"><span class="k">生命 HP</span><span class="v"><span id="hpN">11</span>/11</span></div>
       <div class="bar hp"><i id="hpBar" style="width:100%"></i></div>
+    </div>
+    <div class="bar-wrap" id="taintWrap" style="display:none">
+      <div class="bar-label"><span class="k" style="color:#6f8f5f">同化 侵染</span><span class="v" style="color:#84b06a"><span id="taintN">0</span>/100</span></div>
+      <div class="bar taint"><i id="taintBar" style="width:0%"></i></div>
     </div>
 
     <div class="sect">
@@ -936,8 +941,20 @@ S.inn_out = {
   choices:[
     {label:"翻看登记簿上之前的名字。", tag:"侦查", check:{skill:"侦查",target:60,success:"inn_book",fail:"inn_book_fail"}},
     {label:"上前，与老妇人攀谈、盘问——你想问什么、想怎么试探她，都由你。", tag:"交谈", talk:"oldwoman"},
-    {label:"签名，上楼去房间。", tag:"前往", goto:"room_night", if:()=>true}
+    {label:"签名，上楼去房间。", tag:"前往", goto:"inn_sign", if:()=>true}
   ]
+};
+S.inn_sign = {
+  banner:"inn", loc:"锈锚旅馆 · 门厅",
+  text:[
+    {t:"你提起那支钢笔——笔尖也是凉的——在登记簿上签下名字：塞缪尔·里德。", cls:"amber"},
+    {t:"老妇人缠着旧渔线的手，忽然停住了。她盯着那三个字看了很久，久到你以为她睡着了。然后她抬起那双发黄的眼，头一回，正正地看进你眼睛里——那眼神变了，不再是打量一个过客，倒像是……在辨认一件失而复得的旧物。", cls:"amber"},
+    {t:"「里德。」她把这个姓氏含在嘴里，轻轻念了一遍，喉咙深处漾出一点湿润的、说不清是叹息还是满足的声音。「……回来了。到底是回来了。」她不再多说，把一把黄铜钥匙推到你面前。钥匙牌上刻的不是房号——是你在码头告示上见过的那个、打了结的浪的符号。", cls:"dlg"},
+    {t:"你分明只报了个再普通不过的姓。可她那声『回来了』，像一根冰冷的渔线，悄没声地，缠上了你的脖子。你从没听家里人说起过寒鸦港。那么，是这座镇子，先记住了你。", cls:"amber"}
+  ],
+  san:{loss:1, reason:"旅馆老妇人对你姓氏的反应，透着一股说不清的、认亲般的诡异"},
+  set:{reed_noticed:true},
+  choices:[ {label:"攥紧那把刻着浪结的钥匙，上楼去房间。", tag:"▸", goto:"room_night"} ]
 };
 S.inn_book = {
   banner:"inn", loc:"锈锚旅馆 · 门厅",
@@ -1174,8 +1191,52 @@ S.dawn = {
     {label:"去码头尽头的港务会——告示的落款、规矩，都出自那里。", tag:"前往", goto:"loc_hall", if:()=>!flags.did_hall},
     {label:"去镇口的公用水井（登记簿夹层写着『别喝井水』）。", tag:"前往", goto:"loc_well", if:()=>!flags.did_well},
     {label:"顶着雾走到岬角的灯塔，昨夜那东西是循着它的光走的。", tag:"前往", goto:"loc_light", if:()=>!flags.did_light},
+    {label:"去晒网场旁的渔市——白日里这镇子唯一还像在过活的地方。", tag:"前往", goto:"loc_market", if:()=>!flags.did_market},
     {label:"天黑了。带上查到的一切，独自走上岬角的灯塔，做个了断。（线索越多，胜算越大——尤其务必去过灯塔或读过埃德温的笔记）", tag:"推进", goto:"nightfall"}
   ]
+};
+
+/* ===================== 新增地点 · 渔市（创意扩展 v0.2） ===================== */
+S.loc_market = {
+  banner:"harbor", loc:"寒鸦港 · 渔市",
+  text:[
+    {t:"渔市支在码头与晒网场之间，是白日里寒鸦港唯一还像在『过活』的地方——却过得处处不对。摊上的鱼大得不合常理，一条比人腿还粗的鳕鱼瞪着浑浊的死眼；没人吆喝，没人还价，买卖双方只无声地交换一个眼神、几枚铜板，那份默契让整座市集安静得像一场哑剧。", cls:"amber"},
+    {t:"你留意到几桩小事：家家的秤，秤砣都缺了一角，缺口一模一样，像是同一天、被同一只手敲下去的；晾着的渔网里，混着些不像鱼线的、半透明发白的丝，随海风轻轻搏动，像是活的；一个系围裙的胖女人正把内脏往桶里剖——可她剖开的那条『鱼』，胸腔里排着的骨头，怎么看，都太像一只手。", cls:"amber"}
+  ],
+  choices:[
+    {label:"（侦查）借挑鱼的由头凑到那口木桶边，看清里面到底是什么。", tag:"侦查", check:{skill:"侦查",target:60,success:"market_barrel",fail:"market_miss"}},
+    {label:"跟剖鱼的胖女人搭话，打听镇上的事。", tag:"交谈", goto:"market_talk"},
+    {label:"看够了，离开渔市。", tag:"▸", goto:"dawn"}
+  ]
+};
+S.market_barrel = {
+  banner:"harbor", loc:"寒鸦港 · 渔市",
+  text:[
+    {t:"你装作挑鱼，凑到桶边。桶里泡着的大半确是鱼——可在那堆青灰的鳞与内脏底下，你分明瞥见几段不属于任何鱼的东西：一截生着蹼的、发白的指节；一片剥落的、隐约印着人皮纹路的皮。它们和鱼杂拌在一起，等着被一并熬成镇上人人都喝的那锅汤。", cls:"amber"},
+    {t:"胖女人察觉了你的目光，不慌不忙地拿湿布往桶上一盖，冲你咧开一个缺了几颗牙的笑：「新鲜的。外乡人，晚上留下来，喝碗？」她颈侧那三道浅疤，随着说话，极轻微地翕动了一下。", cls:"dlg"},
+    {t:"【线索】镇上的『渔获』与『被洗净者』的残躯混在一处熬煮——他们吃的，也是他们自己。", cls:"amber"}
+  ],
+  san:{loss:2, reason:"看清渔市木桶里混着人的残躯"},
+  set:{did_market:true, clue_market:true},
+  choices:[ {label:"皮笑肉不笑地谢绝，离开渔市。", tag:"▸", goto:"dawn"} ]
+};
+S.market_miss = {
+  banner:"harbor", loc:"寒鸦港 · 渔市",
+  text:[
+    {t:"你还没凑近，胖女人便不动声色地拿湿布盖住了桶，抬眼似笑非笑地看着你。你没能看清桶里的东西——但那一眼里的东西，你看清了：他们知道你在看，也不在乎。你终究不是这市集上的猎人，是另一样待价而沽的货。", cls:"amber"}
+  ],
+  set:{did_market:true},
+  choices:[ {label:"离开渔市。", tag:"▸", goto:"dawn"} ]
+};
+S.market_talk = {
+  banner:"harbor", loc:"寒鸦港 · 渔市",
+  text:[
+    {t:"你跟胖女人攀谈。她话不多，可当你无意间提起『里德』这个姓，市集里几个原本充耳不闻的镇民，都极缓慢地、极轻微地，把脸转了过来——像一片水草，同时被一道暗流拨动。", cls:"amber"},
+    {t:"「里德家的人，隔上几十年，总要回来一个。」胖女人一边剖鱼一边说，语气平淡得像在说潮水，「当年跟下面立约的，就是你们家的老祖宗。海，记着账呢。你回来，是对的。」她挑了片最肥的鱼塞进你手里，油亮的鱼眼正对着你，「拿着。到晚上，你就都懂了。」", cls:"dlg"}
+  ],
+  san:{loss:1, reason:"从镇民口中听见自家先祖与『下面的东西』立约"},
+  set:{did_market:true, clue_reed_pact:true, reed_noticed:true},
+  choices:[ {label:"捏着那片冰凉的死鱼，离开渔市。", tag:"▸", goto:"dawn"} ]
 };
 
 S.loc_room = {
@@ -1356,6 +1417,7 @@ S.well_taste = {
   ],
   san:{loss:5, reason:"亲口尝下那水，与海面之下的存在建立了不该有的、再断不掉的联系"},
   set:{did_well:true, clue_well:true, tasted:true, know_lowtide:true},
+  onEnter:()=>{ addTaint(20, '亲口尝了掺着海水与卵的井水'); },
   choices:[
     {label:"踉跄着离开水井。", tag:"▸", goto:"dawn"}
   ]
@@ -1686,6 +1748,8 @@ function renderSheet(){
   el('sanN').textContent = PC.san; el('hpN').textContent = PC.hp;
   el('sanBar').style.width = Math.max(0,PC.san/PC.sanMax*100)+'%';
   el('hpBar').style.width = Math.max(0,PC.hp/PC.hpMax*100)+'%';
+  { const tv=(typeof flags!=='undefined'&&flags.taint)||0, tw=el('taintWrap');
+    if(tw){ tw.style.display=tv>0?'block':'none'; if(el('taintN'))el('taintN').textContent=tv; if(el('taintBar'))el('taintBar').style.width=Math.min(100,tv)+'%'; } }
   const sk = el('skills'); sk.innerHTML='';
   for(const k in PC.skills){ sk.insertAdjacentHTML('beforeend',
     `<div class="row"><span class="sk">${k}</span><span class="n">${PC.skills[k]}</span></div>`); }
@@ -1755,6 +1819,13 @@ function applyHP(loss, reason){
   PC.hp = Math.max(0, PC.hp - loss);
   renderSheet();
   sysLine(`▸ 你受伤了：HP −${loss}（${reason}）`, 'bad');
+}
+/* 同化槽：接触井水/海水/涨潮池久留等推进；到临界解锁"非人"专属分支与结局 */
+function addTaint(n, reason){
+  flags.taint = Math.min(100, (flags.taint||0) + n);
+  renderSheet();
+  if(reason){ try{ sysLine(`▸ 侵染加深：同化 +${n}（${reason}）`, 'san'); }catch(e){} }
+  try{ Atmo.dread(0.2 + n*0.02); }catch(e){}
 }
 function clueCount(){ return ['clue_journal','clue_church','clue_hall','clue_well','clue_light'].filter(k=>flags[k]).length; }
 
