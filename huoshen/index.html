@@ -1247,34 +1247,92 @@ S.act1_radio = {
   choices:[ {label:"这绝不是巧合。你得弄清这枚吊坠到底是什么——趁天黑之前。", tag:"▸", goto:"act1_todo"} ]
 };
 S.act1_todo = {
-  banner:"dark", loc:"调查开始", end:true,
+  banner:"dark", loc:"家 · 调查开始",
+  onEnter:()=>{ initClock(); if(flags.pendant_since==null) flags.pendant_since=flags.mins; },
   text:[
-    {t:"—— 《活神之手》· v0.1 开场到此。", cls:"amber"},
-    {t:"接下来：给宾夏、凯利打电话；搜查宾夏与凯利的住处；去密大图书馆、历史学会查『黄衣之印』的来历；驱车前往隐士石谷的拖车与普多克之林，掘出巫师以西洁·菲尔普斯的日记——那里藏着让『黄衣之印的守护者』停手的唯一办法。而这一切，都必须赶在今夜守护者登门之前完成。", cls:"amber"},
-    {t:"完整的调查线、阿卡姆地图与结局正在建设中。引擎（角色卡 / 理智 / 3D 骰 / 时间 / 地图 / CoC 机制 / 音乐）已就绪，复用自《追书人》。", cls:"amber"}
+    {t:"你把吊坠揣进大衣内袋。隔着棉纸，那块黑石的冰凉仍一路渗到胸口。凯利的死绝不是巧合——就在他把这东西转手之后。你得赶在事情失控之前，弄清它究竟是什么。", cls:"amber"},
+    {t:"你在心里排开今天的线头：先打电话给宾夏、给凯利家问个究竟；该去他们的住处看看；去密大图书馆和历史学会，查清这『黄衣之印』的来历；若有必要，驱车去西郊隐士劳伦斯·石谷的拖车，和那片叫『普多克之林』的林子——一切的源头，似乎都在那里。", cls:"amber"},
+    {t:"抬眼时，你怔了一下：窗外空街上，送奶工正低头走过，可你竟像是『看见』了他脸上一闪而过的疲惫与怨气——清晰得不像错觉。你揉了揉眼，那感觉又淡了下去。是昨夜没睡好，还是……你甩甩头，不愿深想。", cls:"amber"},
+    {t:"怀表指向九点四十。不知为什么，你有种说不清的紧迫：这些事，最好都赶在天黑之前做完。", cls:"amber"}
   ],
-  choices:[ {label:"↻ 回到开头", tag:"重玩", goto:"__restart"} ]
+  choices:[ {label:"揣好吊坠，开始今天的调查。", tag:"▸", goto:"hub"} ]
 };
 
-/* ---------------- 调查枢纽：六个方向，自由选、可回访 ---------------- */
+/* ---------------- 阿卡姆 · 调查枢纽（单日赶天黑，自由选、可回访） ---------------- */
 S.hub = {
-  banner:"harbor", loc:"阿诺兹堡 · 调查中",
+  banner:"post", loc:"阿卡姆 · 调查中",
+  onEnter:()=>{ initClock(); if(flags.money==null) flags.money=40; },
   text:[
-    {t:"阿诺兹堡是那种火车只肯停两分钟的小城：一条主街，一家报馆，一座图书馆，一间警局，城东一片上了年头的公墓。十月的风把街上的落叶卷得沙沙响，天色永远像下午四点半。", cls:"amber"},
-    {t:"你在心里摊开这桩案子的几条线头。一个只偷书的贼，一个失踪一年的爱书人，一栋塞满藏书的房子。——从哪儿查起，由你定。"}
+    {t:"密斯卡托尼克的钟楼在灰蒙蒙的天幕下敲响。阿卡姆——这座浸在河雾与旧砖里的大学城，今天对你却像一张正在缓缓收拢的网。你把该查的线头在心里一一摊开，怀表的秒针一格一格地走，谁也拦不住。", cls:"amber"},
+    {t:"从哪儿查起，由你定——只是别忘了，天黑之前，得有个了结。"}
   ],
-  onEnter:()=>{ if(flags.money===undefined) flags.money=31; },
   choices:[
-    {label:"在金博尔家附近走访邻居，打听道格拉斯这个人。", tag:"走访", goto:"neighbors", if:()=>!flags.did_neighbors},
-    {label:"去城东公墓——托马斯说，叔叔生前总爱去那儿看书。", tag:"前往", goto:"graveyard_day"},
-    {label:"去公共图书馆，翻一翻本地的旧新闻。", tag:"前往", goto:"library", if:()=>!flags.clue_article},
-    {label:"去警局，问问入室盗窃报案和可疑人员。", tag:"前往", goto:"police", if:()=>!flags.did_police},
-    {label:"去《阿诺兹堡广告报》报馆，查旧刊。", tag:"前往", goto:"newspaper", if:()=>!flags.clue_clipping},
-    {label:"回金博尔宅，仔细搜查道格拉斯的书房。", tag:"前往", goto:"study", if:()=>!flags.clue_diary},
-    {label:"（禁酒令年头）想法子在镇上弄一瓶威士忌。", tag:"办事", goto:"whiskey", if:()=>!flags.has_whiskey && !flags.whiskey_done},
-    {label:"天黑后，蹲守金博尔宅或公墓，守那个夜里来的『贼』。", tag:"蹲守", goto:"stakeout", if:()=>flags.clue_jefferson_figure||flags.clue_diary||flags.clue_window||flags.clue_footprints},
-    {label:"白天再去公墓，检查道格拉斯最爱的那块墓碑。", tag:"追查", goto:"headstone", if:()=>flags.clue_headstone && !flags.found_tomb},
-    {label:"下到那条地下隧道里去。", tag:"探入", goto:"tunnels", if:()=>flags.found_tunnel && !flags.did_tunnels}
+    {label:"给宾夏打电话——这吊坠是他寄来的，问问他到底怎么回事。", tag:"电话", goto:"call_pinckney", if:()=>!flags.did_call_pinckney},
+    {label:"给凯利家打电话——广播说他今早出了车祸，你得确认。", tag:"电话", goto:"call_kelly", if:()=>!flags.did_call_kelly},
+    {label:"驱车去宾夏家——他在电话里约你过去当面谈。", tag:"前往", goto:"v02_roadmap", if:()=>flags.pinckney_invited},
+    {label:"接下来还有：凯利家 · 密大图书馆 · 历史学会 · 石谷拖车 · 普多克之林……", tag:"待建", goto:"v02_roadmap"},
+    {label:"（天色已晚）等下去，面对那即将登门的东西。", tag:"终局", goto:"v02_roadmap", if:()=>isNight()}
+  ]
+};
+
+/* ---- 电话 · 马修·宾夏（第9声才接；心理学看穿他的强作镇定） ---- */
+S.call_pinckney = {
+  banner:"room", loc:"家 · 电话",
+  onEnter:()=>{ advanceMins(20); },
+  text:[
+    {t:"你摇通接线员，报出宾夏家的号码。听筒里传来漫长的忙音，一声，两声……宾夏住在城的另一头，你几乎要挂断了。第九声响过，那头才『咔』地接起，先是一阵近乎警惕的沉默，才响起他的声音。", cls:"amber"},
+    {t:"「……喂？哦，是你。」宾夏的嗓音平稳得体，甚至带着点老友间的轻快，「抱歉这么久才接——最近总有些莫名其妙的骚扰电话。对方从不说人话，只用一种很低的、喉咙里的声音，反反复复念叨些听不懂的东西。烦得很。」", cls:"dlg"},
+    {t:"「凯利的事……我听说了。」他顿了一下，「太突然了。不过你打来，是为了那枚吊坠吧？研究出什么了？」", cls:"dlg"}
+  ],
+  choices:[
+    {label:"（心理学）他这份镇定，像不像装出来的？细听他话音底下的东西。", tag:"心理学", check:{skill:"心理学",target:60,success:"call_pinckney_read",fail:"call_pinckney_plain"}}
+  ]
+};
+S.call_pinckney_read = {
+  banner:"room", loc:"家 · 电话",
+  onEnter:()=>{ if(!flags.did_call_pinckney){ flags.did_call_pinckney=true; flags.pinckney_invited=true; flags.clue_pinckney_afraid=true; } },
+  text:[
+    {t:"你屏住呼吸，去听那份从容底下的东西——很快便捉住了：他的镇定是一层绷得极紧的皮。每隔几句，他的呼吸就会浅一下；提到凯利时，尾音几不可察地抖了抖。那不只是哀伤，更是恐惧，一种他自己也说不清、却压不下去的恐惧。", cls:"amber"},
+    {t:"「这样吧，」他忽然压低了声音，像是怕被谁听见，「电话里说不清楚。你过来一趟，到我家里来——我有些话，想当面跟你讲。越快越好。」他报了地址，又补了一句几乎耳语的话，「路上……小心点。」", cls:"dlg"},
+    {t:"【线索】宾夏在极力掩饰恐惧，且急着当面见你。他家在城另一头口碑不佳的郊区——该去一趟。", cls:"amber"}
+  ],
+  choices:[ {label:"挂上电话，回到调查。", tag:"▸", goto:"hub"} ]
+};
+S.call_pinckney_plain = {
+  banner:"room", loc:"家 · 电话",
+  onEnter:()=>{ if(!flags.did_call_pinckney){ flags.did_call_pinckney=true; flags.pinckney_invited=true; } },
+  text:[
+    {t:"你听不出什么异样——宾夏听上去只是累了，也许还有点被骚扰电话搅得心烦。他一如既往地客气、体面，像个刚病愈、正急着回学校的教书匠。", cls:"amber"},
+    {t:"「电话里说不清楚，」他说，「你过来一趟吧，到我家里来，咱们当面谈。我把地址给你。」他报了地址，末了叮嘱你路上小心——你没太往心里去。", cls:"dlg"},
+    {t:"【线索】宾夏约你去他家当面谈。地址在城另一头的郊区。", cls:"amber"}
+  ],
+  choices:[ {label:"挂上电话，回到调查。", tag:"▸", goto:"hub"} ]
+};
+
+/* ---- 电话 · 凯利家（车祸后，邻居普拉瑟夫人接听） ---- */
+S.call_kelly = {
+  banner:"room", loc:"家 · 电话",
+  onEnter:()=>{ advanceMins(15); if(!flags.did_call_kelly){ flags.did_call_kelly=true; flags.clue_kelly_confirmed=true; } },
+  text:[
+    {t:"你拨通凯利家的号码。响了很久，接起来的是个中年女人的声音，疲惫而戒备。「凯利府上……我是隔壁的普拉瑟太太。您是哪位？」", cls:"dlg"},
+    {t:"你报上大学同事的身份，她的口气松了半分，却压得更低了：「那您大概还不知道……凯利教授，今天一早，在普利茅斯城外出了车祸，人……人已经没了。」她叹了口气，「凯利太太受不住这打击，medico 刚给她打了一针镇定剂，这会儿谁也见不得。我替她守着电话。」", cls:"dlg"},
+    {t:"你想再多问几句，她却明显警觉起来，话锋一转：「教授的身后事，还有好多要料理，我实在没工夫细聊。您若有正经要紧的事……不如亲自登门吧。」说罢便匆匆道别，挂断了。", cls:"dlg"},
+    {t:"【线索】凯利之死已确认（普利茅斯城外车祸）。他家里或许还有可查之处——但得亲自上门，且要想个说得过去的由头。", cls:"amber"}
+  ],
+  choices:[ {label:"放下听筒，回到调查。", tag:"▸", goto:"hub"} ]
+};
+
+/* ---- v0.2 路线图 signpost（后续地点建设中） ---- */
+S.v02_roadmap = {
+  banner:"dark", loc:"调查 · 未完待续",
+  text:[
+    {t:"—— 《活神之手》v0.2 · 校准样本到此。", cls:"amber"},
+    {t:"你已经打通了宾夏和凯利家的电话，拼出了第一批线头：宾夏在恐惧中约你登门，凯利的死已被证实。接下来的调查线——宾夏家的凶案现场、凯利家的纸片线索、密大图书馆与历史学会里『黄衣之印』的来历、西郊石谷的拖车、普多克之林里那本巫师日记，以及天黑后守护者的登门与五种结局——正在按设计逐步建设。", cls:"amber"},
+    {t:"（本轮验证的是：单日赶天黑的时钟、阿卡姆调查枢纽、以及电话节点的对话与检定质感。完整线见『活神之手-完整调查线设计v1.md』的迭代路线图。）", cls:"amber"}
+  ],
+  choices:[
+    {label:"回到调查枢纽（继续打另一个电话）。", tag:"▸", goto:"hub"},
+    {label:"↻ 回到开头重玩。", tag:"重玩", goto:"__restart"}
   ]
 };
 
@@ -2230,7 +2288,7 @@ function clueCount(){ return ['clue_journal','clue_church','clue_hall','clue_wel
 async function go(key){
   if(key==='__restart'){ PC.san=65; PC.hp=11; for(const k in flags) delete flags[k]; backlog=[];
     renderSheet(); go('arrival'); return; }
-  if(key==='hub'){ enterMap(); return; }   // 枢纽=小镇地图（时间/日夜）
+  if(key==='hub' && flags._useMap){ enterMap(); return; }   // 阿卡姆地图＝v0.7 美术层；v0.2 hub 走普通选项场景
   cur = S[key];
   if(!flags._t0) flags._t0=Date.now();
   choicesBox.innerHTML=''; updateFreeUI();
@@ -2247,6 +2305,7 @@ async function go(key){
   if(cur.san) applySAN(cur.san.loss, cur.san.reason);
   if(cur.hp) applyHP(cur.hp.loss, cur.hp.reason);
   if(cur.onEnter) try{ cur.onEnter(); }catch(e){}
+  { const _ck=el('clock'); if(_ck) _ck.textContent = (flags.mins!=null)? ('周六 · '+period(flags.mins)+' '+fmtClock(flags.mins)+'　· 天黑约 '+fmtClock(NIGHTFALL)) : ''; }
   if(cur.ending){ unlockEnding(cur.ending); renderSummary(); }
   if(clueCount()>0 && !cur.end){ el('loc').textContent = cur.loc + '　· 线索 '+clueCount()+'/5'; }
   renderChoices();
@@ -2875,9 +2934,9 @@ const MAPART = `<svg viewBox="0 0 800 520" preserveAspectRatio="xMidYMid slice" 
   <!-- 标题条 -->
   <text x="400" y="486" fill="#7a6a48" font-size="15" text-anchor="middle" font-family="Georgia,serif" letter-spacing="4" opacity="0.8">A R N O L D ' S &#160; F O R T &#160;·&#160; 1 9 2 2</text>
 </svg>`;
-const DAY_START = 480;    // 08:00 出门
-const NIGHTFALL = 1080;   // 18:00 十月天黑
-const DEADLINE_DAY = 7;
+const DAY_START = 570;    // 09:30 周六上午·收到吊坠
+const NIGHTFALL = 1080;   // 18:00 天黑·守护者登门（硬死线）
+const DEADLINE_DAY = 1;   // 活神之手＝单日赶天黑
 
 function initClock(){ if(flags.day==null) flags.day=1; if(flags.mins==null) flags.mins=DAY_START; if(flags.loc==null) flags.loc='home'; }
 function fmtClock(m){ m=((Math.round(m)%1440)+1440)%1440; const h=Math.floor(m/60), mm=m%60; return h+':'+String(mm).padStart(2,'0'); }
