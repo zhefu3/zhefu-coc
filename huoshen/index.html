@@ -131,6 +131,10 @@
   #freego{background:#151620;border:1px solid var(--edge);color:var(--phos);
     font-family:inherit;padding:0 16px;cursor:pointer}
   #freego:hover{border-color:var(--phos);background:#1a1c28}
+  #freelock{display:none;width:100%;background:transparent;border:1px dashed var(--edge);
+    color:var(--dim);text-align:center;padding:9px 12px;font-family:inherit;font-size:12px;
+    letter-spacing:.3px;cursor:pointer;transition:.15s;border-radius:2px}
+  #freelock:hover{border-color:var(--phos);color:var(--phos)}
 
   /* ===== 惊吓：红闪 / 抖动 / 静音键 / 低语 ===== */
   #flash{position:fixed;inset:0;z-index:55;pointer-events:none;opacity:0;
@@ -183,6 +187,31 @@
   #kpbox .note b{color:#8a9ab0}
   #kpbox .status{font-size:12px;margin-top:10px;min-height:16px}
   #kpbox .status.ok{color:var(--phos)} #kpbox .status.err{color:var(--blood2)}
+  /* 存档码模态 */
+  #savebox{position:fixed;inset:0;z-index:66;display:none;align-items:center;justify-content:center;background:rgba(3,3,6,.85)}
+  #savebox .box{width:470px;max-width:92vw;max-height:86vh;overflow:auto;background:var(--panel);border:1px solid var(--edge);padding:24px}
+  #savebox h3{color:var(--phos);font-size:15px;letter-spacing:2px;margin:0 0 4px}
+  #savebox .desc{color:var(--dim);font-size:12.5px;line-height:1.7;margin-bottom:6px}
+  #savebox label{display:block;color:var(--ink);font-size:12px;letter-spacing:1px;margin:14px 0 6px}
+  #savebox textarea{width:100%;height:66px;background:#0b0c11;border:1px solid var(--edge);color:var(--ink);font-family:ui-monospace,monospace;font-size:11px;line-height:1.5;padding:8px;resize:vertical;box-sizing:border-box}
+  #savebox textarea:focus{outline:none;border-color:var(--phos)}
+  #savebox .row2{display:flex;gap:10px;margin-top:10px}
+  #savebox button{flex:1;font-family:inherit;font-size:13px;padding:10px;cursor:pointer;letter-spacing:1px;border:1px solid var(--edge);background:#151620;color:var(--ink)}
+  #savebox button:hover{border-color:var(--amber);color:#fff}
+  #savebox .status{font-size:12px;margin-top:10px;min-height:16px}
+  #savebox .status.ok{color:var(--phos)} #savebox .status.err{color:var(--blood2)}
+  /* 新手引导卡 */
+  #tutorial{position:fixed;inset:0;z-index:70;display:none;align-items:center;justify-content:center;background:rgba(3,3,6,.9)}
+  #tutorial .box{width:508px;max-width:92vw;max-height:88vh;overflow:auto;background:var(--panel);border:1px solid var(--edge);padding:26px 26px 22px}
+  #tutorial h3{color:var(--amber);font-size:16px;letter-spacing:3px;margin:0 0 18px;text-align:center}
+  #tutorial .row{display:flex;gap:13px;margin-bottom:14px;font-size:13px;line-height:1.75;color:var(--ink)}
+  #tutorial .row b{color:var(--phos)}
+  #tutorial .ic{font-size:19px;flex:0 0 24px;text-align:center;line-height:1.4}
+  #tutorial button{width:100%;margin-top:10px;font-family:inherit;font-size:14px;padding:12px;cursor:pointer;letter-spacing:4px;border:1px solid var(--amber);background:#1a1712;color:var(--amber)}
+  #tutorial button:hover{background:#241d12;color:#ffd888}
+  /* 字号调节 */
+  body.fs-l #narr{font-size:16.5px} body.fs-l .choice{font-size:15px}
+  body.fs-xl #narr{font-size:19px} body.fs-xl .choice{font-size:16.5px}
 
   /* ===== 怪物特写 / 立绘 ===== */
   #portrait{position:fixed;inset:0;z-index:58;display:none;align-items:center;justify-content:center;
@@ -427,16 +456,18 @@
         <button id="ai" title="AI 守秘人设置">⚙ AI</button>
         <button id="mute" title="音效开关">♪ 声</button>
         <button id="motion" title="减弱闪烁/抖屏（光敏友好）">🌀 动</button>
+        <button id="fsize" title="字号（放大叙述文字）">🔤 字</button>
       </div></div>
     <div id="scroll">
-      <div id="narr"></div>
-      <div id="choices"></div>
+      <div id="narr" role="log" aria-live="polite" aria-label="故事叙述"></div>
+      <div id="choices" aria-label="可选行动"></div>
       <div id="freewrap">
         <div class="lbl">▸ 或者，说出你想做的（自由行动）　<span style="opacity:.55">· 提示：点击叙述文字可跳过逐字动画</span></div>
         <div id="freerow">
-          <input id="free" placeholder="例如：搜查房间 / 观察那个人 / 打开信封……" autocomplete="off">
+          <input id="free" aria-label="自由行动：输入你想做的事" placeholder="例如：搜查房间 / 观察那个人 / 打开信封……" autocomplete="off">
           <button id="freego">行动</button>
         </div>
+        <button id="freelock" type="button" title="自由输入需要 AI 守秘人">🔓 想打字自由探索？自由输入由 AI 守秘人驱动 · 需自备 API Key，点此了解并解锁</button>
       </div>
     </div>
   </main>
@@ -446,6 +477,29 @@
 
 <!-- 怪物特写 / 立绘 -->
 <div id="portrait"><div class="pframe"><div class="pcap"></div><div class="phint">▸ 点击继续</div></div></div>
+
+<!-- 新手引导卡（首次游玩一次性） -->
+<div id="tutorial"><div class="box">
+  <h3>◈ 调查员须知 ◈</h3>
+  <div class="row"><span class="ic">🎲</span><div><b>检定</b>：把握不准的行动会掷 d100，点数 ≤ 你的技能值即成功。骰子自动结算，你读一句结果就好。</div></div>
+  <div class="row"><span class="ic">🧠</span><div><b>理智 SAN</b>：目睹超常与恐怖会扣理智，见底会疯狂发作。别硬闯每一处黑暗。</div></div>
+  <div class="row"><span class="ic">⚡</span><div><b>推动检定</b>：失败后有时能"推动"再赌一次——赢了更好，输了后果更重。想清楚再推。</div></div>
+  <div class="row"><span class="ic">⌨️</span><div><b>自由行动</b>（可选）：填了 AI Key 后可打字说出任何行动，由 AI 守秘人接住；不填，靠选项也能完整通关。</div></div>
+  <button id="tutok">开 始 调 查</button>
+</div></div>
+
+<!-- 备份 / 导入存档 -->
+<div id="savebox"><div class="box">
+  <h3>备份 / 导入存档</h3>
+  <div class="desc">进度只存在这台设备的浏览器里——清缓存或换设备就没了。复制下面的存档码保存好，就能在别处恢复。</div>
+  <label>① 你的存档码（复制，粘到备忘录/发给自己）</label>
+  <textarea id="saveout" readonly onclick="this.select()"></textarea>
+  <div class="row2"><button id="savecopy">📋 复制存档码</button></div>
+  <label>② 有存档码？粘贴到这里恢复进度</label>
+  <textarea id="savein" placeholder="把之前复制的存档码粘贴到这里……"></textarea>
+  <div class="row2"><button id="saveimport">导入并继续</button><button id="saveclose">关闭</button></div>
+  <div class="status" id="savestatus"></div>
+</div></div>
 
 <!-- AI 守秘人设置 -->
 <div id="kpset"><div id="kpbox">
@@ -504,8 +558,9 @@
   <div class="cwarn">⚠ 本作含闪烁、震动与惊吓效果；光敏感者可在游戏内顶栏「🌀 动」一键减弱。</div>
   <button id="startBtn">拆 开 包 裹</button>
   <div id="newgame" style="margin-top:14px"><a href="#" style="color:var(--dim);font-size:12px;letter-spacing:2px;text-decoration:none;border-bottom:1px dotted var(--dim)">从头开始（清除存档）</a></div>
+  <div id="savelink" style="margin-top:10px"><a href="#" style="color:var(--dim);font-size:12px;letter-spacing:2px;text-decoration:none;border-bottom:1px dotted var(--dim)">💾 备份 / 导入存档</a></div>
   <div id="endingdex" class="dex"></div>
-  <div class="warn">《活神之手》· 改编自罗伯特·钱伯斯《黄衣之印》（自用）· 语言学教授埃大伯里 · 点子王系统 idea-0012</div>
+  <div class="warn">《活神之手》· 改编自罗伯特·钱伯斯《黄衣之印》（自用）· 语言学教授埃大伯里 · 点子王系统 idea-0012 · <a href="https://github.com/zhefu3/zhefu-coc/issues" target="_blank" rel="noopener" style="color:var(--dim);border-bottom:1px dotted var(--dim);text-decoration:none">反馈 / 报 bug</a></div>
 </div>
 
 <script>
@@ -2178,7 +2233,7 @@ async function go(key){
   if(key==='hub'){ enterMap(); return; }   // 枢纽=小镇地图（时间/日夜）
   cur = S[key];
   if(!flags._t0) flags._t0=Date.now();
-  choicesBox.innerHTML=''; el('freewrap').style.display = cur.end?'none':'block';
+  choicesBox.innerHTML=''; updateFreeUI();
   setBanner(cur.banner);
   try{ Sound.setMood(cur.banner, !!flags.act3); }catch(e){}
   try{ Atmo.setSan(PC.san); Atmo.setScene(cur.banner, !!flags.act3); }catch(e){}
@@ -2673,13 +2728,24 @@ async function doFree(){
 
 /* ---- AI 设置面板 ---- */
 function refreshAIbtn(){ el('ai').classList.toggle('on', KP.hasKey()); }
+/* 自由输入 UI：有 key 才显示输入框；没 key 时收成一个低调的解锁提示，别空吊胃口 */
+function updateFreeUI(){
+  const wrap=el('freewrap'); if(!wrap) return;
+  if(cur && cur.end){ wrap.style.display='none'; return; }
+  wrap.style.display='block';
+  const has=KP.hasKey();
+  el('freerow').style.display = has?'flex':'none';
+  const lbl=wrap.querySelector('.lbl'); if(lbl) lbl.style.display = has?'block':'none';
+  el('freelock').style.display = has?'none':'block';
+}
+el('freelock').onclick = ()=> el('ai').click();
 el('ai').onclick = ()=>{ el('kpkey').value = KP.key(); el('kpstatus').textContent=''; el('kpstatus').className='status'; el('kpset').style.display='flex'; el('kpkey').focus(); };
 el('kpclose').onclick = ()=>{ el('kpset').style.display='none'; };
 el('kpset').onclick = (e)=>{ if(e.target===el('kpset')) el('kpset').style.display='none'; };
 el('kpsave').onclick = ()=>{
   const k=el('kpkey').value.trim();
   if(!k){ el('kpstatus').textContent='请先填入 Key'; el('kpstatus').className='status err'; return; }
-  KP.setKey(k); KP.reset(); refreshAIbtn();
+  KP.setKey(k); KP.reset(); refreshAIbtn(); updateFreeUI();
   el('kpstatus').textContent='✓ 已启用。现在回到游戏，在输入框写任何行动试试。'; el('kpstatus').className='status ok';
   setTimeout(()=>el('kpset').style.display='none', 1400);
 };
@@ -2691,6 +2757,41 @@ function findKey(node){ for(const k in S) if(S[k]===node) return k; return 'arri
 function load(){ try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)); if(s&&S[s.cur]){PC.san=s.san;PC.hp=s.hp;Object.assign(flags,s.flags||{});return s.cur;} }catch(e){} return null; }
 function clearSave(){ try{ localStorage.removeItem(SAVE_KEY); }catch(e){} }
 function hasSave(){ try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)); return !!(s && S[s.cur]); }catch(e){ return false; } }
+
+/* ---- 存档码：跨设备备份/恢复 ---- */
+const SAVE_GAME='huoshen';
+function buildSaveCode(){
+  try{ const raw=localStorage.getItem(SAVE_KEY); if(!raw) return '';
+    const payload={v:1,game:SAVE_GAME,save:JSON.parse(raw)};
+    try{ payload.endings=[...getEndings()]; }catch(_){}
+    return btoa(unescape(encodeURIComponent(JSON.stringify(payload)))); }catch(e){ return ''; }
+}
+function openSaveBox(){
+  const code=buildSaveCode();
+  el('saveout').value = code || '（还没有存档——先玩一会儿，进度会自动保存，再回来备份。）';
+  el('savein').value=''; el('savestatus').textContent=''; el('savestatus').className='status';
+  el('savebox').style.display='flex';
+}
+(function(){ const sl=el('savelink'); if(sl){ const a=sl.querySelector('a'); if(a) a.onclick=(e)=>{ e.preventDefault(); openSaveBox(); }; } })();
+el('saveclose').onclick=()=>{ el('savebox').style.display='none'; };
+el('savebox').onclick=(e)=>{ if(e.target===el('savebox')) el('savebox').style.display='none'; };
+el('savecopy').onclick=async()=>{
+  const v=el('saveout').value; if(!v || v.charAt(0)==='（') return;
+  try{ await navigator.clipboard.writeText(v); }catch(_){ try{ el('saveout').select(); document.execCommand('copy'); }catch(__){} }
+  el('savestatus').textContent='✓ 已复制。存到安全的地方（备忘录/邮件给自己）。'; el('savestatus').className='status ok';
+};
+el('saveimport').onclick=()=>{
+  const code=el('savein').value.trim();
+  if(!code){ el('savestatus').textContent='请先把存档码粘贴到上面的框里。'; el('savestatus').className='status err'; return; }
+  try{
+    const p=JSON.parse(decodeURIComponent(escape(atob(code))));
+    if(!p || p.game!==SAVE_GAME || !p.save || !S[p.save.cur]) throw 0;
+    localStorage.setItem(SAVE_KEY, JSON.stringify(p.save));
+    if(Array.isArray(p.endings)){ try{ localStorage.setItem(SAVE_GAME+'_endings', JSON.stringify(p.endings)); }catch(_){} }
+    el('savestatus').textContent='✓ 导入成功，正在载入存档……'; el('savestatus').className='status ok';
+    setTimeout(()=>location.reload(), 700);
+  }catch(e){ el('savestatus').textContent='✗ 存档码无效，或不是《活神之手》的存档。'; el('savestatus').className='status err'; }
+};
 
 /* ---- 减弱动效（光敏友好；默认跟随系统 prefers-reduced-motion）---- */
 let reducedMotion = (function(){
@@ -3104,10 +3205,25 @@ function enterGame(sceneKey){
   try{ Atmo.start(); }catch(e){}
   try{ renderSheet(); }catch(e){}
   go(sceneKey);                                   // 无论音效/大气是否失败，场景一定渲染
+  try{ maybeTutorial(); }catch(e){}
 }
+/* 新手引导：首次进入弹一次 */
+function maybeTutorial(){
+  let seen=false; try{ seen=localStorage.getItem(SAVE_GAME+'_seen_tut')==='1'; }catch(e){}
+  if(!seen) el('tutorial').style.display='flex';
+}
+el('tutok').onclick=()=>{ el('tutorial').style.display='none'; try{ localStorage.setItem(SAVE_GAME+'_seen_tut','1'); }catch(e){} };
 el('startBtn').onclick = ()=>{ let saved=null; if(hasSave()){ try{ saved=load(); }catch(e){} } enterGame(saved || 'arrival'); };
 el('mute').onclick = ()=>{ try{ const m = Sound.toggle(); el('mute').textContent = m?'♪ 静':'♪ 声'; }catch(e){} };
 el('motion').onclick = ()=>{ reducedMotion=!reducedMotion; try{ localStorage.setItem('huoshen_reduce_motion', reducedMotion?'1':'0'); }catch(e){} applyReduceMotion(); };
+/* 字号调节（无障碍：叙述文字放大两档） */
+const FSIZES=['','fs-l','fs-xl'];
+let fsizeIdx=0; try{ fsizeIdx=Math.max(0,FSIZES.indexOf(localStorage.getItem(SAVE_GAME+'_fontsize')||'')); }catch(e){}
+function applyFontSize(){ document.body.classList.remove('fs-l','fs-xl'); const c=FSIZES[fsizeIdx]; if(c) document.body.classList.add(c);
+  const b=el('fsize'); if(b){ b.classList.toggle('on', fsizeIdx>0); b.textContent = fsizeIdx===0?'🔤 字':(fsizeIdx===1?'🔤 大':'🔤 特'); } }
+el('fsize').onclick=()=>{ fsizeIdx=(fsizeIdx+1)%FSIZES.length; try{ localStorage.setItem(SAVE_GAME+'_fontsize', FSIZES[fsizeIdx]); }catch(e){} applyFontSize(); };
+applyFontSize();
+try{ document.querySelectorAll('#topbtns button[title]').forEach(b=>b.setAttribute('aria-label', b.title)); }catch(e){}
 el('newgame').onclick = (e)=>{ e.preventDefault(); if(hasSave() && !confirm('确定重新开始？当前调查进度将被清除（结局收集会保留）。')) return; clearSave();
   PC.san=65; PC.hp=11; for(const k in flags) delete flags[k]; backlog=[]; document.body.classList.remove('low-san');
   enterGame('arrival'); refreshTitleButtons(); };
