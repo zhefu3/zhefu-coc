@@ -579,6 +579,37 @@ const BANNERS = {
   </svg>`,
 
   // 白天的岬角灯塔（藤壶塔身、灰海、乱云）
+  wreck: `<svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid slice" shape-rendering="crispEdges">
+    <defs><linearGradient id="wksky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1c1e20"/><stop offset="1" stop-color="#2a2622"/></linearGradient></defs>
+    <rect width="320" height="120" fill="url(#wksky)"/>
+    <rect x="0" y="28" width="320" height="16" fill="#33322c" opacity=".35"/>
+    <rect x="0" y="82" width="320" height="38" fill="#1a1611"/>
+    <g stroke="#221c15" stroke-width="1" opacity=".5"><line x1="0" y1="92" x2="320" y2="92"/><line x1="0" y1="106" x2="320" y2="106"/></g>
+    <path d="M40 82 Q160 30 280 82" stroke="#3a2418" stroke-width="4" fill="none"/>
+    <g stroke="#40291a" stroke-width="3" fill="none">
+      <path d="M70 74 Q78 50 88 74"/><path d="M100 66 Q110 40 122 66"/><path d="M140 60 Q152 34 166 60"/><path d="M182 62 Q194 38 206 62"/><path d="M222 68 Q232 46 244 68"/></g>
+    <g fill="#5a3418" opacity=".5"><rect x="150" y="46" width="6" height="14"/><rect x="110" y="52" width="5" height="12"/></g>
+  </svg>`,
+  archive: `<svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid slice" shape-rendering="crispEdges">
+    <defs><linearGradient id="arw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#161310"/><stop offset="1" stop-color="#1e1a14"/></linearGradient></defs>
+    <rect width="320" height="120" fill="url(#arw)"/>
+    <g fill="#0f0d0a"><rect x="10" y="14" width="40" height="90"/><rect x="70" y="20" width="34" height="84"/><rect x="220" y="20" width="34" height="84"/><rect x="272" y="14" width="40" height="90"/></g>
+    <g fill="#2a2016"><rect x="14" y="20" width="32" height="8"/><rect x="14" y="32" width="32" height="8"/><rect x="14" y="44" width="32" height="8"/><rect x="14" y="56" width="32" height="8"/><rect x="276" y="20" width="32" height="8"/><rect x="276" y="32" width="32" height="8"/><rect x="276" y="44" width="32" height="8"/></g>
+    <g fill="#3a2c1c"><rect x="74" y="26" width="26" height="7"/><rect x="74" y="37" width="26" height="7"/><rect x="224" y="26" width="26" height="7"/><rect x="224" y="37" width="26" height="7"/></g>
+    <rect x="130" y="30" width="60" height="74" fill="#060504"/>
+    <rect x="150" y="72" width="20" height="10" fill="#1a2420"/><ellipse cx="160" cy="72" rx="12" ry="4" fill="#2a4a3a"/>
+    <ellipse cx="160" cy="86" rx="30" ry="12" fill="#4a7a5a" opacity=".14"/>
+    <rect x="0" y="104" width="320" height="16" fill="#120f0b"/>
+  </svg>`,
+  school: `<svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid slice" shape-rendering="crispEdges">
+    <defs><linearGradient id="scw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1a2024"/><stop offset="1" stop-color="#22201c"/></linearGradient></defs>
+    <rect width="320" height="120" fill="url(#scw)"/>
+    <rect x="110" y="14" width="100" height="40" fill="#12181a"/><rect x="108" y="12" width="104" height="4" fill="#2a2018"/>
+    <g stroke="#3a4a44" stroke-width="1" opacity=".7"><line x1="122" y1="26" x2="150" y2="26"/><line x1="122" y1="34" x2="160" y2="34"/><line x1="122" y1="42" x2="145" y2="42"/><path d="M170 24 l0 24 M170 36 l14 0" fill="none"/></g>
+    <g fill="#160f0a"><rect x="30" y="78" width="30" height="18"/><rect x="90" y="80" width="30" height="18"/><rect x="200" y="80" width="30" height="18"/><rect x="260" y="78" width="30" height="18"/></g>
+    <g fill="#0d1012"><circle cx="150" cy="76" r="7"/><rect x="145" y="82" width="10" height="14"/><circle cx="176" cy="78" r="7"/><rect x="171" y="84" width="10" height="12"/><circle cx="124" cy="78" r="7"/><rect x="119" y="84" width="10" height="12"/></g>
+    <rect x="0" y="104" width="320" height="16" fill="#141210"/>
+  </svg>`,
   market: `<svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid slice" shape-rendering="crispEdges">
     <defs><linearGradient id="mksky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1c2228"/><stop offset="1" stop-color="#2a2822"/></linearGradient></defs>
     <rect width="320" height="120" fill="url(#mksky)"/>
@@ -1371,7 +1402,7 @@ S.reed_cellar = {
 
 /* ===================== 新增地点 · 镇史档案室（碎片化真相 / 回信之链） ===================== */
 S.loc_archive = {
-  banner:"hall", loc:"寒鸦港 · 镇史档案室",
+  banner:"archive", loc:"寒鸦港 · 镇史档案室",
   text:[
     {t:"档案室在港务会楼下一间没有窗的偏厅，钥匙就挂在门边——在寒鸦港，真相不上锁，因为读得懂它的人，早都成了它的一部分。空气里是霉纸、鲸油和海盐。一排排卷宗架深入黑暗，标着年份；最早那一册，纸页脆得一碰就掉渣。", cls:"amber"}
   ],
@@ -1383,7 +1414,7 @@ S.loc_archive = {
   ]
 };
 S.archive_ledger = {
-  banner:"hall", loc:"档案室 · 百年账",
+  banner:"archive", loc:"档案室 · 百年账",
   text:[
     {t:"你把渔获账和教区名册并排摊开，一年一年地对。规律很快浮出水面，冷得像井水：每逢大潮之年，渔获账上必有一笔反常的『大丰』，而同一年的教区名册上，必有几个名字，后面被人用同一种潦草的记号划去——不是死亡，教区簿上死亡另有写法，这个记号，你在教堂那本册子上见过。", cls:"amber"},
     {t:"划去的名字里，有老人，有壮年，也有刚受洗的婴儿。名字旁偶尔还夹着一句冷冰冰的批注：『自愿』『抵账』『替补』。一百多年，一笔一笔，账目分毫不差。这镇子把献祭做成了会计。", cls:"amber"},
@@ -1397,7 +1428,7 @@ S.archive_ledger = {
   ]
 };
 S.archive_ledger_slow = {
-  banner:"hall", loc:"档案室 · 百年账",
+  banner:"archive", loc:"档案室 · 百年账",
   text:[
     {t:"账目浩繁，字迹又潦草，你翻得头晕眼花，一时理不出头绪。但你没有放弃，多花了大半个白昼，一页一页死磕下来，规律终究还是浮了出来：每逢大潮之年必有一笔反常的『大丰』，同一年的教区名册上，必有几个名字被同一种记号划去——和教堂那本册子上的记号一模一样。一百多年，账目分毫不差。今年是百年续约之年，今晚的名单上，有塞缪尔·里德。", cls:"amber"}
   ],
@@ -1408,7 +1439,7 @@ S.archive_ledger_slow = {
   ]
 };
 S.archive_outsiders = {
-  banner:"hall", loc:"档案室 · 旧报堆",
+  banner:"archive", loc:"档案室 · 旧报堆",
   text:[
     {t:"你专挑那些泛黄的旧报翻。渐渐地，一条你不愿承认的脉络拼了出来：几乎每一次续约之年前后，外埠的小报上，都会有一小则不起眼的失踪启事——一个记者、一个私家侦探、一个来寻亲的年轻人，循着一封『死者寄来的信』来到沿海某镇，此后再无音讯。报道语焉不详，地名也总被含糊带过，可那口吻、那封信，你太熟悉了。", cls:"amber"},
     {t:"寒鸦港不是第一次用一封回信，把一个外乡人请进雾里。你也不会是最后一个。这封信是这镇子撒了一百年的、同一枚饵。", cls:"amber"},
@@ -1527,7 +1558,7 @@ S.tavern_drunk = {
 
 /* ===================== 新增支线 · 孩子莉齐（救孩子 / 携火而走结局） ===================== */
 S.loc_school = {
-  banner:"inn", loc:"寒鸦港 · 育婴堂",
+  banner:"school", loc:"寒鸦港 · 育婴堂",
   text:[
     {t:"镇角一栋刷成褪色蓝的小楼，是寒鸦港的育婴堂。你循着一阵孩子的念谣声走近——那调子你在别处听过：『跟着领头人，一个跟一个，走下最深的水……』一群青灰皮肤、眼睛微凸的孩子围成一圈，安静地、面无表情地拍着手谣唱。他们唱的是仪式。他们还不知道，那是唱给自己的。", cls:"amber"},
     {t:"只有一个女孩坐在窗边角落，没有加入。她约莫七岁，脸颊上是这镇上你见过的、唯一一张还带着血色的脸；一双眼睛清亮亮的，正怯生生又好奇地打量你——一个外来的、和她一样『不对劲』的人。", cls:"amber"}
@@ -1539,7 +1570,7 @@ S.loc_school = {
   ]
 };
 S.lizzy_talk = {
-  banner:"inn", loc:"育婴堂 · 莉齐",
+  banner:"school", loc:"育婴堂 · 莉齐",
   text:[
     {t:"「你的眼睛，」女孩小声说，「跟他们不一样……不对，跟我一样。」她叫莉齐。她说，奶奶从不许她喝井里的水，只让她喝屋檐接的雨水，还反复叮嘱：别去海边，别学那支歌，别让人看见你的眼睛还是亮的。「奶奶上个月，被叫去『洗干净』了。」她说得很平静，平静得让你心口发疼，「现在，没人管我喝什么了。他们说，下一个大潮就轮到我。就是今晚。」", cls:"amber"},
     {t:"她仰起那张还没被夺走的脸看你：「你是来带我走的吗？信上……奶奶说过，会有一个姓里德的人回来。她说，那也许是唯一的机会。」", cls:"amber"}
@@ -1552,7 +1583,7 @@ S.lizzy_talk = {
   ]
 };
 S.lizzy_promise = {
-  banner:"inn", loc:"育婴堂 · 莉齐",
+  banner:"school", loc:"育婴堂 · 莉齐",
   text:[
     {t:"莉齐没有笑，也没有哭。她只是极郑重地点了点头，把一样东西塞进你手心——一颗光滑的、被摩挲得温热的白色小石子。「奶奶给的，」她说，「说这是『还记得自己是谁』的石头。你先拿着。等你回来，再还我。」", cls:"amber"},
     {t:"你攥紧那颗小石子，走出育婴堂。雾还是那么冷，可你怀里，第一次揣上了一样比『活着出去』更沉、也更暖的东西。", cls:"amber"}
@@ -1565,7 +1596,7 @@ S.lizzy_promise = {
 
 /* ===================== 新增地点 · 寒鸦号残骸（镇名由来 / 献祭由来已久） ===================== */
 S.loc_wreck = {
-  banner:"harbor", loc:"寒鸦港 · 寒鸦号残骸",
+  banner:"wreck", loc:"寒鸦港 · 寒鸦号残骸",
   text:[
     {t:"退潮时，滩涂尽头会露出一副巨大的、锈成暗红的肋骨——那是『寒鸦号』，一艘搁浅了几十年的捕鲸船，这座镇子的名字，就是从它来的。船身早被海水啃空，甲板塌陷，只剩龙骨还倔强地指着灰天。镇上没有人肯靠近它。", cls:"amber"},
     {t:"你踩着滑腻长满藤壶的船板，钻进倾塌的船长室。海水与霉烂几乎毁掉了一切——唯有一本铜皮包角的航海日志，卡在舱壁的夹缝里，奇迹般地，还能一页页揭开。", cls:"amber"}
@@ -1577,7 +1608,7 @@ S.loc_wreck = {
   ]
 };
 S.wreck_log = {
-  banner:"harbor", loc:"寒鸦号 · 船长室",
+  banner:"wreck", loc:"寒鸦号 · 船长室",
   text:[
     {t:"日志的字迹到最后几页越来越乱。船长记载：那一年他们遭了前所未有的丰渔，鲸群自己撞上门来，多到船舱都装不下；可就在同一个大潮之夜，全体船员被镇上『请』去海边『观礼』——回来的，只剩他一个，而且他发誓，回来的那些人，眼睛都变了。", cls:"amber"},
     {t:"最后一页，写着他把船故意搁浅在滩上的缘由：『我要让这条船烂在这儿，烂成镇子的名字，好叫后世每一个来的人，都看见它、都问上一句：寒鸦港的鸦，究竟从哪儿来？——但愿有那么一个人，能顺着这个问题，一直问到底。』", cls:"dlg"},
@@ -1588,7 +1619,7 @@ S.wreck_log = {
   choices:[ {label:"合上日志，钻出船舱。", tag:"▸", goto:"dawn"} ]
 };
 S.wreck_log_slow = {
-  banner:"harbor", loc:"寒鸦号 · 船长室",
+  banner:"wreck", loc:"寒鸦号 · 船长室",
   text:[
     {t:"日志泡得太烂，大半字迹糊成了墨团。你耐着性子、就着微光辨认了许久，只勉强拼出零星几句：『……多到装不下……被请去观礼……回来的眼睛变了……我要让这船烂成镇子的名字……』——已经够了。这镇子的『丰饶』，一直是用人换的，一船一村地换。", cls:"amber"}
   ],
@@ -2134,7 +2165,7 @@ const Atmo = (function(){
     harbor:[70,90,120], inn:[90,80,70], post:[58,66,74],
     room:[42,44,58], dark:[26,30,46], climax:[28,56,66],
     yellow:[92,78,24], dread:[34,28,18], corpse:[46,40,42],   // 黄衣病态 / 死寂逼近 / 尸腐
-    reedhouse:[40,30,48], altar:[30,58,60], crypt:[28,48,50], marsh:[42,46,34], apoth:[70,58,38], market:[52,60,64]  // 老宅/祭坛礁/涨潮池/盐沼/医馆/渔市
+    reedhouse:[40,30,48], altar:[30,58,60], crypt:[28,48,50], marsh:[42,46,34], apoth:[70,58,38], market:[52,60,64], archive:[64,52,34], school:[46,54,52], wreck:[54,46,38]  // 老宅/祭坛礁/涨潮池/盐沼/医馆/渔市/档案室/育婴堂/寒鸦号
   };
   function make(){
     cv=document.getElementById('atmo'); if(!cv) return; ctx=cv.getContext('2d');
