@@ -1667,7 +1667,22 @@ S.church_crypt = {
   onEnter:()=>{ addTaint(5, '在涨潮池没踝的海水里站了太久'); },
   choices:[
     {label:"（送别）踏进冰冷的池水，走到埃德温面前，给他一个人的了结。", tag:"决意", goto:"edwin_farewell", if:()=>!flags.farewell_edwin},
+    {label:"（你已经变了——闭上眼，试着去『听』那些沉在水里的声音，究竟在说什么。）", tag:"非人", goto:"crypt_commune", if:()=>(flags.taint||0)>=20 && !flags.did_commune},
     {label:"踉跄着退回地面，离开这里。", tag:"▸", goto:"dawn"}
+  ]
+};
+S.crypt_commune = {
+  banner:"dark", loc:"教堂地下 · 涨潮池",
+  onEnter:()=>{ addTaint(10, '主动去听、去应了海底那些声音'); },
+  text:[
+    {t:"你闭上眼。你已经不敢确定，自己还剩几分是人——可正是这变了的几分，让你第一次『听』见了。那不是声音。是无数个念头，从水底、从每一张苍白仰起的脸里，一齐涌进你的脑子，冰冷、黏稠、耐心。它们不恨你。它们在欢迎你，像欢迎一个终于开窍的孩子。", cls:"amber"},
+    {t:"在那片黏稠的低语里，你捞到了几样别人捞不到的东西：那纸约的信物——一块鲸骨牌——被港务长锁进了港务会他办公室的保险柜；而毁掉它的地方，是岬角灯塔下、退潮才露头的那块立约祭坛礁。这些，本是要拿命、拿运气才换得到的情报，此刻却像它们自家的私语，直接淌进了你脑子里。", cls:"amber"},
+    {t:"你猛地睁开眼，踉跄着退开一步，胃里一阵翻搅。你得到了想要的——可你也清楚地感觉到，方才那一『听』，你身上又有什么，朝着它们，滑过去了一寸。有些门，开了，就关不上了。", cls:"amber"}
+  ],
+  san:{loss:3, reason:"主动用变异的感官，去听懂了本不该听懂的东西"},
+  set:{did_commune:true, clue_token_location:true, clue_altar:true, clue_true_end:true},
+  choices:[
+    {label:"带着换来的情报，踉跄退回地面。", tag:"▸", goto:"dawn"}
   ]
 };
 S.edwin_farewell = {
