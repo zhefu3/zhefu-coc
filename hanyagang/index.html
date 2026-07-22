@@ -353,7 +353,7 @@
 
   <!-- 舞台 -->
   <main id="stage">
-    <div id="banner"><div id="loc">寒鸦港</div><button id="ai" title="AI 守秘人设置">⚙ AI</button><button id="mute" title="音效开关">♪ 声</button><button id="fsize" title="字号（放大叙述文字）">🔤 字</button></div>
+    <div id="banner"><div id="loc">寒鸦港</div><button id="ai" title="AI 守秘人设置">⚙ AI</button><button id="mute" title="音效开关">♪ 声</button><button id="fsize" title="字号（放大叙述文字）">🔤 字</button><button id="menu" title="回到主菜单（进度自动保存）">⌂ 菜单</button></div>
     <div id="scroll">
       <div id="narr" role="log" aria-live="polite" aria-label="故事叙述"></div>
       <div id="choices" aria-label="可选行动"></div>
@@ -1192,6 +1192,10 @@ S.dawn = {
     {label:"去镇口的公用水井（登记簿夹层写着『别喝井水』）。", tag:"前往", goto:"loc_well", if:()=>!flags.did_well},
     {label:"顶着雾走到岬角的灯塔，昨夜那东西是循着它的光走的。", tag:"前往", goto:"loc_light", if:()=>!flags.did_light},
     {label:"去晒网场旁的渔市——白日里这镇子唯一还像在过活的地方。", tag:"前往", goto:"loc_market", if:()=>!flags.did_market},
+    {label:"上镇子最高处，那栋背海而立的黑石大宅——你的脚，竟像认得路。", tag:"前往", goto:"loc_reedhouse", if:()=>!flags.did_reedhouse},
+    {label:"去港务会楼下的镇史档案室，翻一翻这镇子百年的账。", tag:"前往", goto:"loc_archive", if:()=>!flags.did_archive},
+    {label:"去镇上那间还亮着灯的医馆，会会传闻里唯一『还算个人』的老医生。", tag:"前往", goto:"loc_apothecary", if:()=>!flags.did_apoth},
+    {label:"钻进码头边那家『半淹的锚』酒馆，听听醉汉嘴里的实话。", tag:"前往", goto:"loc_tavern", if:()=>!flags.did_tavern},
     {label:"天黑了。带上查到的一切，独自走上岬角的灯塔，做个了断。（线索越多，胜算越大——尤其务必去过灯塔或读过埃德温的笔记）", tag:"推进", goto:"nightfall"}
   ]
 };
@@ -1237,6 +1241,206 @@ S.market_talk = {
   san:{loss:1, reason:"从镇民口中听见自家先祖与『下面的东西』立约"},
   set:{did_market:true, clue_reed_pact:true, reed_noticed:true},
   choices:[ {label:"捏着那片冰凉的死鱼，离开渔市。", tag:"▸", goto:"dawn"} ]
+};
+
+/* ===================== 新增地点 · 里德老宅（里德暗线 / 真·破局线源头） ===================== */
+S.loc_reedhouse = {
+  banner:"room", loc:"寒鸦港 · 里德老宅",
+  text:[
+    {t:"镇子最高处、背海而立的，是一栋比周围一切都老的黑石大宅。你本不知该往哪走，可你的脚，像是认得路。铁门虚掩，门楣上那个打了结的浪的符号，被百年海风蚀得只剩浅浅一道轮廓——和你钥匙牌上的、码头告示上的，一模一样。", cls:"amber"},
+    {t:"你推门进去。灰尘在唯一一束从破窗斜进来的光里浮动。可地板上，除了你自己的脚印，再没有别人的脚印——却处处是被人擦拭、维护过的痕迹：擦净的烛台、掸过灰的扶手、续过油的门轴。这栋宅子空着，又不像空着。它像是一直在等。等一个姓里德的人，回来。", cls:"amber"}
+  ],
+  san:{loss:1, reason:"踏进一栋空置百年、却分明一直在等你回来的祖宅"},
+  set:{did_reedhouse:true},
+  choices:[
+    {label:"看正厅那一整面墙的家族肖像。", tag:"侦查", goto:"reed_portraits"},
+    {label:"顺着渗水的痕迹，下到地窖去。", tag:"潜行", goto:"reed_cellar"},
+    {label:"这宅子让你喘不过气。先离开。", tag:"▸", goto:"dawn"}
+  ]
+};
+S.reed_portraits = {
+  banner:"room", loc:"里德老宅 · 家族肖像",
+  text:[
+    {t:"一整面墙，挂满了一代代里德家人的油画肖像，从褪色发黑的最早那几幅，一直排到近乎当代。你沿着它们走过去，起初只当是寻常的家族相似——同样的高颧骨，同样的薄唇。可越往后看，你的胃越沉：每一幅里的眼睛，都比常人微微外凸一点点，一幅比一幅更甚；到最近那几幅，那双眼睛已经水汪汪地凸了出来，而画师却仍一丝不苟、甚至骄傲地把它们描了下来，仿佛那是什么高贵的血统印记。", cls:"amber"},
+    {t:"这面墙的最末端，空着一个位置。钉子已经钉好，蒙着一块干净的黑布，像是特意为谁留出来的。你掀开布角——底下不是画。是一面镜子。镜子里，是你自己的脸。", cls:"amber"},
+    {t:"你凑近，看自己的眼睛。还好。还是一双人的眼睛。可站在这面墙前，你忽然就懂了：那个空位，是留给谁的。", cls:"amber"}
+  ],
+  san:{loss:3, reason:"在家族肖像里看清里德血脉世代非人的印记，与那个留给你的空位"},
+  set:{clue_reed_blood:true, reed_noticed:true},
+  choices:[
+    {label:"放下黑布，下地窖去。", tag:"潜行", goto:"reed_cellar"},
+    {label:"逃也似地离开老宅。", tag:"▸", goto:"dawn"}
+  ]
+};
+S.reed_cellar = {
+  banner:"dark", loc:"里德老宅 · 地窖",
+  text:[
+    {t:"地窖的石阶湿滑，越往下，海的气味越重——这宅子建在崖上，地窖却像直通着海。最底下是一间圆形石室，正中一座石台，台上摆着一只黑檀木匣，匣面刻着同样的结浪竖眼。四壁石龛里，一盏盏鲸油灯不知被谁点着，火苗幽绿，安静地燃着，仿佛早知道你会来。", cls:"amber"},
+    {t:"你打开木匣。里面衬着褪色的红绒，绒上凹陷着一个物件的形状——一块牌子的形状——可那位置是空的。东西不在。只余一张脆黄的羊皮纸压在绒下，上面是早已不用的古英文，你那点记者的底子勉强辨出开头几行：", cls:"amber"},
+    {t:"『……以里德家血脉为质，立此永约。彼予我港，百年不竭之丰；我予彼……凡循此血而归者，皆为约中之人，海必迎之，不得辞。欲解此约者，唯毁信物于立约之石之上，别无他途……』", cls:"dlg"},
+    {t:"【线索】创始契约的信物是破约的钥匙，可它已不在匣中——被人取走了。找到那块牌子、在『立约之石』上毁掉它，是唯一能真正终结这一切、而不只是延迟一夜的路。而你，是『循此血而归』的约中之人。", cls:"amber"}
+  ],
+  san:{loss:4, reason:"读到以自己血脉为质的创始契约，得知自己生来即是『约中之人』"},
+  set:{clue_covenant:true, clue_true_end:true},
+  choices:[
+    {label:"揣起那张羊皮纸，回到镇上——你得找到那块牌子。", tag:"▸", goto:"dawn"}
+  ]
+};
+
+/* ===================== 新增地点 · 镇史档案室（碎片化真相 / 回信之链） ===================== */
+S.loc_archive = {
+  banner:"hall", loc:"寒鸦港 · 镇史档案室",
+  text:[
+    {t:"档案室在港务会楼下一间没有窗的偏厅，钥匙就挂在门边——在寒鸦港，真相不上锁，因为读得懂它的人，早都成了它的一部分。空气里是霉纸、鲸油和海盐。一排排卷宗架深入黑暗，标着年份；最早那一册，纸页脆得一碰就掉渣。", cls:"amber"}
+  ],
+  set:{did_archive:true},
+  choices:[
+    {label:"查历年的『渔获账』与教区名册，把这镇子的百年账拼出来。", tag:"图书馆", check:{skill:"图书馆",target:65,success:"archive_ledger",fail:"archive_ledger_slow"}},
+    {label:"翻旧报，找找像你一样『循信而来』的外乡人，后来都怎么了。", tag:"图书馆", goto:"archive_outsiders"},
+    {label:"离开档案室。", tag:"▸", goto:"dawn"}
+  ]
+};
+S.archive_ledger = {
+  banner:"hall", loc:"档案室 · 百年账",
+  text:[
+    {t:"你把渔获账和教区名册并排摊开，一年一年地对。规律很快浮出水面，冷得像井水：每逢大潮之年，渔获账上必有一笔反常的『大丰』，而同一年的教区名册上，必有几个名字，后面被人用同一种潦草的记号划去——不是死亡，教区簿上死亡另有写法，这个记号，你在教堂那本册子上见过。", cls:"amber"},
+    {t:"划去的名字里，有老人，有壮年，也有刚受洗的婴儿。名字旁偶尔还夹着一句冷冰冰的批注：『自愿』『抵账』『替补』。一百多年，一笔一笔，账目分毫不差。这镇子把献祭做成了会计。", cls:"amber"},
+    {t:"而每隔约一百年，账上会出现一次格外大的『大丰』，配着格外多的划名——那是『续约』之年。你翻到最新一册，今年，正是这样一个百年续约之年。名册的最下面，墨迹未干地列着今晚要划去的名字。你一眼就看见了其中一个：塞缪尔·里德。", cls:"amber"}
+  ],
+  san:{loss:3, reason:"在百年账目里，读到今晚要被划去的名字中有你自己"},
+  set:{did_archive:true, clue_ledger:true, clue_hundred:true},
+  choices:[
+    {label:"合上账册，去查那些循信而来的外乡人。", tag:"▸", goto:"archive_outsiders"},
+    {label:"合上账册，离开档案室。", tag:"▸", goto:"dawn"}
+  ]
+};
+S.archive_ledger_slow = {
+  banner:"hall", loc:"档案室 · 百年账",
+  text:[
+    {t:"账目浩繁，字迹又潦草，你翻得头晕眼花，一时理不出头绪。但你没有放弃，多花了大半个白昼，一页一页死磕下来，规律终究还是浮了出来：每逢大潮之年必有一笔反常的『大丰』，同一年的教区名册上，必有几个名字被同一种记号划去——和教堂那本册子上的记号一模一样。一百多年，账目分毫不差。今年是百年续约之年，今晚的名单上，有塞缪尔·里德。", cls:"amber"}
+  ],
+  san:{loss:3, reason:"在百年账目里，读到今晚要被划去的名字中有你自己"},
+  set:{did_archive:true, clue_ledger:true, clue_hundred:true},
+  choices:[
+    {label:"合上账册，离开档案室（天光已经不早了）。", tag:"▸", goto:"dawn"}
+  ]
+};
+S.archive_outsiders = {
+  banner:"hall", loc:"档案室 · 旧报堆",
+  text:[
+    {t:"你专挑那些泛黄的旧报翻。渐渐地，一条你不愿承认的脉络拼了出来：几乎每一次续约之年前后，外埠的小报上，都会有一小则不起眼的失踪启事——一个记者、一个私家侦探、一个来寻亲的年轻人，循着一封『死者寄来的信』来到沿海某镇，此后再无音讯。报道语焉不详，地名也总被含糊带过，可那口吻、那封信，你太熟悉了。", cls:"amber"},
+    {t:"寒鸦港不是第一次用一封回信，把一个外乡人请进雾里。你也不会是最后一个。这封信是这镇子撒了一百年的、同一枚饵。", cls:"amber"},
+    {t:"你还留意到最新的一则：三天前，一位名叫科拉·芬奇的私家侦探，受托寻找一个『溺亡后仍在寄明信片』的委托人，最后的行踪，指向本地。——她可能，此刻就在镇上。", cls:"amber"}
+  ],
+  san:{loss:1, reason:"意识到自己只是这镇子百年来钓上的又一个外乡人"},
+  set:{did_archive:true, clue_chain:true, know_finch:true},
+  choices:[
+    {label:"记下科拉·芬奇这个名字，离开档案室。", tag:"▸", goto:"dawn"}
+  ]
+};
+
+/* ===================== 新增地点 · 医馆（清醒者·老医生·可减侵染） ===================== */
+S.loc_apothecary = {
+  banner:"inn", loc:"寒鸦港 · 医馆",
+  text:[
+    {t:"医馆的门楣上挂着块褪色的木牌：『格里夫斯医师』。屋里比外头暖，炉上煨着不知什么草药，头一回，那味道盖过了无处不在的咸腥。药柜后面站着个干瘦的老人，戴着一副厚厚的眼镜——镜片后，是一双你在这镇上唯一见过的、清澈的、彻头彻尾属于人的眼睛。", cls:"amber"},
+    {t:"他看见你，先是一愣，随即快步过来，压低声音，几乎是恳求：「你还没喝他们的水，对不对？眼睛还是清的。天哪，又来一个。」他反手把门闩上了。「坐下，别出声。我叫格里夫斯，这镇上……最后一个，还记得自己是人的人。」", cls:"dlg"}
+  ],
+  san:{loss:0, reason:""},
+  set:{did_apoth:true, met_griffith:true},
+  choices:[
+    {label:"坐下，与格里夫斯医师长谈——问他这镇子、问洗礼、问出路。", tag:"交谈", goto:"apoth_talk"},
+    {label:"（若已沾染）请他看看你身上那股正在漫开的变化。", tag:"求医", goto:"apoth_cure", if:()=>(flags.taint||0)>0},
+    {label:"谢过他，离开医馆。", tag:"▸", goto:"dawn"}
+  ]
+};
+S.apoth_talk = {
+  banner:"inn", loc:"寒鸦港 · 医馆",
+  text:[
+    {t:"格里夫斯给你倒了杯干净的、他自己蒸馏的水，话像决了堤。「他们不是一夜变成那样的，」他说，「是水。祖祖辈辈把海水掺进井里，一口一口喝下去，几十年，人就慢慢……熟了。像腌一样。等‘熟’透了，大潮之夜被叫下海去‘洗’，就成了下面那位的一根指头、一只眼。他们管这叫恩典。」", cls:"dlg"},
+    {t:"「我行医五十年，靠的就是没沾过那口井——喝雨水，喝我自己蒸的水。所以我还是我。可也正因为如此，我在这镇上，是个睁着眼的瞎子：我看得见一切，却什么也改变不了。」他摘下眼镜擦了擦，眼眶红了，「我给临盆的产妇接生，明知那孩子一落地就要喝那水；我给发‘热’的人看诊，明知那‘热’是鳃在长。我能做的，只是……让他们死前，还像个人。」", cls:"dlg"},
+    {t:"「你不一样。你姓里德——别惊讶，老妇人天没亮就挨家挨户传遍了。」他盯着你，「里德家是立约的血。你要么今晚被‘迎’下去，要么……你是唯一一个，有资格去动那纸约的人。孩子，如果你还想做人，就别信任何‘恩典’，别喝任何水。天黑前，能查的都查了吧。」", cls:"dlg"}
+  ],
+  san:{loss:1, reason:"从唯一清醒者口中听清这镇子如何把人腌成非人"},
+  set:{did_apoth:true, clue_water_truth:true, ally_griffith:true, clue_true_end:true},
+  choices:[
+    {label:"问他：那纸约、那块信物，究竟在哪儿。", tag:"追问", goto:"apoth_covenant"},
+    {label:"谢过医师，离开医馆。", tag:"▸", goto:"dawn"}
+  ]
+};
+S.apoth_covenant = {
+  banner:"inn", loc:"寒鸦港 · 医馆",
+  text:[
+    {t:"格里夫斯的手抖了一下。「你已经知道约的事了。」他沉默良久，「信物是一块鲸骨牌，刻着那个记号。原先供在你家老宅地窖里……可上一次续约之后，港务长把它请去了港务会，锁进了他办公室的保险柜——他怕的，就是有朝一日冒出个不信邪的里德，把它给毁了。」", cls:"dlg"},
+    {t:"「立约之石，是岬角灯塔底下、退潮才露出来的那块祭坛礁。想破约，你得先从港务长那儿拿到牌子，再赶在满潮淹没之前，到礁石上毁掉它。」他抓住你的手腕，掌心冰凉却有力，「这几乎办不到。可这是唯一一条，能救下这一镇可怜人、而不是把他们连镇一起葬送的路。要走，还是不走，你自己掂量。」", cls:"dlg"}
+  ],
+  set:{did_apoth:true, clue_token_location:true, clue_altar:true, clue_true_end:true},
+  choices:[
+    {label:"把这条路记死，谢过医师，离开。", tag:"▸", goto:"dawn"}
+  ]
+};
+S.apoth_cure = {
+  banner:"inn", loc:"寒鸦港 · 医馆",
+  text:[
+    {t:"你解开衣领，让他看你身上那片正在悄悄漫开的、青灰色的变化。格里夫斯的脸沉了下来，却没有惊慌。他取来一小瓶浑浊的药液，逼你一口喝下——又苦又涩，一股铁锈味。", cls:"amber"},
+    {t:"「这压不住根，只能拖住它。」他把剩下的半瓶塞进你怀里，「感觉海的声音又要盖过来时，就喝一口。记住，别再碰他们的水，一滴都不行。你身上的东西，一旦漫过心口，你就再不是你了——到那时候，就算破了约，也救不回你自己。」", cls:"dlg"}
+  ],
+  set:{did_apoth:true, has_tincture:true},
+  onEnter:()=>{ if((flags.taint||0)>0){ flags.taint=Math.max(0,(flags.taint||0)-15); renderSheet(); try{ sysLine('▸ 侵染暂缓：同化 −15（格里夫斯的药液压住了变化）','clue'); }catch(e){} } },
+  choices:[
+    {label:"揣好药瓶，谢过医师，离开。", tag:"▸", goto:"dawn"}
+  ]
+};
+
+/* ===================== 新增地点 · 酒馆『半淹的锚』（醉汉真言 / 另一个外来者） ===================== */
+S.loc_tavern = {
+  banner:"inn", loc:"寒鸦港 · 半淹的锚",
+  text:[
+    {t:"酒馆低矮阴暗，招牌上一只锚沉了半截在漆成海浪的木板里。角落一台老留声机，反反复复放着同一支走了调的圣歌——你听了半晌才惊觉，那不是圣歌，是把一支渔歌，整个倒过来唱的。几个镇民泡在浑浊的酒里，青灰的脸埋在阴影中，没人抬头看你。", cls:"amber"},
+    {t:"但吧台尽头有一个人，抬头看了你——一个风尘仆仆、眼神锐利的年轻女人，面前搁着杯没动过的酒和一个摊开的笔记本。她的眼睛，和你一样，还是清的。你们隔着半间酒馆，认出了彼此：两个不属于这里的人。", cls:"amber"}
+  ],
+  set:{did_tavern:true},
+  choices:[
+    {label:"走过去，跟那个清醒眼睛的女人搭话。", tag:"交谈", goto:"tavern_finch"},
+    {label:"先跟角落里那个醉得最深的镇民套两句话。", tag:"交谈", goto:"tavern_drunk"},
+    {label:"离开酒馆。", tag:"▸", goto:"dawn"}
+  ]
+};
+S.tavern_finch = {
+  banner:"inn", loc:"半淹的锚 · 科拉·芬奇",
+  text:[
+    {t:"「你也是收到信来的。」她没问，是断定。「科拉·芬奇，私家侦探。有人雇我找他失踪的兄弟——一个‘溺死’之后，还在往家寄明信片的人。线索把我带到了这鬼地方。」她合上笔记本，声音压得极低，「我来了三天，查明白了两件事：第一，这镇子不对，非常不对；第二，出去的路，一到晚上就没了——雾会把它吃掉。」", cls:"dlg"},
+    {t:"她打量着你：「你眼神比我刚来时还沉。你查到的，比我多。」她伸出手，「合伙吧。你我单打独斗都出不去。今晚满潮之前，我们把知道的凑一块儿——要么一起破了这局，要么，至少想法子一起活着钻出这团雾。」", cls:"dlg"}
+  ],
+  set:{did_tavern:true, ally_finch:true, met_finch:true},
+  choices:[
+    {label:"握住她的手——多一个清醒的活人，就多一分胜算。", tag:"结盟", set:{allied_finch:true}, goto:"tavern_pact"},
+    {label:"婉拒——你信不过任何在这镇上还清醒的人，包括她。", tag:"▸", goto:"dawn"}
+  ]
+};
+S.tavern_pact = {
+  banner:"inn", loc:"半淹的锚 · 结盟",
+  text:[
+    {t:"你们凑在留声机的噪音下，飞快地交换了各自查到的东西。科拉听完你说的‘里德’和那纸约，笔尖顿住了：「所以你不是随便被钓来的……你是他们等了一百年的正主。」她盯着你，眼里第一次有了一点近乎希望的光，「那这就不只是逃命了。你手里，有一把他们最怕的钥匙。」", cls:"amber"},
+    {t:"「这样，」她合计道，「入夜他们全去海边，港务会最空。我替你望风、拖时间，你去撬港务长的保险柜，拿那块牌子。拿到了，我们一起冲岬角的祭坛礁。成了，这镇子的百年孽账，今晚就断在我们手里。」她把半块干粮塞给你，「先吃点。今晚，谁都别想睡。」", cls:"amber"}
+  ],
+  set:{did_tavern:true, plan_heist:true, ally_finch:true},
+  choices:[
+    {label:"记下今夜的计划，离开酒馆。", tag:"▸", goto:"dawn"}
+  ]
+};
+S.tavern_drunk = {
+  banner:"inn", loc:"半淹的锚 · 醉汉",
+  text:[
+    {t:"你在那醉得最深的镇民对面坐下，替他斟满。他浑浊的眼珠转过来，颈侧的鳃裂一张一合。他不设防——在寒鸦港，醉汉是唯一还会说真话的人，因为真话在这里，早就不算秘密了。", cls:"amber"},
+    {t:"「灯……」他咕哝着，一根发蹼的手指戳向窗外岬角的方向，「都指望那盏灯呐。灯一亮，主上来，海就赏饭吃。可你猜怎么着——」他凑近，喷着腥臭的酒气，压低了嗓子，像说一个天大的笑话，「港务长那老王八，最怕的就是灯灭。八十年前那回，差点就灭了，是他爹拿命顶上去的。他呀，一辈子都在怕灯灭，怕主怪罪，怕这镇子……哈，怕这镇子得自个儿饿死。」", cls:"dlg"},
+    {t:"他忽然咧嘴笑了，露出一嘴细密的、不像人牙的东西：「外乡人，你今晚也有份儿。别怕。洗干净了，就不冷了，也不用再怕灯灭喽。」说罢又栽回酒里去了。", cls:"dlg"}
+  ],
+  san:{loss:1, reason:"从醉汉嘴里听见自己今夜的下场，被当成一个笑话讲出来"},
+  set:{did_tavern:true, clue_light:true, clue_keeper_fear:true},
+  choices:[
+    {label:"给他再满上一杯，起身离开。", tag:"▸", goto:"dawn"}
+  ]
 };
 
 S.loc_room = {
@@ -1448,6 +1652,7 @@ S.nightfall = {
   ],
   set:{act3:true},
   choices:[
+    {label:"（真·破局）不上塔——趁全镇都涌向海边、港务会空了，潜回去撬港务长的保险柜，取那块鲸骨牌。", tag:"决意", goto:"heist_hall", if:()=>flags.clue_token_location},
     {label:"冲上塔顶，赶在午夜前毁掉那盏信标灯。", tag:"决心", check:{skill:"决心",target:60,success:"end_disrupt",fail:"climax_struggle"},
        if:()=>flags.clue_light || flags.know_mechanism},
     {label:"不逞英雄——趁全镇都在海边，退潮的暗礁露出来，摸黑走礁石滩逃出寒鸦港。", tag:"机敏", check:{skill:"机敏",target:55,success:"end_escape",fail:"climax_caught"},
@@ -1494,7 +1699,72 @@ S.climax_witness = {
   ]
 };
 
+/* ---------- 真·破局线（创意扩展 v0.3）---------- */
+S.heist_hall = {
+  banner:"hall", loc:"港务会 · 空楼 · 满潮将至",
+  text:[
+    {t:"你逆着涌向海边的人流，钻回空无一人的港务会。海雾里的低唱一声高过一声，从背后追着你。港务长的办公室在二楼，那口墨绿的保险柜就蹲在书桌后头，像一头睡着的兽——鲸骨牌，就锁在它肚子里。", cls:"amber"},
+    {t:"你得又快又静，赶在有人回头之前把它弄出来。", cls:"amber"}
+  ],
+  choices:[
+    {label:"（芬奇的密码）照纸条从容开柜，取出鲸骨牌。", tag:"里应外合", goto:"heist_ok", if:()=>flags.allied_finch},
+    {label:"（侦查）独自贴着柜门，听着锁芯的回响，一格一格地试。", tag:"侦查", check:{skill:"侦查",target:55,success:"heist_ok",fail:"heist_bad"}},
+    {label:"（手枪）没工夫细撬了——一枪崩掉锁，抢了就走。", tag:"手枪", check:{skill:"手枪",target:40,success:"heist_loud",fail:"heist_bad"}}
+  ]
+};
+S.heist_ok = {
+  banner:"hall", loc:"港务会 · 空楼",
+  text:[
+    {t:"锁舌轻轻一响，柜门开了。里面没有金银，只有一样东西：一块半个巴掌大的鲸骨牌，被摩挲得温润发亮，正面深深刻着那个结浪竖眼的记号。你一碰到它，掌心便是一阵刺骨的凉，仿佛攥住了一小片海底。", cls:"amber"},
+    {t:"这就是了。立约百年的凭据，一镇人命运的枢纽，此刻，攥在一个姓里德的人手里。你把它塞进贴胸的口袋，转身冲进雾里——立约之石，在岬角，退潮才露头，你得赶在满潮淹没它之前赶到。", cls:"amber"}
+  ],
+  set:{has_token:true},
+  choices:[ {label:"揣着鲸骨牌，冲向岬角的祭坛礁。", tag:"▸", goto:"altar_rock"} ]
+};
+S.heist_loud = {
+  banner:"dark", loc:"港务会 · 空楼",
+  text:[
+    {t:"枪声在空楼里炸开，震落了一片灰。锁碎了，你一把抓出那块冰凉的鲸骨牌——可枪声也传出去了。窗外，海边队伍里几盏惨绿的灯笼停住、转向，开始朝镇里回涌。", cls:"amber"},
+    {t:"没时间了。你攥紧鲸骨牌，从后窗翻出去，凭着一股狠劲冲向岬角。身后，追赶的低唱越来越近。", cls:"amber"}
+  ],
+  hp:{loss:1, reason:"翻窗逃脱时磕在礁石棱上"},
+  set:{has_token:true, town_alerted:true},
+  choices:[ {label:"顶着追兵，冲向岬角的祭坛礁。", tag:"▸", goto:"altar_rock"} ]
+};
+S.heist_bad = {
+  banner:"dark", loc:"港务会 · 空楼",
+  text:[
+    {t:"你的手在发抖，锁芯却纹丝不动。就在你额头渗汗的当口，楼梯上响起了湿漉漉的脚步声——不止一个人。你回过头，办公室门口，港务长正笑吟吟地站着，身后是几个举着绿灯笼、青灰色的身影。「里德先生，」他温软地说，「这东西，可不该由您来碰。」", cls:"amber"}
+  ],
+  san:{loss:3, reason:"破约功亏一篑，被港务长当场堵在保险柜前"},
+  choices:[ {label:"被无数蹼手按住，拖向海边。", tag:"▸", goto:"climax_caught"} ]
+};
+S.altar_rock = {
+  banner:"lighthouse", loc:"岬角 · 立约之石 · 午夜将至",
+  text:[
+    {t:"退潮把岬角外那块巨大的祭坛礁露了出来——礁面被人凿刻着那个结浪竖眼的地画，几百年的仪式把石头磨得油亮。海水正一寸寸涨回来，留给你的时间以秒计。你踉跄爬上礁石，掏出那块鲸骨牌。", cls:"amber"},
+    {t:"就在这时，塔顶的信标灯亮了。那不是光，是深海沟底才有的、浓稠得能滴落的幽绿，直直射向海面。海开始让路——岬角外那片黑水被下面某个正在上浮的、庞大到超出理解的东西，从底部缓缓顶起。全镇的低唱攀到了顶点。它上来了。它是来收今夜的贡的——也是来收你的。", cls:"amber"},
+    {t:"你举起鲸骨牌。那牌子在你手里疯狂地发烫、震颤，仿佛下面那个东西正隔着整片海，用尽全力想夺回它。羊皮纸上的字在你脑中轰响：『欲解此约者，唯毁信物于立约之石之上。』", cls:"amber"}
+  ],
+  set:{act3:true},
+  choices:[
+    {label:"用尽全身的力气，把鲸骨牌高高举起，狠狠砸碎在立约之石上。", tag:"决绝", goto:"end_covenant"},
+    {label:"……犹豫了。它太大了，而你只想活着。把牌子扔给它，换自己一条生路。", tag:"退缩", goto:"end_taken"}
+  ]
+};
+
 /* ---------- 结局 ---------- */
+S.end_covenant = {
+  banner:"dark", loc:"结局 · 永续破约", end:true,
+  text:[
+    {t:"鲸骨牌在立约之石上砸得粉碎。", cls:"amber"},
+    {t:"那一瞬，没有雷鸣，没有巨响。只是那块牌子迸裂成齑粉的刹那，你听见——不是用耳朵，是用整个身体——一声横贯整片海的、无边无际的『断裂』，像一根绷了三百年的弦，终于崩断。上浮到一半的庞然之物顿住了，那只刚要睁开的、比灯塔还高的竖眼，里面第一次漾起一种它存在了亿万年、却从未有过的情绪：困惑。契约断了。它与这片海岸的连结，断了。", cls:"amber"},
+    {t:"它缓缓地、极不情愿地，沉了回去。海水轰然合拢，填平了它让开的路。祭坛礁上，只剩你一个人，浑身湿透，握着两手骨屑，对着一片重归死寂的、终于只是『海』的海。", cls:"amber"},
+    {t:"寒鸦港自由了。可自由的代价，你要到很多年后才看得全：海不再收贡，也不再赏赐。第二年,渔网空了；第三年，第一场百年未遇的风暴掀翻了半个渔村；青灰皮肤的镇民们，第一次开始像寻常人一样，衰老，生病，死去——真正地死去。他们诅咒你，也有人，在深夜里悄悄地感谢你。你给了他们一样东西，一样他们交出去了三百年的东西：一个会结束的、属于人的人生。", cls:"amber"},
+    {t:"—— 结局【永续破约】· 你毁掉了创始契约，永远终结了献祭。你没有拯救寒鸦港的繁荣，你只是把它还给了时间——把这一镇非人，重新变回了会死的人。这是最重的一种慈悲。", cls:"amber"}
+  ],
+  choices:[{label:"↻ 重玩这个副本", tag:"重玩", goto:"__restart"}]
+};
 S.end_disrupt = {
   banner:"dark", loc:"结局 · 熄 灯", end:true,
   text:[
@@ -2366,6 +2636,7 @@ function maybeTutorial(){
 el('tutok').onclick=()=>{ el('tutorial').style.display='none'; try{ localStorage.setItem(SAVE_GAME+'_seen_tut','1'); }catch(e){} };
 el('startBtn').onclick = ()=>{ let saved=null; try{ saved=load(); }catch(e){} enterGame(saved || 'arrival'); };
 el('mute').onclick = ()=>{ try{ const m = Sound.toggle(); el('mute').textContent = m?'♪ 静':'♪ 声'; }catch(e){} };
+el('menu').onclick = ()=>{ if(typing) return; if(confirm('回到主菜单？当前进度已自动保存，可在标题界面「继续」。')){ try{ if(!(cur&&cur.end)) save(); }catch(e){} location.reload(); } };
 el('newgame').onclick = (e)=>{ e.preventDefault(); try{ localStorage.removeItem('hanya_save'); }catch(_){}
   PC.san=65; PC.hp=11; for(const k in flags) delete flags[k]; document.body.classList.remove('low-san');
   enterGame('arrival'); };

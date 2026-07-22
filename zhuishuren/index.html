@@ -457,6 +457,7 @@
         <button id="mute" title="音效开关">♪ 声</button>
         <button id="motion" title="减弱闪烁/抖屏（光敏友好）">🌀 动</button>
         <button id="fsize" title="字号（放大叙述文字）">🔤 字</button>
+        <button id="menu" title="回到主菜单（进度自动保存）">⌂ 菜单</button>
       </div></div>
     <div id="scroll">
       <div id="narr" role="log" aria-live="polite" aria-label="故事叙述"></div>
@@ -3224,6 +3225,7 @@ function maybeTutorial(){
 el('tutok').onclick=()=>{ el('tutorial').style.display='none'; try{ localStorage.setItem(SAVE_GAME+'_seen_tut','1'); }catch(e){} };
 el('startBtn').onclick = ()=>{ let saved=null; if(hasSave()){ try{ saved=load(); }catch(e){} } enterGame(saved || 'arrival'); };
 el('mute').onclick = ()=>{ try{ const m = Sound.toggle(); el('mute').textContent = m?'♪ 静':'♪ 声'; }catch(e){} };
+el('menu').onclick = ()=>{ if(typing) return; if(confirm('回到主菜单？当前进度已自动保存，可在标题界面「继续」。')){ try{ if(!(cur&&cur.end)) save(); }catch(e){} location.reload(); } };
 el('motion').onclick = ()=>{ reducedMotion=!reducedMotion; try{ localStorage.setItem('zhuishu_reduce_motion', reducedMotion?'1':'0'); }catch(e){} applyReduceMotion(); };
 /* 字号调节（无障碍：叙述文字放大两档） */
 const FSIZES=['','fs-l','fs-xl'];
