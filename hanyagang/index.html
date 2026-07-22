@@ -579,6 +579,30 @@ const BANNERS = {
   </svg>`,
 
   // 白天的岬角灯塔（藤壶塔身、灰海、乱云）
+  market: `<svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid slice" shape-rendering="crispEdges">
+    <defs><linearGradient id="mksky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1c2228"/><stop offset="1" stop-color="#2a2822"/></linearGradient></defs>
+    <rect width="320" height="120" fill="url(#mksky)"/>
+    <rect x="0" y="8" width="320" height="10" fill="#161a1e"/>
+    <g fill="#12161a"><rect x="20" y="18" width="6" height="30"/><rect x="150" y="18" width="6" height="30"/><rect x="290" y="18" width="6" height="30"/></g>
+    <path d="M26 20 Q80 40 150 20" stroke="#3a4038" stroke-width="1" fill="none" opacity=".6"/>
+    <path d="M156 20 Q220 40 290 20" stroke="#3a4038" stroke-width="1" fill="none" opacity=".6"/>
+    <rect x="0" y="72" width="320" height="48" fill="#1a1610"/><rect x="0" y="68" width="320" height="5" fill="#241c12"/>
+    <ellipse cx="90" cy="84" rx="46" ry="12" fill="#2a3038"/><polygon points="44,84 30,76 30,92" fill="#2a3038"/><circle cx="120" cy="82" r="2.5" fill="#0a0c0e"/>
+    <g fill="#242a30"><ellipse cx="200" cy="86" rx="16" ry="6"/><ellipse cx="230" cy="84" rx="14" ry="5"/><ellipse cx="260" cy="87" rx="15" ry="6"/></g>
+    <rect x="150" y="78" width="18" height="20" fill="#160f0a"/><ellipse cx="159" cy="78" rx="9" ry="3" fill="#0e1418"/>
+  </svg>`,
+  apoth: `<svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid slice" shape-rendering="crispEdges">
+    <defs><linearGradient id="apw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#241c14"/><stop offset="1" stop-color="#1a140e"/></linearGradient></defs>
+    <rect width="320" height="120" fill="url(#apw)"/>
+    <rect x="0" y="0" width="320" height="70" fill="#1e160f"/>
+    <g stroke="#2c2016" stroke-width="1"><line x1="0" y1="24" x2="320" y2="24"/><line x1="0" y1="46" x2="320" y2="46"/></g>
+    <g fill="#3a4a3a" opacity=".7"><rect x="14" y="10" width="8" height="12"/><rect x="30" y="8" width="7" height="14"/><rect x="46" y="10" width="8" height="12"/><rect x="200" y="10" width="8" height="12"/><rect x="216" y="8" width="7" height="14"/><rect x="280" y="10" width="8" height="12"/></g>
+    <g fill="#6a5a3a" opacity=".6"><rect x="70" y="32" width="8" height="12"/><rect x="86" y="30" width="7" height="14"/><rect x="240" y="32" width="8" height="12"/><rect x="256" y="30" width="7" height="14"/></g>
+    <rect x="150" y="52" width="20" height="16" fill="#2a1e12"/><rect x="154" y="55" width="12" height="10" fill="#c87a30" opacity=".7"/>
+    <ellipse cx="160" cy="60" rx="40" ry="20" fill="#c8823a" opacity=".12"/>
+    <rect x="0" y="88" width="320" height="32" fill="#160f0a"/><rect x="0" y="84" width="320" height="5" fill="#22180f"/>
+    <rect x="60" y="76" width="8" height="10" fill="#8aa0b0" opacity=".4"/>
+  </svg>`,
   marsh: `<svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid slice" shape-rendering="crispEdges">
     <defs><linearGradient id="msky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1a1e1c"/><stop offset="1" stop-color="#2a2c24"/></linearGradient></defs>
     <rect width="320" height="120" fill="url(#msky)"/>
@@ -1101,7 +1125,7 @@ S.post_fail = {
 S.room_night = {
   banner:"room", loc:"锈锚旅馆 · 末尾房间 · 深夜",
   text:[
-    {t:"房间比棺材大不了多少。一张铁床，一扇朝海的窗，玻璃上凝着水汽，从外面看不进来，你却总觉得，从里面能被什么看着。"},
+    {t:"房间比棺材大不了多少。一张铁床，一扇朝海的窗，玻璃上凝着水汽，从外面看不进来，你却总觉得，从里面能被什么看着。墙上原本挂镜子的地方，蒙着一块洗得发白的旧布——你后来才留意到，这镇上家家的镜子都这么蒙着。他们不愿照见自己，也许是因为，镜子里的东西，一年比一年，更不像人。", cls:"amber"},
     {t:"你把左轮压在枕头下，吹熄了灯。灯塔的光每隔一会儿扫过天花板，一次，一次。你在这有节奏的明灭里，慢慢沉下去——"},
     {t:"直到走廊里传来声音把你惊醒。"},
     {t:"湿淋淋的脚步。一步，一停，一滩水落地的声音。它正沿着走廊，朝你这间的方向，慢慢挪过来。老妇人的话在你耳边响起：别应声。", cls:"amber"}
@@ -1260,7 +1284,7 @@ S.dawn = {
 
 /* ===================== 新增地点 · 渔市（创意扩展 v0.2） ===================== */
 S.loc_market = {
-  banner:"harbor", loc:"寒鸦港 · 渔市",
+  banner:"market", loc:"寒鸦港 · 渔市",
   text:[
     {t:"渔市支在码头与晒网场之间，是白日里寒鸦港唯一还像在『过活』的地方——却过得处处不对。摊上的鱼大得不合常理，一条比人腿还粗的鳕鱼瞪着浑浊的死眼；没人吆喝，没人还价，买卖双方只无声地交换一个眼神、几枚铜板，那份默契让整座市集安静得像一场哑剧。", cls:"amber"},
     {t:"你留意到几桩小事：家家的秤，秤砣都缺了一角，缺口一模一样，像是同一天、被同一只手敲下去的；晾着的渔网里，混着些不像鱼线的、半透明发白的丝，随海风轻轻搏动，像是活的；一个系围裙的胖女人正把内脏往桶里剖——可她剖开的那条『鱼』，胸腔里排着的骨头，怎么看，都太像一只手。", cls:"amber"}
@@ -1272,7 +1296,7 @@ S.loc_market = {
   ]
 };
 S.market_barrel = {
-  banner:"harbor", loc:"寒鸦港 · 渔市",
+  banner:"market", loc:"寒鸦港 · 渔市",
   text:[
     {t:"你装作挑鱼，凑到桶边。桶里泡着的大半确是鱼——可在那堆青灰的鳞与内脏底下，你分明瞥见几段不属于任何鱼的东西：一截生着蹼的、发白的指节；一片剥落的、隐约印着人皮纹路的皮。它们和鱼杂拌在一起，等着被一并熬成镇上人人都喝的那锅汤。", cls:"amber"},
     {t:"胖女人察觉了你的目光，不慌不忙地拿湿布往桶上一盖，冲你咧开一个缺了几颗牙的笑：「新鲜的。外乡人，晚上留下来，喝碗？」她颈侧那三道浅疤，随着说话，极轻微地翕动了一下。", cls:"dlg"},
@@ -1283,7 +1307,7 @@ S.market_barrel = {
   choices:[ {label:"皮笑肉不笑地谢绝，离开渔市。", tag:"▸", goto:"dawn"} ]
 };
 S.market_miss = {
-  banner:"harbor", loc:"寒鸦港 · 渔市",
+  banner:"market", loc:"寒鸦港 · 渔市",
   text:[
     {t:"你还没凑近，胖女人便不动声色地拿湿布盖住了桶，抬眼似笑非笑地看着你。你没能看清桶里的东西——但那一眼里的东西，你看清了：他们知道你在看，也不在乎。你终究不是这市集上的猎人，是另一样待价而沽的货。", cls:"amber"}
   ],
@@ -1291,7 +1315,7 @@ S.market_miss = {
   choices:[ {label:"离开渔市。", tag:"▸", goto:"dawn"} ]
 };
 S.market_talk = {
-  banner:"harbor", loc:"寒鸦港 · 渔市",
+  banner:"market", loc:"寒鸦港 · 渔市",
   text:[
     {t:"你跟胖女人攀谈。她话不多，可当你无意间提起『里德』这个姓，市集里几个原本充耳不闻的镇民，都极缓慢地、极轻微地，把脸转了过来——像一片水草，同时被一道暗流拨动。", cls:"amber"},
     {t:"「里德家的人，隔上几十年，总要回来一个。」胖女人一边剖鱼一边说，语气平淡得像在说潮水，「当年跟下面立约的，就是你们家的老祖宗。海，记着账呢。你回来，是对的。」她挑了片最肥的鱼塞进你手里，油亮的鱼眼正对着你，「拿着。到晚上，你就都懂了。」", cls:"dlg"}
@@ -1399,7 +1423,7 @@ S.archive_outsiders = {
 
 /* ===================== 新增地点 · 医馆（清醒者·老医生·可减侵染） ===================== */
 S.loc_apothecary = {
-  banner:"inn", loc:"寒鸦港 · 医馆",
+  banner:"apoth", loc:"寒鸦港 · 医馆",
   text:[
     {t:"医馆的门楣上挂着块褪色的木牌：『格里夫斯医师』。屋里比外头暖，炉上煨着不知什么草药，头一回，那味道盖过了无处不在的咸腥。药柜后面站着个干瘦的老人，戴着一副厚厚的眼镜——镜片后，是一双你在这镇上唯一见过的、清澈的、彻头彻尾属于人的眼睛。", cls:"amber"},
     {t:"他看见你，先是一愣，随即快步过来，压低声音，几乎是恳求：「你还没喝他们的水，对不对？眼睛还是清的。天哪，又来一个。」他反手把门闩上了。「坐下，别出声。我叫格里夫斯，这镇上……最后一个，还记得自己是人的人。」", cls:"dlg"}
@@ -1413,7 +1437,7 @@ S.loc_apothecary = {
   ]
 };
 S.apoth_talk = {
-  banner:"inn", loc:"寒鸦港 · 医馆",
+  banner:"apoth", loc:"寒鸦港 · 医馆",
   text:[
     {t:"格里夫斯给你倒了杯干净的、他自己蒸馏的水，话像决了堤。「他们不是一夜变成那样的，」他说，「是水。祖祖辈辈把海水掺进井里，一口一口喝下去，几十年，人就慢慢……熟了。像腌一样。等‘熟’透了，大潮之夜被叫下海去‘洗’，就成了下面那位的一根指头、一只眼。他们管这叫恩典。」", cls:"dlg"},
     {t:"「我行医五十年，靠的就是没沾过那口井——喝雨水，喝我自己蒸的水。所以我还是我。可也正因为如此，我在这镇上，是个睁着眼的瞎子：我看得见一切，却什么也改变不了。」他摘下眼镜擦了擦，眼眶红了，「我给临盆的产妇接生，明知那孩子一落地就要喝那水；我给发‘热’的人看诊，明知那‘热’是鳃在长。我能做的，只是……让他们死前，还像个人。」", cls:"dlg"},
@@ -1427,7 +1451,7 @@ S.apoth_talk = {
   ]
 };
 S.apoth_covenant = {
-  banner:"inn", loc:"寒鸦港 · 医馆",
+  banner:"apoth", loc:"寒鸦港 · 医馆",
   text:[
     {t:"格里夫斯的手抖了一下。「你已经知道约的事了。」他沉默良久，「信物是一块鲸骨牌，刻着那个记号。原先供在你家老宅地窖里……可上一次续约之后，港务长把它请去了港务会，锁进了他办公室的保险柜——他怕的，就是有朝一日冒出个不信邪的里德，把它给毁了。」", cls:"dlg"},
     {t:"「立约之石，是岬角灯塔底下、退潮才露出来的那块祭坛礁。想破约，你得先从港务长那儿拿到牌子，再赶在满潮淹没之前，到礁石上毁掉它。」他抓住你的手腕，掌心冰凉却有力，「这几乎办不到。可这是唯一一条，能救下这一镇可怜人、而不是把他们连镇一起葬送的路。要走，还是不走，你自己掂量。」", cls:"dlg"}
@@ -1438,7 +1462,7 @@ S.apoth_covenant = {
   ]
 };
 S.apoth_cure = {
-  banner:"inn", loc:"寒鸦港 · 医馆",
+  banner:"apoth", loc:"寒鸦港 · 医馆",
   text:[
     {t:"你解开衣领，让他看你身上那片正在悄悄漫开的、青灰色的变化。格里夫斯的脸沉了下来，却没有惊慌。他取来一小瓶浑浊的药液，逼你一口喝下——又苦又涩，一股铁锈味。", cls:"amber"},
     {t:"「这压不住根，只能拖住它。」他把剩下的半瓶塞进你怀里，「感觉海的声音又要盖过来时，就喝一口。记住，别再碰他们的水，一滴都不行。你身上的东西，一旦漫过心口，你就再不是你了——到那时候，就算破了约，也救不回你自己。」", cls:"dlg"}
@@ -1623,7 +1647,8 @@ S.room_find = {
   text:[
     {t:"松动的踢脚线后面，塞着埃德温的野外笔记本，纸页被海水泡得发皱，字迹却是他的。你一页页读下去，胃越来越沉。", cls:"amber"},
     {t:"『寒鸦港近百年没有饥荒、没有沉船、渔获永远丰盈——代价是，每逢大潮之夜，港务会要向下面那位「献洗礼」。他们不叫它死亡，叫「洗干净」：被选中的人沉入海沟，再从潮里回来，成为它的一部分，永远侍奉。』", cls:"dlg"},
-    {t:"最后一页只有几行仓促的字：『我知道得太多了。他们要洗我。灯塔的光不是航标——是唤它上浮的信标，午夜满潮时点亮。若有人读到这些：熄了那盏灯，它就上不来，仪式就破了。别信任何滴着水的人，哪怕那是我。』"}
+    {t:"最后一页只有几行仓促的字：『我知道得太多了。他们要洗我。灯塔的光不是航标——是唤它上浮的信标，午夜满潮时点亮。若有人读到这些：熄了那盏灯，它就上不来，仪式就破了。别信任何滴着水的人，哪怕那是我。』"},
+    {t:"你合上笔记，才发现自己捏着纸页的那个角，不知何时洇开了一小片深色的水渍，正一点点往里洇。可屋里是干的，你的手也是干的。你怔怔地看着那片水渍，忽然懂了：不是纸在渗水。是有什么东西，正隔着这一整座镇子、隔着你读过的每一个字，慢慢地，往你这边够过来。", cls:"amber"}
   ],
   san:{loss:3, reason:"读到挚友留下的、记录自身被献祭全过程的笔记"},
   set:{did_room:true, clue_journal:true, clue_light:true, know_lowtide:true},
@@ -2109,7 +2134,7 @@ const Atmo = (function(){
     harbor:[70,90,120], inn:[90,80,70], post:[58,66,74],
     room:[42,44,58], dark:[26,30,46], climax:[28,56,66],
     yellow:[92,78,24], dread:[34,28,18], corpse:[46,40,42],   // 黄衣病态 / 死寂逼近 / 尸腐
-    reedhouse:[40,30,48], altar:[30,58,60], crypt:[28,48,50], marsh:[42,46,34]  // 老宅/祭坛礁/涨潮池/盐沼
+    reedhouse:[40,30,48], altar:[30,58,60], crypt:[28,48,50], marsh:[42,46,34], apoth:[70,58,38], market:[52,60,64]  // 老宅/祭坛礁/涨潮池/盐沼/医馆/渔市
   };
   function make(){
     cv=document.getElementById('atmo'); if(!cv) return; ctx=cv.getContext('2d');
