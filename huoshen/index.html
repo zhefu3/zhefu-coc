@@ -1272,8 +1272,8 @@ S.hub = {
     {label:"给凯利家打电话——广播说他今早出了车祸，你得确认。", tag:"电话", goto:"call_kelly", if:()=>!flags.did_call_kelly},
     {label:"驱车去宾夏家——他在电话里约你过去当面谈。", tag:"前往", goto:"pinckney_house", if:()=>flags.pinckney_invited && !flags.did_pinckney_house},
     {label:"登门凯利家——去看看这位老友身后留下了什么。", tag:"前往", goto:"kelly_house", if:()=>!flags.did_kelly_house},
-    {label:"驱车去西郊，找隐士劳伦斯·石谷的拖车。", tag:"前往", goto:"v02_roadmap", if:()=>flags.clue_stonevale && !flags.did_stonevale},
     {label:"去密大图书馆、历史学会，查『黄衣之印』的来历……", tag:"待建", goto:"v02_roadmap"},
+    {label:"驱车去西郊，找隐士劳伦斯·石谷的拖车。", tag:"前往", goto:"v02_roadmap", if:()=>flags.clue_stonevale && !flags.did_stonevale},
     {label:"（天色已晚）等下去，面对那即将登门的东西。", tag:"终局", goto:"v02_roadmap", if:()=>isNight()}
   ]
 };
