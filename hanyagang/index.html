@@ -579,6 +579,18 @@ const BANNERS = {
   </svg>`,
 
   // 白天的岬角灯塔（藤壶塔身、灰海、乱云）
+  marsh: `<svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid slice" shape-rendering="crispEdges">
+    <defs><linearGradient id="msky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1a1e1c"/><stop offset="1" stop-color="#2a2c24"/></linearGradient></defs>
+    <rect width="320" height="120" fill="url(#msky)"/>
+    <rect x="0" y="30" width="320" height="18" fill="#33352c" opacity=".4"/>
+    <rect x="0" y="52" width="320" height="10" fill="#20241e" opacity=".6"/>
+    <rect x="0" y="70" width="320" height="50" fill="#141812"/>
+    <g stroke="#22281e" stroke-width="1" opacity=".5"><line x1="0" y1="80" x2="320" y2="80"/><line x1="0" y1="96" x2="320" y2="96"/></g>
+    <g fill="#0d0f0a"><rect x="60" y="58" width="6" height="40"/><rect x="90" y="60" width="6" height="42"/><rect x="120" y="62" width="6" height="44"/><rect x="152" y="66" width="6" height="40"/></g>
+    <rect x="56" y="56" width="46" height="4" fill="#12140d"/><rect x="112" y="60" width="20" height="4" fill="#12140d"/>
+    <g stroke="#2c3222" stroke-width="1"><line x1="20" y1="72" x2="18" y2="54"/><line x1="24" y1="72" x2="26" y2="56"/><line x1="200" y1="74" x2="198" y2="56"/><line x1="205" y1="74" x2="207" y2="58"/><line x1="260" y1="72" x2="258" y2="54"/><line x1="290" y1="74" x2="288" y2="56"/></g>
+    <circle cx="205" cy="66" r="2" fill="#c8a24a" opacity=".5"/>
+  </svg>`,
   crypt: `<svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid slice" shape-rendering="crispEdges">
     <defs><linearGradient id="crw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0d1518"/><stop offset="1" stop-color="#132428"/></linearGradient></defs>
     <rect width="320" height="120" fill="#0a0e10"/>
@@ -1563,7 +1575,7 @@ S.wreck_log_slow = {
 
 /* ===================== 新增地点 · 盐沼断桥（抵抗据点 / 群像撤离） ===================== */
 S.loc_marsh = {
-  banner:"harbor", loc:"寒鸦港 · 盐沼 · 断桥",
+  banner:"marsh", loc:"寒鸦港 · 盐沼 · 断桥",
   text:[
     {t:"镇子北边，陆路在一片望不到头的盐沼里断了——一座木桥朽了一半，泡在齐腰的咸水与芦苇里。桥那头，是通往内陆、通往正常世界的唯一一条路，此刻却被浓得化不开的雾死死封着。你试着走上断桥，不到十步，脚下的木板就软得像浸透的饼干；而雾里，隐约有什么东西在盘桓、在等。这条路，白天走不通。", cls:"amber"},
     {t:"你正打算折返，芦苇丛深处，一盏罩得极暗的马灯，警惕地亮了一下，又灭了。有人，藏在那里。", cls:"amber"}
@@ -1575,7 +1587,7 @@ S.loc_marsh = {
   ]
 };
 S.marsh_hide = {
-  banner:"harbor", loc:"盐沼 · 藏身处",
+  banner:"marsh", loc:"盐沼 · 藏身处",
   text:[
     {t:"芦苇丛里，猫着一家三口：一个满脸风霜的男人端着一杆旧猎枪指着你，身后是他妻子，和一个被紧紧搂着的、约莫十岁的男孩。他们的眼睛，都还是清的。「站住，」男人低吼，「你眼睛……不是他们那副样子。你也想出去？」", cls:"dlg"},
     {t:"他叫塔尔博特，一个死活不肯喝井水的渔夫。一家躲在盐沼里已经三天，就等一样东西：今晚满潮之前那短短半个钟头，退到最低的潮水，会让盐沼里一条只有老渔民才知道的、通往内陆的浅埂露出来。「窗口很短，」他说，「错过了，就得再等一个月——可我们撑不到一个月。这镇子，今晚就要收网了。」", cls:"dlg"}
@@ -1588,7 +1600,7 @@ S.marsh_hide = {
   ]
 };
 S.marsh_plan = {
-  banner:"harbor", loc:"盐沼 · 藏身处",
+  banner:"marsh", loc:"盐沼 · 藏身处",
   text:[
     {t:"你把知道的都倒了出来。塔尔博特听到『里德』这个姓时，端枪的手抖了一下：「里德……立约的那一家。」他盯着你看了很久，忽然放下了枪，「怪不得。老人们说过，破这局的，得是里德家的血。」他妻子拉了拉他的袖子，眼里是害怕，也是一丝不敢信的希望。", cls:"dlg"},
     {t:"你们就着那盏暗灯，飞快地合计出一条路：塔尔博特熟盐沼的浅埂，能在退潮那半个钟头，带走所有想走、也走得动的人；而你，趁镇民全涌向海边，去做那件只有你能做的事——毁约，或熄灯。「你在岬角把火点起来，」塔尔博特说，「那就是给我们的信号。我们一看见，就带着人从浅埂走。要么一起活，要么……至少，死得像个人。」", cls:"amber"}
@@ -2097,7 +2109,7 @@ const Atmo = (function(){
     harbor:[70,90,120], inn:[90,80,70], post:[58,66,74],
     room:[42,44,58], dark:[26,30,46], climax:[28,56,66],
     yellow:[92,78,24], dread:[34,28,18], corpse:[46,40,42],   // 黄衣病态 / 死寂逼近 / 尸腐
-    reedhouse:[40,30,48], altar:[30,58,60], crypt:[28,48,50]    // 里德老宅阴郁 / 祭坛礁幽绿 / 涨潮池阴湿
+    reedhouse:[40,30,48], altar:[30,58,60], crypt:[28,48,50], marsh:[42,46,34]  // 老宅/祭坛礁/涨潮池/盐沼
   };
   function make(){
     cv=document.getElementById('atmo'); if(!cv) return; ctx=cv.getContext('2d');
