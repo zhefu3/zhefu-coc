@@ -1491,9 +1491,11 @@ S.end_witness = {
 const Atmo = (function(){
   let cv, ctx, W, H, dpr, raf=null, t=0;
   let fog=[], parts=[], grain, sanTint=0, mood='harbor', ptype='dust';
+  let heart=0, dread=0, pres={on:false};   // 心跳暗角 / dread 峰值 / 潜伏黑影
   const MOOD_TINT = {
-    harbor:[70,90,120], inn:[90,80,70], post:[70,85,95],
-    room:[55,60,80], dark:[40,45,65], climax:[30,60,70]
+    harbor:[70,90,120], inn:[90,80,70], post:[58,66,74],
+    room:[42,44,58], dark:[26,30,46], climax:[28,56,66],
+    yellow:[92,78,24], dread:[34,28,18], corpse:[46,40,42]   // 黄衣病态 / 死寂逼近 / 尸腐
   };
   function make(){
     cv=document.getElementById('atmo'); if(!cv) return; ctx=cv.getContext('2d');
@@ -1542,19 +1544,50 @@ const Atmo = (function(){
         ctx.fillStyle=col; ctx.beginPath(); ctx.arc(x,y,(p.sz||1)*dpr,0,7); ctx.fill(); }
     });
     ctx.globalCompositeOperation='source-over';
-    // 胶片颗粒（理智越低越强）
-    if(grain){ const gi=0.5+sanTint*0.9; ctx.globalAlpha=gi; const ox=Math.random()*140,oy=Math.random()*140;
+    // 胶片颗粒（理智越低/dread 越强——横尸与逼近时噪点爬满全屏）
+    if(grain){ const gi=Math.min(1, 0.62+sanTint*1.05+dread*0.55); ctx.globalAlpha=gi; const ox=Math.random()*140,oy=Math.random()*140;
       for(let y=-oy;y<H;y+=140) for(let x=-ox;x<W;x+=140) ctx.drawImage(grain,x,y); ctx.globalAlpha=1; }
+    drawDread();
     raf=requestAnimationFrame(loop);
+  }
+  // 心跳式收缩暗角 + 潜伏黑影（余光恐惧）；dread 峰值随时间衰减
+  function drawDread(){
+    if(dread>0) dread=Math.max(0, dread-0.006);
+    const reduce = document.body.classList.contains('reduce-motion');
+    const tension = Math.min(1.15, sanTint*0.85 + dread + (mood==='climax'||mood==='dread'?0.4:0) + (mood==='dark'||mood==='corpse'||mood==='room'?0.15:0));
+    const cx=W*0.5, cy=H*0.42;
+    let beat=0; if(!reduce){ heart += 0.014 + tension*0.055; beat=Math.pow(0.5+0.5*Math.sin(heart),2); }
+    const inner=Math.max(W,H)*(0.62 - tension*0.24 - beat*(0.02+tension*0.06));
+    const g=ctx.createRadialGradient(cx,cy,Math.max(1,inner), cx,cy,Math.max(W,H)*0.96);
+    g.addColorStop(0,'rgba(0,0,0,0)');
+    g.addColorStop(1,`rgba(${10+sanTint*26|0},2,2,${Math.min(0.92,0.5+tension*0.34)})`);
+    ctx.globalCompositeOperation='source-over'; ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+    if(reduce) return;
+    if(!pres.on){
+      if(Math.random() < 0.0008 + tension*0.0045){ pres.on=true; pres.edge=Math.floor(Math.random()*4); pres.q=0.22+Math.random()*0.56; pres.life=0; pres.dur=220+Math.random()*180; }
+    } else {
+      pres.life++; const k=pres.life/pres.dur; const p=Math.sin(Math.PI*Math.min(1,k)); if(k>=1) pres.on=false;
+      const reach=p*(0.28+tension*0.14); let px,py; const e=pres.edge;
+      if(e===0){ px=-0.14*W+reach*W;   py=H*pres.q; }
+      else if(e===1){ px=W*1.14-reach*W; py=H*pres.q; }
+      else if(e===2){ px=W*pres.q;      py=-0.14*H+reach*H; }
+      else { px=W*pres.q;               py=H*1.14-reach*H; }
+      const rr=Math.max(W,H)*(0.42+p*0.16);
+      const gg=ctx.createRadialGradient(px,py,0,px,py,rr);
+      gg.addColorStop(0,`rgba(0,0,0,${0.62*p})`); gg.addColorStop(0.68,`rgba(0,0,0,${0.2*p})`); gg.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=gg; ctx.beginPath(); ctx.arc(px,py,rr,0,7); ctx.fill();
+    }
   }
   function start(){ if(!cv) make(); if(!raf) loop(); }
   function setScene(key, climax){ mood = climax?'climax':(key in MOOD_TINT?key:'dark');
     const np = (key==='harbor')?'rain':(mood==='climax'?'ember':'dust');
     if(np!==ptype){ ptype=np; if(ctx) spawnParts(); }
-    const v=document.getElementById('vig'); if(v){ const dark=(mood==='dark'||mood==='room'||mood==='climax');
-      v.style.background=`radial-gradient(130% 130% at 50% 42%, transparent ${dark?32:42}%, rgba(${8+sanTint*40|0},0,0,${0.72+sanTint*0.2}) 100%)`; } }
+    const v=document.getElementById('vig'); if(v){ const dark=(mood==='dark'||mood==='room'||mood==='climax'||mood==='dread'||mood==='corpse');
+      v.style.background=`radial-gradient(130% 130% at 50% 42%, transparent ${dark?42:52}%, rgba(${8+sanTint*40|0},0,0,${0.42+sanTint*0.22}) 100%)`; } }
   function setSan(san){ sanTint=Math.max(0,Math.min(1,(65-san)/60)); document.body.classList.toggle('low-san',san<=30); }
-  return { start, setScene, setSan };
+  return { start, setScene, setSan,
+    dread:(v)=>{ dread=Math.min(1.2, dread+(v==null?0.7:v)); },
+    mood:(m)=>{ if(m in MOOD_TINT) mood=m; } };
 })();
 
 /* ============ 氛围音（Web Audio 实时合成 · 无音频文件 · 零成本） ============ */
@@ -1715,7 +1748,7 @@ function applySAN(loss, reason){
   PC.san = Math.max(0, PC.san - loss);
   renderSheet();
   scare(loss>=6);
-  Atmo.setSan(PC.san); if(cur) Atmo.setScene(cur.banner, !!flags.act3);
+  try{ Atmo.setSan(PC.san); if(cur) Atmo.setScene(cur.banner, !!flags.act3); Atmo.dread(0.35+loss*0.12); }catch(e){}
   sysLine(`▸ 理智检定失守：SAN −${loss}（${reason}）`, 'san');
 }
 function applyHP(loss, reason){
