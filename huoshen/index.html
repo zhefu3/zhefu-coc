@@ -1269,8 +1269,10 @@ S.hub = {
   choices:[
     {label:"给宾夏打电话——这吊坠是他寄来的，问问他到底怎么回事。", tag:"电话", goto:"call_pinckney", if:()=>!flags.did_call_pinckney},
     {label:"给凯利家打电话——广播说他今早出了车祸，你得确认。", tag:"电话", goto:"call_kelly", if:()=>!flags.did_call_kelly},
-    {label:"驱车去宾夏家——他在电话里约你过去当面谈。", tag:"前往", goto:"v02_roadmap", if:()=>flags.pinckney_invited},
-    {label:"接下来还有：凯利家 · 密大图书馆 · 历史学会 · 石谷拖车 · 普多克之林……", tag:"待建", goto:"v02_roadmap"},
+    {label:"驱车去宾夏家——他在电话里约你过去当面谈。", tag:"前往", goto:"pinckney_house", if:()=>flags.pinckney_invited && !flags.did_pinckney_house},
+    {label:"登门凯利家——去看看这位老友身后留下了什么。", tag:"前往", goto:"kelly_house", if:()=>!flags.did_kelly_house},
+    {label:"驱车去西郊，找隐士劳伦斯·石谷的拖车。", tag:"前往", goto:"v02_roadmap", if:()=>flags.clue_stonevale && !flags.did_stonevale},
+    {label:"去密大图书馆、历史学会，查『黄衣之印』的来历……", tag:"待建", goto:"v02_roadmap"},
     {label:"（天色已晚）等下去，面对那即将登门的东西。", tag:"终局", goto:"v02_roadmap", if:()=>isNight()}
   ]
 };
@@ -1322,13 +1324,99 @@ S.call_kelly = {
   choices:[ {label:"放下听筒，回到调查。", tag:"▸", goto:"hub"} ]
 };
 
-/* ---- v0.2 路线图 signpost（后续地点建设中） ---- */
+/* ================= v0.3 · 两个凶案现场 ================= */
+
+/* ---- 宾夏家（他约你登门，你到时他已死） ---- */
+S.pinckney_house = {
+  banner:"dark", loc:"宾夏宅 · 门外",
+  onEnter:()=>{ advanceMins(40); },
+  text:[
+    {t:"宾夏的家在城另一头一片口碑不佳的郊区：一栋矮塌塌的五室小屋，围着一圈疏于打理的草坪。午后惨白的阳光斜斜切下来，在稀落的草叶间拖出细长的影子。", cls:"amber"},
+    {t:"你按了门铃，又敲了门。没有回应。屋里静得反常——静得像屋子本身在屏息。隔着窗玻璃望进去，只有拉了一半的窗帘和一动不动的暗影。", cls:"amber"},
+    {t:"电话里，他分明急着见你，还叮嘱你路上小心。这份沉默，不对劲。", cls:"amber"}
+  ],
+  choices:[
+    {label:"绕到屋后，试试那扇多半没锁的后门。", tag:"绕行", goto:"pinckney_study"},
+    {label:"顾不了那么多，打碎一扇窗户进去。", tag:"破窗", goto:"pinckney_study", set:{_entry_loud:true}}
+  ]
+};
+S.pinckney_study = {
+  banner:"room", loc:"宾夏宅 · 书房",
+  san:{loss:2, reason:"在一片狼藉中认出好友宾夏的尸体"},
+  text:[
+    {t:"你摸进屋。餐厅被宾夏改成了书房：三面墙的书架，中央一张结实的写字台，上头一台打字机和几摞手稿。可此刻，写字台被掀翻在地，天花板的吊灯碎了一地，一整排书架轰然倒塌，书本泼洒开来。", cls:"amber"},
+    {t:"书堆底下，伸出一只手臂和半边肩膀。你不必去翻也知道那是谁——马修·宾夏。就在一个钟头前，他还在电话里压着嗓子，叫你路上小心。", cls:"amber"},
+    {t:"你从不曾习惯直面一具尸体，何况是朋友的。喉咙里一阵发紧。", cls:"amber"}
+  ],
+  choices:[
+    {label:"（侦查）这样一排书架……真会自己倒下来压死人吗？勘查现场。", tag:"侦查", check:{skill:"侦查",target:50,success:"pinckney_murder",fail:"pinckney_murder_slow"}}
+  ]
+};
+S.pinckney_murder = {
+  banner:"room", loc:"宾夏宅 · 书房",
+  set:{did_pinckney_house:true, clue_pinckney_murdered:true},
+  text:[
+    {t:"你俯身查看那排倒下的书架。书架背后，本该把它牢牢锚在墙上的金属支架与螺栓，齐根崩断——断口崭新，闪着金属的白光。被这样死死固定的书架，绝不可能自己倒下，更不可能倒得如此干净利落，恰好压住一个人。", cls:"amber"},
+    {t:"有什么东西进过这屋子，与宾夏搏斗过，最后掀翻整排书架，将他埋在下面。你想起广播里那个走上公路、逼停凯利的灰衣大块头；想起宾夏电话里那些喉音的骚扰。", cls:"amber"},
+    {t:"石谷、凯利、宾夏——一个接着一个，像是按着某种顺序。而你，是最后一个从他手里接过这枚吊坠的人。胸口的黑石，忽然沉得像一块冰。", cls:"amber"},
+    {t:"【线索】宾夏死于他杀，凶手力大得能掀翻锚死的书架。死亡沿着一条『持有链』蔓延，你在链条的末端。", cls:"amber"}
+  ],
+  choices:[ {label:"这里不宜久留。悄悄退出去，回到调查。", tag:"▸", goto:"hub"} ]
+};
+S.pinckney_murder_slow = {
+  banner:"room", loc:"宾夏宅 · 书房",
+  onEnter:()=>{ advanceMins(30); },
+  set:{did_pinckney_house:true, clue_pinckney_murdered:true},
+  text:[
+    {t:"乍看之下，这就是一桩寻常的意外：年久失修的旧书架塌了，砸倒了倒霉的主人。你几乎要信了——直到你沉住气，多花了半个钟头，把倒下的书架翻来覆去看了个遍。", cls:"amber"},
+    {t:"书架背后，锚住它的金属支架齐根崩断，断口崭新。这样一排被死死固定的书架，绝不会自己倒下。有什么力大无穷的东西进过这屋子，掀翻了它——就像那个逼停凯利的灰衣大块头。", cls:"amber"},
+    {t:"石谷、凯利、宾夏，一个接一个，像按着某种顺序。而你是最后一个接过吊坠的人。", cls:"amber"},
+    {t:"【线索】宾夏死于他杀。死亡沿着一条『持有链』蔓延，你在末端。（勘查多花了些时间。）", cls:"amber"}
+  ],
+  choices:[ {label:"这里不宜久留。悄悄退出去，回到调查。", tag:"▸", goto:"hub"} ]
+};
+
+/* ---- 凯利家（邻居普拉瑟夫人把门；搜到通往石谷的纸片） ---- */
+S.kelly_house = {
+  banner:"dark", loc:"凯利宅 · 门外",
+  onEnter:()=>{ advanceMins(30); },
+  text:[
+    {t:"凯利的家在一条体面些的街上。你还没上完台阶，门就开了一道缝——一个面容疲惫的中年女人堵在门口，正是电话里的普拉瑟夫人。她上下打量你，眼神里满是戒备。", cls:"amber"},
+    {t:"「凯利太太见不得人，医生刚给她打了针，睡下了。」她并不请你进门，「您到底有什么要紧事？」——你几乎是本能地『看见』了她脸上层层叠叠的东西：疲惫、哀伤，还有一丝对陌生人说不清的敌意，清晰得让你心里发毛。你想起那枚吊坠。", cls:"amber"}
+  ],
+  choices:[
+    {label:"（说服）编个体面的学术由头：你与凯利有未竟的合作，需取回共同的资料。", tag:"说服", check:{skill:"说服",target:60,success:"kelly_search",fail:"kelly_refused"}},
+    {label:"（心理学）不硬来——先陪她说几句凯利，让她卸下防备。", tag:"心理学", check:{skill:"心理学",target:60,success:"kelly_search",fail:"kelly_refused"}}
+  ]
+};
+S.kelly_search = {
+  banner:"room", loc:"凯利宅 · 书房",
+  onEnter:()=>{ advanceMins(30); if(!flags.did_kelly_house){ flags.did_kelly_house=true; flags.clue_stonevale=true; } },
+  text:[
+    {t:"普拉瑟夫人将信将疑地把你让进凯利的书房，自己守在门口。凯利是个火爆而邋遢的人，桌上、地上堆满了没归档的纸张。你不动声色地翻检起来。", cls:"amber"},
+    {t:"半晌，在写字台旁的地板上，你拾起一张揉皱的小纸片。上面是凯利潦草的字迹：一个名字——『劳伦斯·石谷』——和一串西郊的地址。地址后面，还添了一行小字：", cls:"amber"},
+    {t:"「宝物在普多克之林边。」", cls:"dlg"},
+    {t:"【线索】隐士劳伦斯·石谷，西郊某处；『宝物在普多克之林边』。这枚吊坠的源头，也许就在那里。", cls:"amber"}
+  ],
+  choices:[ {label:"揣好纸片，谢过普拉瑟夫人，回到调查。", tag:"▸", goto:"hub"} ]
+};
+S.kelly_refused = {
+  banner:"dark", loc:"凯利宅 · 门外",
+  text:[
+    {t:"普拉瑟夫人的脸沉了下来。「教授，恕我直言——这个时候还来打搅，实在不合适。凯利太太经不起了。」她后退半步，作势要关门，「您请回吧。」", cls:"amber"},
+    {t:"门缝一点一点合拢。也许换个由头、换个说法，还有机会——但你得先想想该怎么开口。", cls:"amber"}
+  ],
+  choices:[ {label:"暂且退开，回到调查（可换个法子再来）。", tag:"▸", goto:"hub"} ]
+};
+
+/* ---- v0.3 路线图 signpost（后续地点建设中） ---- */
 S.v02_roadmap = {
   banner:"dark", loc:"调查 · 未完待续",
   text:[
-    {t:"—— 《活神之手》v0.2 · 校准样本到此。", cls:"amber"},
-    {t:"你已经打通了宾夏和凯利家的电话，拼出了第一批线头：宾夏在恐惧中约你登门，凯利的死已被证实。接下来的调查线——宾夏家的凶案现场、凯利家的纸片线索、密大图书馆与历史学会里『黄衣之印』的来历、西郊石谷的拖车、普多克之林里那本巫师日记，以及天黑后守护者的登门与五种结局——正在按设计逐步建设。", cls:"amber"},
-    {t:"（本轮验证的是：单日赶天黑的时钟、阿卡姆调查枢纽、以及电话节点的对话与检定质感。完整线见『活神之手-完整调查线设计v1.md』的迭代路线图。）", cls:"amber"}
+    {t:"—— 《活神之手》v0.3 · 建设进度到此。", cls:"amber"},
+    {t:"你已经打通了宾夏与凯利家的电话，也走过了两处凶案现场：宾夏被力大无穷的凶手掀翻的书架压死，你终于确信这是一条循『持有链』索命的杀戮；凯利家的纸片，把线索引向了西郊隐士劳伦斯·石谷，和那片『普多克之林』。", cls:"amber"},
+    {t:"接下来正在建设：密大图书馆与历史学会里『黄衣之印』的来历、西郊石谷的拖车、普多克之林里那本巫师日记（藏着唯一的破局之法），以及天黑后守护者的登门与五种结局。", cls:"amber"},
+    {t:"（完整迭代路线图见『活神之手-完整调查线设计v1.md』。）", cls:"amber"}
   ],
   choices:[
     {label:"回到调查枢纽（继续打另一个电话）。", tag:"▸", goto:"hub"},
