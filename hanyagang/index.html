@@ -1,0 +1,2153 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>寒鸦港的回信 · 克苏鲁的呼唤</title>
+<style>
+  :root{
+    --bg:#07070a; --bg2:#0c0d12; --panel:#0f1016; --edge:#23252f;
+    --ink:#c8c2b6;          /* 主文字 泛黄旧纸 */
+    --amber:#d9a441;        /* 叙事琥珀 */
+    --phos:#79c6a0;         /* 磷光绿(系统/检定) */
+    --blood:#a12b2b;        /* 血红 */
+    --blood2:#c94a3a;
+    --dim:#6b6a72; --san:#7fb0d8;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:
+      radial-gradient(1000px 700px at 50% -15%, #14101a 0%, var(--bg) 55%),
+      var(--bg);
+    color:var(--ink);
+    font-family:"Courier New",'PingFang SC',"Microsoft YaHei",monospace;
+    font-size:15px; line-height:1.85; letter-spacing:.3px;
+    -webkit-font-smoothing:none;
+    image-rendering:pixelated;
+    overflow:hidden;
+  }
+  /* CRT 扫描线 + 暗角 覆盖层 */
+  body::after{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:50;
+    background:
+      radial-gradient(120% 120% at 50% 50%, transparent 55%, rgba(0,0,0,.55) 100%),
+      repeating-linear-gradient(0deg, rgba(0,0,0,.16) 0px, rgba(0,0,0,.16) 1px, transparent 2px, transparent 3px);
+    mix-blend-mode:multiply;
+  }
+  /* 大气层画布（体积雾/微粒/颗粒 实时渲染） */
+  #atmo{position:fixed;inset:0;z-index:0;pointer-events:none}
+  #vig{position:fixed;inset:0;z-index:49;pointer-events:none;
+    background:radial-gradient(130% 130% at 50% 42%, transparent 42%, rgba(0,0,0,.72) 100%);
+    transition:background 1.2s ease}
+  #app{display:flex; height:100vh; gap:0; position:relative; z-index:1}
+  /* ===== 左：角色卡 ===== */
+  #sheet{
+    width:270px; flex:0 0 270px; background:linear-gradient(180deg,#0d0e14,#0a0a0f);
+    border-right:1px solid var(--edge); padding:16px 14px; overflow-y:auto;
+  }
+  #sheet h2{font-size:12px;color:var(--phos);letter-spacing:2px;margin:0 0 3px;text-transform:uppercase}
+  .role{font-size:16px;color:var(--amber);margin-bottom:2px}
+  .role small{color:var(--dim);font-size:11px;display:block;letter-spacing:1px}
+  .bar-wrap{margin:12px 0}
+  .bar-label{display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px}
+  .bar-label .k{color:var(--dim)}
+  .bar-label .v{color:var(--san)}
+  .bar{height:12px;background:#161620;border:1px solid var(--edge);position:relative;overflow:hidden}
+  .bar > i{display:block;height:100%;transition:width .6s ease}
+  .bar.san > i{background:linear-gradient(90deg,#3a5a7a,var(--san))}
+  .bar.hp > i{background:linear-gradient(90deg,#5a2020,var(--blood2))}
+  .sect{margin-top:16px;border-top:1px dashed var(--edge);padding-top:10px}
+  .sect h3{font-size:11px;color:var(--dim);letter-spacing:2px;margin:0 0 7px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:2px 10px;font-size:12.5px}
+  .grid .row{display:flex;justify-content:space-between;padding:1px 0}
+  .grid .row .sk{color:var(--ink)}
+  .grid .row .n{color:var(--phos)}
+  .stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;font-size:12px}
+  .stats .st{background:#12121a;border:1px solid var(--edge);padding:4px 5px;text-align:center}
+  .stats .st b{display:block;color:var(--amber);font-size:14px}
+  .stats .st span{color:var(--dim);font-size:10px;letter-spacing:1px}
+  #inv{font-size:12px;color:var(--ink)}
+  #inv li{margin:1px 0;list-style:none;padding-left:12px;position:relative}
+  #inv li::before{content:"▪";position:absolute;left:0;color:var(--blood)}
+
+  /* ===== 中：叙事 ===== */
+  #stage{flex:1;display:flex;flex-direction:column;min-width:0}
+  #banner{height:240px;flex:0 0 240px;border-bottom:1px solid var(--edge);position:relative;overflow:hidden;background:#04050a}
+  #banner svg{width:100%;height:100%;display:block;position:absolute;inset:0;transform-origin:50% 60%;
+    animation:kenburns 34s ease-in-out infinite alternate}
+  @keyframes kenburns{0%{transform:scale(1.01) translate(-0.5%,0)}100%{transform:scale(1.05) translate(1%,-1%)}}
+  /* 场景景深/光晕/底部融入叙事区 */
+  #banner::before{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;
+    background:
+      radial-gradient(90% 120% at 50% 20%, rgba(60,40,80,.14), transparent 60%),
+      linear-gradient(180deg, rgba(4,5,10,.35) 0%, transparent 26%, transparent 62%, rgba(6,7,12,.85) 92%, var(--bg) 100%)}
+  #banner::after{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;
+    box-shadow:inset 0 0 120px 20px rgba(0,0,0,.7);mix-blend-mode:multiply}
+  #banner.flick svg{animation:kenburns 26s ease-in-out infinite alternate, bflick .2s 2}
+  @keyframes bflick{0%,100%{filter:none}50%{filter:brightness(1.8) contrast(1.3)}}
+  #loc{position:absolute;left:18px;bottom:14px;z-index:4;font-size:12px;color:var(--phos);letter-spacing:3px;
+    text-shadow:0 0 8px #000,0 2px 0 #000;background:rgba(5,6,10,.55);padding:3px 11px;border:1px solid var(--edge);
+    backdrop-filter:blur(2px)}
+  #scroll{flex:1;overflow-y:auto;padding:30px 34px 10px;position:relative}
+  #narr{max-width:680px;margin:0 auto}
+  .p{margin:0 0 15px;white-space:pre-wrap}
+  .p.amber{color:var(--amber)}
+  .sys{color:var(--phos);font-size:13px;border-left:2px solid var(--phos);padding-left:10px;margin:14px auto;max-width:680px}
+  .sys.bad{color:var(--blood2);border-color:var(--blood)}
+  .sys.san{color:var(--san);border-color:var(--san)}
+  .dlg{color:#cfc8ff}
+  /* 选项 */
+  #choices{max-width:680px;margin:6px auto 30px;display:flex;flex-direction:column;gap:9px}
+  .choice{
+    background:linear-gradient(180deg,#12131b,#0d0e14);border:1px solid var(--edge);
+    color:var(--ink);text-align:left;padding:11px 14px;font-family:inherit;font-size:14px;
+    cursor:pointer;transition:.12s;position:relative;
+  }
+  .choice:hover{border-color:var(--amber);color:#fff;background:#191722;transform:translateX(3px)}
+  .choice .tag{color:var(--phos);font-size:11px;letter-spacing:1px;margin-right:8px}
+  .choice .tag.chk{color:var(--blood2)}
+  .choice:disabled{opacity:.35;cursor:not-allowed;text-decoration:line-through}
+  /* 自由输入 */
+  #freewrap{max-width:680px;margin:0 auto 26px}
+  #freewrap .lbl{font-size:11px;color:var(--dim);letter-spacing:1px;margin-bottom:5px}
+  #freerow{display:flex;gap:8px}
+  #free{flex:1;background:#0b0c11;border:1px solid var(--edge);color:var(--ink);
+    font-family:inherit;font-size:14px;padding:9px 12px}
+  #free:focus{outline:none;border-color:var(--phos)}
+  #freego{background:#151620;border:1px solid var(--edge);color:var(--phos);
+    font-family:inherit;padding:0 16px;cursor:pointer}
+  #freego:hover{border-color:var(--phos);background:#1a1c28}
+
+  /* ===== 惊吓：红闪 / 抖动 / 静音键 / 低语 ===== */
+  #flash{position:fixed;inset:0;z-index:55;pointer-events:none;opacity:0;
+    background:radial-gradient(120% 120% at 50% 50%, rgba(150,10,10,.0) 40%, rgba(140,0,0,.55) 100%);
+    transition:opacity .5s ease}
+  #flash.hit{opacity:1;transition:opacity .06s ease}
+  #app.shake{animation:shake .5s cubic-bezier(.36,.07,.19,.97)}
+  @keyframes shake{
+    10%{transform:translate(-3px,2px)}20%{transform:translate(4px,-3px)}30%{transform:translate(-5px,1px) rotate(-.3deg)}
+    40%{transform:translate(4px,3px)}50%{transform:translate(-3px,-2px)}60%{transform:translate(3px,2px)}
+    70%{transform:translate(-4px,1px) rotate(.3deg)}80%{transform:translate(2px,-2px)}90%{transform:translate(-2px,1px)}100%{transform:translate(0,0)}}
+  #mute{position:absolute;right:12px;top:10px;z-index:6;background:rgba(5,6,10,.6);border:1px solid var(--edge);
+    color:var(--dim);font-family:inherit;font-size:13px;padding:3px 9px;cursor:pointer;letter-spacing:1px}
+  #mute:hover{color:var(--phos);border-color:var(--phos)}
+  .p.whisper{color:#8a6a9a;font-style:italic;text-shadow:0 0 8px rgba(120,60,140,.4);opacity:.85}
+  body.low-san{animation:breathe 5s infinite}
+  @keyframes breathe{0%,100%{filter:none}50%{filter:saturate(.6) brightness(.92) hue-rotate(-8deg)}}
+
+  /* ===== AI 守秘人 ===== */
+  #ai{position:absolute;right:70px;top:10px;z-index:6;background:rgba(5,6,10,.6);border:1px solid var(--edge);
+    color:var(--dim);font-family:inherit;font-size:13px;padding:3px 9px;cursor:pointer;letter-spacing:1px}
+  #ai:hover{color:var(--phos);border-color:var(--phos)}
+  #ai.on{color:var(--phos);border-color:#2c5a44}
+  .p.kp{color:#d7cbe4;border-left:2px solid #6b4e86;padding-left:12px}
+  .p.kp b{color:#b79adf}
+  .thinking{color:#8a7aa8;font-size:13px;letter-spacing:2px;margin:10px auto;max-width:680px}
+  .thinking i{opacity:.5;animation:dots 1.2s infinite}
+  @keyframes dots{0%,100%{opacity:.2}50%{opacity:.9}}
+  #kpset{position:fixed;inset:0;z-index:65;display:none;align-items:center;justify-content:center;background:rgba(3,3,6,.85)}
+  #kpbox{width:460px;max-width:92vw;background:var(--panel);border:1px solid var(--edge);padding:24px;
+    box-shadow:0 0 0 1px #000,0 20px 60px -20px #000}
+  #kpbox h3{color:var(--phos);font-size:15px;letter-spacing:2px;margin:0 0 4px}
+  #kpbox .desc{color:var(--dim);font-size:12.5px;line-height:1.7;margin-bottom:16px}
+  #kpbox label{display:block;color:var(--ink);font-size:12px;letter-spacing:1px;margin:0 0 6px}
+  #kpkey{width:100%;background:#0b0c11;border:1px solid var(--edge);color:var(--ink);font-family:inherit;
+    font-size:13px;padding:10px 12px;letter-spacing:1px}
+  #kpkey:focus{outline:none;border-color:var(--phos)}
+  #kpbox .row2{display:flex;gap:10px;margin-top:18px}
+  #kpbox button{flex:1;font-family:inherit;font-size:13px;padding:10px;cursor:pointer;letter-spacing:2px;border:1px solid var(--edge);background:#151620;color:var(--ink)}
+  #kpsave{border-color:#2c5a44!important;color:var(--phos)!important}
+  #kpbox button:hover{border-color:var(--amber);color:#fff}
+  #kpbox .note{color:var(--dim);font-size:11px;line-height:1.7;margin-top:14px;border-top:1px dashed var(--edge);padding-top:12px}
+  #kpbox .note b{color:#8a9ab0}
+  #kpbox .status{font-size:12px;margin-top:10px;min-height:16px}
+  #kpbox .status.ok{color:var(--phos)} #kpbox .status.err{color:var(--blood2)}
+
+  /* ===== 怪物特写 / 立绘 ===== */
+  #portrait{position:fixed;inset:0;z-index:58;display:none;align-items:center;justify-content:center;
+    background:radial-gradient(60% 60% at 50% 45%, rgba(8,4,6,.72), rgba(2,2,4,.95));cursor:pointer}
+  #portrait .pframe{position:relative;width:min(70vh,440px);max-width:88vw;
+    border:1px solid #2a2230;box-shadow:0 0 0 1px #000, 0 0 80px -10px #000, inset 0 0 60px rgba(0,0,0,.6);
+    background:#050406;overflow:hidden;transform:scale(.96);opacity:0}
+  #portrait.show .pframe{animation:reveal .9s ease forwards}
+  @keyframes reveal{0%{transform:scale(.96) translateY(6px);opacity:0;filter:brightness(2.2) contrast(1.4)}
+    12%{opacity:1;filter:brightness(2) contrast(1.5)}18%{filter:none}100%{transform:scale(1) translateY(0);opacity:1;filter:none}}
+  #portrait .pframe svg{width:100%;height:100%;display:block}
+  #portrait .pframe::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(120% 120% at 50% 45%, transparent 55%, rgba(0,0,0,.6) 100%),
+      repeating-linear-gradient(0deg, rgba(0,0,0,.16) 0, rgba(0,0,0,.16) 1px, transparent 2px, transparent 3px)}
+  #portrait .pcap{position:absolute;left:0;right:0;bottom:0;z-index:2;text-align:center;
+    color:#c7b6d6;font-size:13px;letter-spacing:3px;padding:12px;background:linear-gradient(0deg,rgba(4,3,6,.9),transparent)}
+  #portrait .phint{position:absolute;bottom:-26px;left:0;right:0;text-align:center;color:var(--dim);font-size:11px;letter-spacing:2px;opacity:.6}
+  .pbreathe{animation:pbreathe 6s ease-in-out infinite}
+  @keyframes pbreathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+
+  /* ===== 骰子弹层 ===== */
+  #dice{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;
+    background:rgba(3,3,6,.82)}
+  #dicebox{width:340px;background:var(--panel);border:1px solid var(--edge);padding:26px;text-align:center;
+    box-shadow:0 0 0 1px #000,0 20px 60px -20px #000}
+  #dicebox .what{color:var(--dim);font-size:12px;letter-spacing:2px}
+  #dicebox .skill{color:var(--amber);font-size:17px;margin:4px 0 2px}
+  #dicebox .target{color:var(--phos);font-size:12px;margin-bottom:18px}
+  /* 百分骰 · 十面滚筒骰（真 3D 立体） */
+  #dtray{position:relative;height:170px;display:flex;align-items:center;justify-content:center;margin:6px 0 8px}
+  #dtray::before{content:"";position:absolute;width:150px;height:150px;border-radius:50%;
+    border:1px solid rgba(90,70,70,.16);box-shadow:inset 0 0 40px rgba(60,20,20,.14);
+    background:radial-gradient(circle, rgba(30,10,12,.2), transparent 68%);animation:sigil 44s linear infinite}
+  #dtray::after{content:"";position:absolute;width:108px;height:108px;border-radius:50%;
+    border:1px dashed rgba(80,64,64,.12);animation:sigil 66s linear infinite reverse}
+  @keyframes sigil{to{transform:rotate(360deg)}}
+  #dcanvas{position:relative;z-index:2;display:block}
+  .diewrap{position:relative;width:64px;height:64px;z-index:2}
+  .dlbl{position:absolute;bottom:-24px;left:0;right:0;text-align:center;font-size:10px;color:#5f5540;letter-spacing:2px}
+  .barrel{position:absolute;inset:0;transform-style:preserve-3d;transform:rotateY(-15deg) rotateX(0deg);
+    will-change:transform;filter:drop-shadow(0 13px 9px rgba(0,0,0,.72))}
+  .bface{position:absolute;left:50%;top:50%;width:64px;height:32px;margin:-16px 0 0 -32px;
+    display:flex;align-items:center;justify-content:center;
+    font-family:"Courier New",monospace;font-weight:bold;font-size:18px;letter-spacing:1px;color:#c9bb99;
+    background:linear-gradient(180deg,#373127 0%,#221d16 52%,#0e0b08 100%);
+    border:1px solid #090705;box-shadow:inset 0 2px 3px rgba(255,236,196,.07),inset 0 -5px 9px rgba(0,0,0,.62);
+    backface-visibility:hidden;text-shadow:0 1px 0 #000,0 0 2px #000}
+  .bcap{position:absolute;left:50%;top:50%;width:96px;height:96px;margin:-48px 0 0 -48px;
+    background:radial-gradient(circle at 42% 36%,#2b261e,#0d0a07 78%);border:1px solid #090705;backface-visibility:hidden;
+    clip-path:polygon(100% 50%,90.45% 79.39%,65.45% 97.55%,34.55% 97.55%,9.55% 79.39%,0 50%,9.55% 20.61%,34.55% 2.45%,65.45% 2.45%,90.45% 20.61%)}
+  .diewrap.rolling{animation:diedrop 1.35s cubic-bezier(.3,.62,.4,1) forwards}
+  .diewrap.units.rolling{animation-delay:.12s}
+  @keyframes diedrop{
+    0%{transform:translate(-54px,-160px)}
+    38%{transform:translate(-12px,0)}      /* 第一次落地 */
+    48%{transform:translate(-5px,-22px)}
+    64%{transform:translate(3px,0)}         /* 弹起 */
+    78%{transform:translate(4px,-7px)}
+    90%{transform:translate(0,0)}100%{transform:translate(0,0)}}
+  #d100{font-family:"Courier New",monospace;font-size:46px;color:#c8bd9c;letter-spacing:2px;font-weight:bold;line-height:1;margin:8px 0 2px;min-height:46px;
+    text-shadow:0 0 20px rgba(0,0,0,.9)}
+  #d100 .eq{color:#5f5748;font-size:20px;margin:0 8px}
+  #d100 b{color:#e6dcc0}
+  #dicebox.thud{animation:dbthud .34s ease}
+  @keyframes dbthud{0%{transform:translateY(0)}18%{transform:translate(1px,5px) scale(.996)}44%{transform:translateY(-2px)}72%{transform:translateY(1px)}100%{transform:translateY(0)}}
+  #dres{font-size:16px;margin:12px 0 20px;min-height:22px;letter-spacing:2px}
+  #dres.ok{color:var(--phos)} #dres.gr{color:#8ef0b0} #dres.fail{color:var(--blood2)} #dres.fumble{color:var(--blood)}
+  #droll{background:var(--blood);border:1px solid var(--blood2);color:#fff;font-family:inherit;
+    font-size:15px;padding:10px 26px;cursor:pointer;letter-spacing:2px}
+  #droll:hover{background:var(--blood2)}
+  #dcont{display:none;background:#151620;border:1px solid var(--edge);color:var(--ink);
+    font-family:inherit;font-size:14px;padding:9px 24px;cursor:pointer;letter-spacing:2px}
+  #dcont:hover{border-color:var(--amber);color:#fff}
+
+  /* 标题幕 */
+  #title{position:fixed;inset:0;z-index:70;background:#050609;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;overflow:hidden}
+  #titlebg{position:absolute;inset:0;z-index:0;opacity:.85}
+  #titlebg svg{width:100%;height:100%;object-fit:cover;filter:saturate(.85) brightness(1.05) contrast(1.05);
+    animation:kenburns 40s ease-in-out infinite alternate;transform-origin:50% 55%}
+  #title .veil{position:absolute;inset:0;z-index:1;
+    background:
+      radial-gradient(680px 460px at 50% 44%, rgba(6,5,10,.28), rgba(4,4,7,.82) 80%),
+      linear-gradient(180deg, rgba(4,5,10,.55), rgba(4,4,7,.15) 42%, rgba(3,3,6,.92))}
+  #title > *:not(#titlebg):not(.veil){position:relative;z-index:2}
+  #title h1{font-size:42px;color:#e6e0d4;letter-spacing:12px;margin:0 0 8px;
+    text-shadow:0 0 40px rgba(0,0,0,.9),0 0 14px rgba(160,40,40,.25),0 3px 0 #000}
+  #title .en{color:var(--blood2);letter-spacing:5px;font-size:11.5px;margin-bottom:30px;opacity:.75}
+  #title .rule{width:120px;height:1px;background:linear-gradient(90deg,transparent,var(--blood),transparent);margin:0 0 26px;opacity:.7}
+  #title .by{color:#9a938a;font-size:13px;max-width:460px;line-height:2.1;margin-bottom:32px}
+  #title button{background:none;border:1px solid var(--blood);color:var(--blood2);font-family:inherit;
+    font-size:15px;padding:12px 40px;cursor:pointer;letter-spacing:4px}
+  #title button:hover{background:var(--blood);color:#fff}
+  #title .warn{color:var(--dim);font-size:10.5px;margin-top:26px;letter-spacing:1px;opacity:.6}
+  .flick{animation:flick 6s infinite}
+  @keyframes flick{0%,97%,100%{opacity:1}98%{opacity:.4}99%{opacity:.85}}
+  ::-webkit-scrollbar{width:8px}::-webkit-scrollbar-thumb{background:#22232c}::-webkit-scrollbar-track{background:#0a0a0e}
+  @media(max-width:720px){#sheet{display:none}}
+</style>
+</head>
+<body>
+
+<canvas id="atmo"></canvas>
+<div id="vig"></div>
+
+<div id="app">
+  <!-- 角色卡 -->
+  <aside id="sheet">
+    <h2>调查员</h2>
+    <div class="role" id="pcname">塞缪尔·里德</div>
+    <div class="role"><small id="pcjob">自由记者 · 1926</small></div>
+
+    <div class="bar-wrap">
+      <div class="bar-label"><span class="k">理智 SAN</span><span class="v"><span id="sanN">65</span>/99</span></div>
+      <div class="bar san"><i id="sanBar" style="width:65%"></i></div>
+    </div>
+    <div class="bar-wrap">
+      <div class="bar-label"><span class="k">生命 HP</span><span class="v"><span id="hpN">11</span>/11</span></div>
+      <div class="bar hp"><i id="hpBar" style="width:100%"></i></div>
+    </div>
+
+    <div class="sect">
+      <h3>属性</h3>
+      <div class="stats">
+        <div class="st"><b>55</b><span>力量</span></div>
+        <div class="st"><b>60</b><span>体质</span></div>
+        <div class="st"><b>55</b><span>体型</span></div>
+        <div class="st"><b>65</b><span>敏捷</span></div>
+        <div class="st"><b>70</b><span>智力</span></div>
+        <div class="st"><b>65</b><span>意志</span></div>
+      </div>
+    </div>
+
+    <div class="sect">
+      <h3>技能</h3>
+      <div class="grid" id="skills"></div>
+    </div>
+
+    <div class="sect">
+      <h3>随身物</h3>
+      <ul id="inv"></ul>
+    </div>
+  </aside>
+
+  <!-- 舞台 -->
+  <main id="stage">
+    <div id="banner"><div id="loc">寒鸦港</div><button id="ai" title="AI 守秘人设置">⚙ AI</button><button id="mute" title="音效开关">♪ 声</button></div>
+    <div id="scroll">
+      <div id="narr"></div>
+      <div id="choices"></div>
+      <div id="freewrap">
+        <div class="lbl">▸ 或者，说出你想做的（自由行动）　<span style="opacity:.55">· 提示：点击叙述文字可跳过逐字动画</span></div>
+        <div id="freerow">
+          <input id="free" placeholder="例如：搜查房间 / 观察那个人 / 打开信封……" autocomplete="off">
+          <button id="freego">行动</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="flash"></div>
+
+<!-- 怪物特写 / 立绘 -->
+<div id="portrait"><div class="pframe"><div class="pcap"></div><div class="phint">▸ 点击继续</div></div></div>
+
+<!-- AI 守秘人设置 -->
+<div id="kpset"><div id="kpbox">
+  <h3>AI 守秘人（KP）</h3>
+  <div class="desc">填入一个 Anthropic API Key，游戏的自由输入框就会变成真·守秘人——你写任何行动，AI 都会以克苏鲁守秘人的身份实时接住，用便宜的 Claude Haiku 模型，一整局大约几美分。</div>
+  <label>Anthropic API Key（仅存本地浏览器，绝不上传）</label>
+  <input id="kpkey" type="password" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
+  <div class="status" id="kpstatus"></div>
+  <div class="row2">
+    <button id="kpsave">保存并启用</button>
+    <button id="kpclose">关闭</button>
+  </div>
+  <div class="note">
+    <b>怎么拿 key：</b>去 console.anthropic.com → API Keys 创建，充一点额度即可（和你的 Claude 订阅是两笔账）。<br>
+    <b>省钱：</b>默认用 Claude Haiku + 只发精简上下文，一局约几美分。<br>
+    <b>隐私：</b>Key 只存在你本机浏览器 localStorage，游戏是本地网页，只有你操作时才把当前剧情片段发给 Anthropic 生成回应。
+  </div>
+</div></div>
+
+<!-- 骰子 -->
+<div id="dice"><div id="dicebox">
+  <div class="what">技能检定</div>
+  <div class="skill" id="dskill">侦查</div>
+  <div class="target" id="dtarget">目标 ≤ 60</div>
+  <div id="dtray"><canvas id="dcanvas" width="380" height="170"></canvas></div>
+  <div id="d100">--</div>
+  <div id="dres"></div>
+  <button id="droll">掷 d100</button>
+  <button id="dcont">继续 ▸</button>
+</div></div>
+
+<!-- 标题 -->
+<div id="title">
+  <div id="titlebg"></div>
+  <div class="veil"></div>
+  <h1 class="flick">寒 鸦 港 的 回 信</h1>
+  <div class="en">THE REPLY FROM BLACKROOK HARBOR &nbsp;·&nbsp; CALL OF CTHULHU</div>
+  <div class="rule"></div>
+  <div class="by">一封信，邮戳落在你朋友溺亡之后三天。<br>信里只有一行字：<span style="color:var(--amber)">「他们没让我走。来寒鸦港。」</span></div>
+  <button id="startBtn">进 入 迷 雾</button>
+  <div id="newgame" style="margin-top:14px"><a href="#" style="color:var(--dim);font-size:12px;letter-spacing:2px;text-decoration:none;border-bottom:1px dotted var(--dim)">从头开始（清除存档）</a></div>
+  <div class="warn">v0.1 · 《寒鸦港的回信》三幕 5 结局 · 恐怖向 · 场景音效 · 点子王系统 idea-0012</div>
+</div>
+
+<script>
+/* ============ 像素风场景横幅 (纯 SVG rect，无外部资源) ============ */
+const BANNERS = {
+  harbor: `<svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid slice" shape-rendering="crispEdges">
+    <defs>
+      <linearGradient id="hsky" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#0a0d16"/><stop offset="0.55" stop-color="#111a24"/><stop offset="1" stop-color="#1a2622"/>
+      </linearGradient>
+      <linearGradient id="hsea" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#0c1620"/><stop offset="1" stop-color="#050a10"/>
+      </linearGradient>
+    </defs>
+    <rect width="320" height="120" fill="url(#hsky)"/>
+    <!-- 月 隐在云后 -->
+    <circle cx="86" cy="30" r="15" fill="#b9c2b0" opacity=".22"/><circle cx="86" cy="30" r="11" fill="#cdd4c4" opacity=".28"/>
+    <rect x="60" y="26" width="70" height="4" fill="#0e1720" opacity=".7"/><rect x="52" y="32" width="90" height="3" fill="#0e1720" opacity=".6"/>
+    <!-- 远岸剪影 -->
+    <rect x="0" y="60" width="320" height="6" fill="#0a1118" opacity=".9"/>
+    <rect x="0" y="57" width="120" height="4" fill="#0a1016"/><rect x="200" y="56" width="120" height="5" fill="#0a1016"/>
+    <!-- 雾带 -->
+    <rect x="0" y="52" width="320" height="5" fill="#26333c" opacity=".35"/><rect x="0" y="63" width="320" height="6" fill="#1c2830" opacity=".4"/>
+    <!-- 灯塔 -->
+    <rect x="250" y="20" width="10" height="46" fill="#171a20"/><rect x="250" y="20" width="4" height="46" fill="#20242c"/>
+    <rect x="250" y="26" width="10" height="4" fill="#3a2418"/><rect x="250" y="36" width="10" height="4" fill="#3a2418"/><rect x="250" y="46" width="10" height="4" fill="#3a2418"/>
+    <rect x="247" y="14" width="16" height="7" fill="#22262e"/><rect x="249" y="15" width="12" height="5" fill="#e0b24e"/>
+    <rect x="248" y="12" width="14" height="3" fill="#2a2e36"/>
+    <!-- 光束 -->
+    <polygon points="255,17 320,2 320,44" fill="#e6c064" opacity=".08"/>
+    <polygon points="255,17 318,10 320,30" fill="#e6c064" opacity=".06"/>
+    <!-- 镇屋顶 层叠 -->
+    <rect x="8" y="46" width="26" height="20" fill="#0c131b"/><rect x="4" y="43" width="34" height="4" fill="#0a0f16"/>
+    <rect x="40" y="50" width="20" height="16" fill="#0b1119"/><rect x="66" y="42" width="30" height="24" fill="#0d141c"/><rect x="62" y="39" width="38" height="4" fill="#0a0f16"/>
+    <rect x="104" y="48" width="22" height="18" fill="#0b1119"/><rect x="132" y="44" width="26" height="22" fill="#0c131b"/>
+    <rect x="162" y="50" width="20" height="16" fill="#0b1119"/><rect x="186" y="46" width="26" height="20" fill="#0d141c"/>
+    <!-- 歪斜的教堂尖顶 -->
+    <rect x="150" y="30" width="8" height="16" fill="#0a1016"/><polygon points="150,30 158,30 156,16" fill="#0a0f15"/>
+    <rect x="152" y="20" width="2" height="6" fill="#141a1e"/>
+    <!-- 亮着的窗（暖黄，几盏） -->
+    <rect x="16" y="52" width="3" height="3" fill="#e0b24e" opacity=".85"/><rect x="24" y="55" width="2" height="3" fill="#c98f2e" opacity=".6"/>
+    <rect x="74" y="50" width="3" height="3" fill="#e0b24e" opacity=".55"/><rect x="112" y="54" width="2" height="3" fill="#e0b24e" opacity=".7"/>
+    <rect x="140" y="52" width="3" height="3" fill="#c98f2e" opacity=".5"/><rect x="194" y="52" width="2" height="3" fill="#e0b24e" opacity=".6"/>
+    <!-- 海面 -->
+    <rect x="0" y="66" width="320" height="54" fill="url(#hsea)"/>
+    <rect x="0" y="70" width="320" height="1" fill="#1a3040" opacity=".6"/><rect x="0" y="80" width="320" height="1" fill="#152634" opacity=".5"/>
+    <rect x="0" y="94" width="320" height="1" fill="#101f2b" opacity=".45"/>
+    <!-- 灯塔与月的水中倒影 -->
+    <rect x="253" y="66" width="4" height="40" fill="#5a4620" opacity=".18"/>
+    <rect x="82" y="66" width="8" height="30" fill="#3a4048" opacity=".12"/>
+    <!-- 码头栈桥与桩 -->
+    <rect x="0" y="98" width="70" height="5" fill="#0a0d10"/><rect x="10" y="103" width="4" height="17" fill="#0a0d10"/><rect x="30" y="103" width="4" height="17" fill="#0a0d10"/><rect x="52" y="103" width="4" height="17" fill="#0a0d10"/>
+    <!-- 乌鸦 -->
+    <rect x="120" y="22" width="4" height="1" fill="#05070a"/><rect x="121" y="21" width="1" height="1" fill="#05070a"/><rect x="123" y="21" width="1" height="1" fill="#05070a"/>
+    <rect x="180" y="16" width="3" height="1" fill="#05070a"/><rect x="181" y="15" width="1" height="1" fill="#05070a"/>
+  </svg>`,
+  inn: `<svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid slice" shape-rendering="crispEdges">
+    <defs><radialGradient id="ilamp" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#e8b45a" stop-opacity="0.5"/><stop offset="0.5" stop-color="#b57a2a" stop-opacity="0.18"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient></defs>
+    <rect width="320" height="120" fill="#0d0a08"/>
+    <rect x="0" y="20" width="320" height="1" fill="#181009" opacity=".6"/><rect x="0" y="54" width="320" height="1" fill="#181009" opacity=".5"/>
+    <!-- 左侧冷光窗 -->
+    <rect x="14" y="24" width="26" height="34" fill="#0c1016"/><rect x="16" y="26" width="10" height="30" fill="#20303e" opacity=".5"/><rect x="28" y="26" width="10" height="30" fill="#1a2836" opacity=".45"/>
+    <rect x="26" y="24" width="2" height="34" fill="#0a0a0c"/>
+    <!-- 楼梯上行入黑（右） -->
+    <polygon points="250,120 320,120 320,30 288,30" fill="#080605"/>
+    <rect x="262" y="60" width="58" height="4" fill="#0c0908"/><rect x="272" y="74" width="48" height="4" fill="#0c0908"/><rect x="282" y="88" width="38" height="4" fill="#0c0908"/><rect x="292" y="102" width="28" height="4" fill="#0c0908"/>
+    <rect x="292" y="34" width="12" height="22" fill="#050404"/><rect x="296" y="38" width="4" height="10" fill="#141018" opacity=".8"/>
+    <!-- 吊灯 + 暖光晕 -->
+    <ellipse cx="150" cy="70" rx="115" ry="72" fill="url(#ilamp)"/>
+    <rect x="148" y="8" width="4" height="18" fill="#1a140c"/><rect x="144" y="26" width="12" height="8" fill="#2a1e10"/><rect x="146" y="28" width="8" height="5" fill="#f0c060" opacity=".9"/>
+    <!-- 前台柜 + 登记簿 -->
+    <rect x="80" y="82" width="150" height="38" fill="#100b07"/><rect x="80" y="82" width="150" height="4" fill="#20160c"/><rect x="80" y="86" width="150" height="2" fill="#3a2814" opacity=".5"/>
+    <rect x="120" y="80" width="26" height="4" fill="#1c150e"/><rect x="122" y="79" width="22" height="2" fill="#3a2e1e" opacity=".7"/>
+    <!-- 钥匙挂钩 -->
+    <rect x="60" y="30" width="30" height="16" fill="#0c0907"/>
+    <rect x="64" y="34" width="1" height="6" fill="#8a6a2a"/><rect x="70" y="34" width="1" height="5" fill="#8a6a2a"/><rect x="76" y="34" width="1" height="6" fill="#6a4e1e"/><rect x="82" y="34" width="1" height="4" fill="#8a6a2a"/>
+  </svg>`,
+  post: `<svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid slice" shape-rendering="crispEdges">
+    <defs><radialGradient id="pcand" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#c9a24a" stop-opacity="0.38"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
+      <linearGradient id="pwin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a3a48"/><stop offset="1" stop-color="#0c1620"/></linearGradient></defs>
+    <rect width="320" height="120" fill="#0b0c0e"/>
+    <rect x="0" y="30" width="320" height="1" fill="#14161a" opacity=".5"/><rect x="0" y="66" width="320" height="1" fill="#14161a" opacity=".5"/>
+    <rect x="80" y="0" width="1" height="120" fill="#101216" opacity=".4"/><rect x="240" y="0" width="1" height="120" fill="#101216" opacity=".4"/>
+    <!-- 拱窗 -->
+    <rect x="132" y="24" width="56" height="60" fill="#0a0d12"/>
+    <path d="M132 40 A28 28 0 0 1 188 40 L188 84 L132 84 Z" fill="url(#pwin)" opacity=".55"/>
+    <rect x="159" y="26" width="2" height="58" fill="#0a0d12"/><rect x="134" y="52" width="52" height="2" fill="#0a0d12"/>
+    <rect x="0" y="100" width="320" height="20" fill="#070809"/><rect x="120" y="104" width="80" height="2" fill="#1a2630" opacity=".4"/>
+    <!-- 两处烛光 -->
+    <ellipse cx="70" cy="82" rx="48" ry="42" fill="url(#pcand)"/>
+    <rect x="68" y="70" width="4" height="12" fill="#1a140c"/><rect x="69" y="66" width="2" height="5" fill="#f0c060"/>
+    <ellipse cx="250" cy="86" rx="42" ry="36" fill="url(#pcand)" opacity=".7"/>
+    <rect x="248" y="76" width="4" height="10" fill="#1a140c"/><rect x="249" y="72" width="2" height="5" fill="#e0b050"/>
+  </svg>`,
+  room: `<svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid slice" shape-rendering="crispEdges">
+    <defs><linearGradient id="rwin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#26323f"/><stop offset="1" stop-color="#0a1018"/></linearGradient>
+      <radialGradient id="rmoon" cx="50%" cy="40%" r="60%"><stop offset="0" stop-color="#8494a0" stop-opacity="0.5"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient></defs>
+    <rect width="320" height="120" fill="#060507"/>
+    <rect x="0" y="0" width="320" height="94" fill="#0a0809"/>
+    <rect x="0" y="94" width="320" height="26" fill="#0c0a09"/><rect x="0" y="98" width="320" height="1" fill="#151011" opacity=".6"/>
+    <rect x="60" y="94" width="1" height="26" fill="#050404" opacity=".6"/><rect x="150" y="94" width="1" height="26" fill="#050404" opacity=".6"/><rect x="240" y="94" width="1" height="26" fill="#050404" opacity=".6"/>
+    <!-- 朝海窗（右）+ 月 + 凝水 -->
+    <rect x="214" y="18" width="70" height="66" fill="#080b10"/><rect x="218" y="22" width="62" height="58" fill="url(#rwin)" opacity=".7"/>
+    <ellipse cx="249" cy="44" rx="30" ry="26" fill="url(#rmoon)"/>
+    <rect x="248" y="22" width="2" height="58" fill="#070a0e"/><rect x="218" y="50" width="62" height="2" fill="#070a0e"/>
+    <!-- 窗上结浪符号（凝水描出） -->
+    <rect x="236" y="60" width="10" height="2" fill="#3a4650" opacity=".55"/><rect x="244" y="58" width="2" height="6" fill="#3a4650" opacity=".55"/><rect x="252" y="60" width="10" height="2" fill="#3a4650" opacity=".55"/>
+    <!-- 铁床（左） -->
+    <rect x="10" y="60" width="70" height="10" fill="#0e0c0d"/><rect x="10" y="58" width="70" height="3" fill="#161213"/>
+    <rect x="12" y="46" width="3" height="24" fill="#161213"/><rect x="74" y="52" width="3" height="18" fill="#161213"/><rect x="12" y="46" width="14" height="2" fill="#161213"/>
+    <!-- 门（中）+ 门缝下病态水光 -->
+    <rect x="150" y="30" width="40" height="64" fill="#0a0809"/><rect x="150" y="30" width="40" height="2" fill="#141012"/><rect x="184" y="62" width="3" height="3" fill="#6a5426"/>
+    <rect x="150" y="92" width="40" height="2" fill="#101820"/><rect x="150" y="94" width="40" height="1" fill="#28414e" opacity=".75"/>
+  </svg>`,
+  dark: `<svg viewBox="0 0 200 60" preserveAspectRatio="none"><rect width="200" height="60" fill="#050406"/></svg>`,
+
+  // 教堂内景（被摘十字架，鲸骨拼成的结浪竖眼浮雕）
+  church: `<svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid slice" shape-rendering="crispEdges">
+    <defs><linearGradient id="cwin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#26323c"/><stop offset="1" stop-color="#0a1016"/></linearGradient>
+      <radialGradient id="cgl" cx="50%" cy="42%" r="60%"><stop offset="0" stop-color="#26343a" stop-opacity=".5"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient></defs>
+    <rect width="320" height="120" fill="#090b0d"/>
+    <rect x="0" y="0" width="320" height="120" fill="url(#cgl)"/>
+    <!-- 拱顶暗梁 -->
+    <path d="M40 0 L160 34 L280 0" stroke="#141a1e" stroke-width="2" fill="none"/>
+    <rect x="158" y="30" width="4" height="90" fill="#0c1114"/>
+    <!-- 后墙拱窗（碎） -->
+    <rect x="132" y="12" width="56" height="52" fill="#0a0d12"/><path d="M132 30 A28 28 0 0 1 188 30 L188 64 L132 64 Z" fill="url(#cwin)" opacity=".5"/>
+    <rect x="150" y="40" width="20" height="24" fill="#060a0e"/>
+    <!-- 鲸骨浮雕：结浪 + 竖眼 -->
+    <g stroke="#b9b09a" stroke-width="2.5" fill="none" opacity=".85">
+      <path d="M120 84 q20 -14 40 0 q20 14 40 0"/><path d="M122 92 q19 -12 38 0 q19 12 38 0"/></g>
+    <ellipse cx="160" cy="74" rx="16" ry="22" fill="none" stroke="#c6bda6" stroke-width="2.5"/>
+    <path d="M160 56 Q166 74 160 92 Q154 74 160 56 Z" fill="#0a0d0c"/>
+    <!-- 空长椅 -->
+    <rect x="30" y="92" width="70" height="6" fill="#0d1012"/><rect x="30" y="104" width="70" height="6" fill="#0c0f11"/>
+    <rect x="220" y="92" width="70" height="6" fill="#0d1012"/><rect x="220" y="104" width="70" height="6" fill="#0c0f11"/>
+    <!-- 中央通往地下的石阶（淌水回声） -->
+    <rect x="140" y="104" width="40" height="16" fill="#05080a"/><rect x="146" y="110" width="28" height="2" fill="#16303a" opacity=".6"/>
+    <!-- 湿地面反光 -->
+    <rect x="0" y="116" width="320" height="4" fill="#0a1418" opacity=".5"/>
+  </svg>`,
+
+  // 白天的岬角灯塔（藤壶塔身、灰海、乱云）
+  lighthouse: `<svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid slice" shape-rendering="crispEdges">
+    <defs><linearGradient id="lsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1c2530"/><stop offset="1" stop-color="#33403e"/></linearGradient>
+      <linearGradient id="lsea2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#20303a"/><stop offset="1" stop-color="#0c161c"/></linearGradient></defs>
+    <rect width="320" height="120" fill="url(#lsky)"/>
+    <!-- 乱云 -->
+    <rect x="0" y="20" width="200" height="6" fill="#28313c" opacity=".6"/><rect x="120" y="34" width="200" height="5" fill="#242d38" opacity=".5"/>
+    <!-- 海 -->
+    <rect x="0" y="74" width="320" height="46" fill="url(#lsea2)"/>
+    <g stroke="#3a4e54" stroke-width="1" opacity=".5"><line x1="0" y1="82" x2="320" y2="82"/><line x1="0" y1="96" x2="320" y2="96"/><line x1="0" y1="110" x2="320" y2="110"/></g>
+    <!-- 礁岩 -->
+    <path d="M150 120 L170 74 Q196 66 220 74 L240 120 Z" fill="#161c1e"/>
+    <path d="M150 120 L170 74 Q182 70 190 74 L188 120 Z" fill="#1c2426"/>
+    <!-- 塔身（条纹+藤壶） -->
+    <rect x="184" y="18" width="20" height="60" fill="#c9c3b2"/><rect x="184" y="18" width="8" height="60" fill="#dcd6c6"/>
+    <rect x="184" y="28" width="20" height="8" fill="#3a2418"/><rect x="184" y="44" width="20" height="8" fill="#3a2418"/><rect x="184" y="60" width="20" height="8" fill="#3a2418"/>
+    <g fill="#6f7466" opacity=".8"><rect x="186" y="70" width="3" height="3"/><rect x="196" y="66" width="3" height="3"/><rect x="189" y="62" width="2" height="2"/><rect x="199" y="72" width="2" height="2"/></g>
+    <!-- 灯室（白天熄灭） -->
+    <rect x="180" y="8" width="28" height="12" fill="#20242c"/><rect x="182" y="10" width="24" height="8" fill="#0d1014"/><rect x="178" y="4" width="32" height="5" fill="#2a2e36"/>
+    <rect x="192" y="0" width="4" height="4" fill="#141820"/>
+    <!-- 海鸟 -->
+    <path d="M60 30 l6 2 l6 -2" stroke="#0c1114" stroke-width="1.5" fill="none"/><path d="M90 22 l5 2 l5 -2" stroke="#0c1114" stroke-width="1.5" fill="none"/>
+  </svg>`,
+
+  // 港务会办公室（正式却阴冷，绿罩灯、海图、灰港窗光）
+  hall: `<svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid slice" shape-rendering="crispEdges">
+    <defs><radialGradient id="hlamp2" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#4a7a4e" stop-opacity=".5"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
+      <linearGradient id="hwin2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2c3a44"/><stop offset="1" stop-color="#101a20"/></linearGradient></defs>
+    <rect width="320" height="120" fill="#0e0f0c"/>
+    <rect x="0" y="72" width="320" height="48" fill="#0a0b09"/>
+    <!-- 灰港窗光 -->
+    <rect x="232" y="16" width="60" height="56" fill="#0a1015"/><rect x="236" y="20" width="52" height="48" fill="url(#hwin2)" opacity=".6"/>
+    <rect x="260" y="18" width="2" height="52" fill="#0a1015"/><rect x="236" y="42" width="52" height="2" fill="#0a1015"/>
+    <!-- 墙上海图 -->
+    <rect x="30" y="20" width="52" height="40" fill="#14140e"/><rect x="34" y="24" width="44" height="32" fill="#2a2a1c" opacity=".6"/>
+    <g stroke="#4a4a30" stroke-width="1" opacity=".5" fill="none"><path d="M40 40 q12 -8 24 2"/><circle cx="56" cy="38" r="6"/></g>
+    <!-- 大办公桌 -->
+    <rect x="70" y="78" width="180" height="42" fill="#120d08"/><rect x="70" y="78" width="180" height="4" fill="#241a0e"/>
+    <!-- 绿罩台灯 + 光晕 -->
+    <ellipse cx="120" cy="80" rx="60" ry="40" fill="url(#hlamp2)"/>
+    <rect x="112" y="60" width="16" height="6" fill="#1d3a22"/><rect x="118" y="52" width="3" height="10" fill="#0d140c"/><rect x="110" y="66" width="20" height="2" fill="#2c5a34" opacity=".8"/>
+    <!-- 台上文件 -->
+    <rect x="150" y="74" width="24" height="4" fill="#3a3428" opacity=".7"/><rect x="180" y="75" width="18" height="3" fill="#2a2620" opacity=".6"/>
+  </svg>`,
+
+  // 镇口公用水井（雾中石井、井绳、暗水）
+  well: `<svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid slice" shape-rendering="crispEdges">
+    <defs><radialGradient id="wwater" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#16323a"/><stop offset="1" stop-color="#050c10"/></radialGradient></defs>
+    <rect width="320" height="120" fill="#0b0d0f"/>
+    <!-- 雾带 -->
+    <rect x="0" y="30" width="320" height="8" fill="#1c2830" opacity=".4"/><rect x="0" y="52" width="320" height="6" fill="#18242c" opacity=".35"/>
+    <!-- 远处屋影 -->
+    <rect x="10" y="40" width="40" height="30" fill="#0c1116" opacity=".8"/><rect x="270" y="44" width="42" height="26" fill="#0c1116" opacity=".8"/>
+    <!-- 石井 -->
+    <ellipse cx="160" cy="86" rx="66" ry="20" fill="#12161a"/><ellipse cx="160" cy="82" rx="60" ry="17" fill="#0a0f12"/>
+    <ellipse cx="160" cy="82" rx="46" ry="12" fill="url(#wwater)"/>
+    <ellipse cx="160" cy="80" rx="46" ry="12" fill="none" stroke="#1a2a30" stroke-width="1" opacity=".6"/>
+    <!-- 井壁砖 -->
+    <g stroke="#1c2024" stroke-width="1" opacity=".7"><line x1="104" y1="86" x2="108" y2="100"/><line x1="130" y1="92" x2="132" y2="106"/><line x1="188" y1="92" x2="190" y2="106"/><line x1="214" y1="86" x2="210" y2="100"/></g>
+    <rect x="100" y="86" width="120" height="20" fill="#0e1215" opacity=".5"/>
+    <!-- 井架与绳 -->
+    <rect x="112" y="30" width="4" height="54" fill="#161210"/><rect x="204" y="30" width="4" height="54" fill="#161210"/><rect x="110" y="28" width="100" height="4" fill="#1c1712"/>
+    <rect x="158" y="32" width="1.5" height="42" fill="#2a2418"/><rect x="150" y="72" width="18" height="8" fill="#241c12"/>
+    <!-- 一点虹光黏膜 -->
+    <ellipse cx="166" cy="80" rx="10" ry="3" fill="#2e6a5a" opacity=".3"/>
+  </svg>`
+};
+
+/* ============ 怪物特写 / 立绘（细节向 SVG 插画） ============ */
+const ART = {
+  // 溺水归来的埃德温——歪着头、滴水、嘴裂开、里面是蠕动的海葵
+  edwin: `<svg viewBox="0 0 300 360" preserveAspectRatio="xMidYMid slice">
+    <defs>
+      <radialGradient id="ebg" cx="50%" cy="42%" r="70%"><stop offset="0" stop-color="#0c141a"/><stop offset="1" stop-color="#030507"/></radialGradient>
+      <linearGradient id="eskin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fa19a"/><stop offset="0.5" stop-color="#6f8880"/><stop offset="1" stop-color="#3f5650"/></linearGradient>
+      <radialGradient id="esock" cx="50%" cy="45%" r="60%"><stop offset="0" stop-color="#0a0f10"/><stop offset="0.7" stop-color="#04070a"/><stop offset="1" stop-color="#0a1418"/></radialGradient>
+    </defs>
+    <rect width="300" height="360" fill="url(#ebg)"/>
+    <!-- 渗水的暗背景纹 -->
+    <g opacity="0.5" stroke="#12333a" stroke-width="1">
+      <line x1="40" y1="0" x2="46" y2="360"/><line x1="120" y1="0" x2="118" y2="360"/><line x1="250" y1="0" x2="256" y2="360"/><line x1="200" y1="0" x2="196" y2="360"/></g>
+    <!-- 肩与湿大衣 -->
+    <path d="M40 360 L60 250 Q150 210 240 250 L262 360 Z" fill="#141a1c"/>
+    <path d="M60 250 Q150 214 240 250 L236 274 Q150 240 66 274 Z" fill="#0d1214"/>
+    <rect x="150" y="250" width="2" height="110" fill="#243033" opacity="0.6"/>
+    <!-- 脖子（歪的） -->
+    <g transform="rotate(-11 150 210)">
+      <path d="M120 250 Q150 262 180 250 L176 200 L124 200 Z" fill="url(#eskin)"/>
+      <!-- 颈侧鳃裂 -->
+      <g stroke="#2a1518" stroke-width="3" opacity="0.85"><line x1="128" y1="214" x2="140" y2="222"/><line x1="126" y1="224" x2="139" y2="231"/><line x1="126" y1="234" x2="140" y2="240"/></g>
+      <!-- 头 -->
+      <ellipse cx="150" cy="150" rx="66" ry="80" fill="url(#eskin)"/>
+      <path d="M86 150 Q84 96 150 78 Q216 96 214 150 Q214 120 150 108 Q86 120 86 150 Z" fill="#3d524c" opacity="0.6"/>
+      <!-- 湿发 -->
+      <g stroke="#0b1416" stroke-width="3" fill="none" opacity="0.9">
+        <path d="M92 96 Q100 150 96 210"/><path d="M110 82 Q112 140 106 200"/><path d="M150 74 Q150 130 150 150"/><path d="M190 82 Q188 140 196 205"/><path d="M208 96 Q202 150 206 210"/></g>
+      <path d="M86 96 Q150 62 214 96 L214 118 Q150 90 86 118 Z" fill="#0a1214"/>
+      <!-- 眼窝：空洞，一点乳白微光 -->
+      <ellipse cx="120" cy="146" rx="19" ry="14" fill="url(#esock)"/><ellipse cx="180" cy="146" rx="19" ry="14" fill="url(#esock)"/>
+      <circle cx="123" cy="148" r="3" fill="#9fb4b0" opacity="0.7"/><circle cx="177" cy="148" r="3" fill="#9fb4b0" opacity="0.7"/>
+      <path d="M101 140 Q120 133 139 140" stroke="#233" stroke-width="1.5" fill="none"/><path d="M161 140 Q180 133 199 140" stroke="#233" stroke-width="1.5" fill="none"/>
+      <!-- 鼻梁阴影 -->
+      <path d="M150 150 L144 178 Q150 182 156 178 Z" fill="#3a4e48" opacity="0.7"/>
+      <!-- 嘴：裂到耳根，内里发黑，一圈向内蠕动的海葵触手 -->
+      <path d="M104 196 Q150 176 196 196 Q150 236 104 196 Z" fill="#07100f"/>
+      <path d="M112 197 Q150 184 188 197 Q150 224 112 197 Z" fill="#040a0a"/>
+      <g stroke="#1c3a34" stroke-width="2.5" fill="none" opacity="0.9">
+        <path d="M126 200 q-4 8 2 12"/><path d="M138 202 q-2 9 3 12"/><path d="M150 203 q0 9 0 13"/><path d="M162 202 q2 9 -3 12"/><path d="M174 200 q4 8 -2 12"/></g>
+      <!-- 缺牙的一点惨白 -->
+      <rect x="146" y="192" width="3" height="4" fill="#b8c4c0" opacity="0.6"/>
+    </g>
+    <!-- 全身滴水 -->
+    <g stroke="#2e5a60" stroke-width="1.5" opacity="0.55">
+      <line x1="96" y1="230" x2="96" y2="300"/><line x1="150" y1="252" x2="150" y2="330"/><line x1="206" y1="232" x2="206" y2="300"/><line x1="120" y1="244" x2="120" y2="290"/><line x1="184" y1="246" x2="184" y2="292"/></g>
+    <circle cx="150" cy="336" r="3" fill="#2e5a60" opacity="0.6"/><circle cx="96" cy="304" r="2" fill="#2e5a60" opacity="0.5"/>
+  </svg>`,
+
+  // 潮下之主的眼——一只比灯塔还高、竖瞳的巨眼从黑水中睁开
+  eye: `<svg viewBox="0 0 400 340" preserveAspectRatio="xMidYMid slice">
+    <defs>
+      <radialGradient id="ybg" cx="50%" cy="40%" r="75%"><stop offset="0" stop-color="#0a1512"/><stop offset="0.6" stop-color="#04090a"/><stop offset="1" stop-color="#010304"/></radialGradient>
+      <radialGradient id="yscl" cx="50%" cy="50%" r="55%"><stop offset="0" stop-color="#b7c9a4"/><stop offset="0.55" stop-color="#7f9a6f"/><stop offset="1" stop-color="#26361f"/></radialGradient>
+      <radialGradient id="yiris" cx="50%" cy="50%" r="52%"><stop offset="0" stop-color="#7fe3b0"/><stop offset="0.35" stop-color="#2f9a6a"/><stop offset="0.72" stop-color="#0c3a2a"/><stop offset="1" stop-color="#04140f"/></radialGradient>
+      <radialGradient id="yglow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#59e0a0" stop-opacity="0.5"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
+    </defs>
+    <rect width="400" height="340" fill="url(#ybg)"/>
+    <!-- 隐约庞大轮廓 -->
+    <path d="M0 300 Q120 210 200 250 Q300 210 400 300 L400 340 L0 340 Z" fill="#050c0a" opacity="0.8"/>
+    <ellipse cx="200" cy="150" rx="260" ry="150" fill="url(#yglow)"/>
+    <!-- 眼睑（横向巨睑，竖眼） -->
+    <path d="M60 150 Q200 20 340 150 Q200 280 60 150 Z" fill="#0c1a14"/>
+    <path d="M74 150 Q200 40 326 150 Q200 260 74 150 Z" fill="#050d0a"/>
+    <!-- 眼白 + 血丝 -->
+    <ellipse cx="200" cy="150" rx="120" ry="104" fill="url(#yscl)"/>
+    <g stroke="#7a2020" stroke-width="1.4" opacity="0.55" fill="none">
+      <path d="M92 120 Q140 140 150 150"/><path d="M100 190 Q150 168 160 160"/><path d="M300 118 Q258 142 250 152"/><path d="M296 196 Q252 170 244 160"/><path d="M120 96 Q160 132 168 148"/></g>
+    <!-- 虹膜 -->
+    <circle cx="200" cy="150" r="96" fill="url(#yiris)"/>
+    <g stroke="#0a2c20" stroke-width="1.5" opacity="0.6">
+      <line x1="200" y1="60" x2="200" y2="90"/><line x1="200" y1="210" x2="200" y2="240"/><line x1="110" y1="150" x2="140" y2="150"/><line x1="260" y1="150" x2="290" y2="150"/>
+      <line x1="140" y1="90" x2="158" y2="112"/><line x1="260" y1="90" x2="242" y2="112"/><line x1="140" y1="210" x2="158" y2="188"/><line x1="260" y1="210" x2="242" y2="188"/></g>
+    <!-- 竖瞳 -->
+    <path d="M200 58 Q214 150 200 242 Q186 150 200 58 Z" fill="#010604"/>
+    <path d="M200 78 Q206 150 200 222 Q194 150 200 78 Z" fill="#000" />
+    <ellipse cx="196" cy="120" rx="4" ry="10" fill="#bfeecb" opacity="0.5"/>
+    <!-- 水面 -->
+    <rect x="0" y="288" width="400" height="52" fill="#020706"/>
+    <g stroke="#14463a" stroke-width="1.2" opacity="0.5"><line x1="0" y1="296" x2="400" y2="296"/><line x1="0" y1="312" x2="400" y2="312"/><line x1="0" y1="328" x2="400" y2="328"/></g>
+    <rect x="196" y="288" width="8" height="52" fill="#1f6a4e" opacity="0.25"/>
+  </svg>`,
+
+  // 涨潮池——半浸海水里，无数苍白蹼手贴着池壁、仰起的脸
+  pool: `<svg viewBox="0 0 360 320" preserveAspectRatio="xMidYMid slice">
+    <defs>
+      <linearGradient id="pw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#12262a"/><stop offset="1" stop-color="#03090c"/></linearGradient>
+      <radialGradient id="pgl" cx="50%" cy="30%" r="70%"><stop offset="0" stop-color="#2a4a4e" stop-opacity="0.5"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
+    </defs>
+    <rect width="360" height="320" fill="#05090b"/>
+    <!-- 石壁 -->
+    <rect width="360" height="150" fill="#0a0e10"/><rect y="70" width="360" height="1" fill="#141a1c"/><rect x="120" width="1" height="150" fill="#141a1c"/><rect x="250" width="1" height="150" fill="#141a1c"/>
+    <!-- 挂着的旧衣 -->
+    <path d="M60 40 L52 110 L74 110 Z" fill="#161010" opacity="0.85"/><path d="M150 34 L140 96 L164 96 Z" fill="#12140f" opacity="0.8"/><path d="M270 42 L262 104 L286 104 Z" fill="#141010" opacity="0.8"/>
+    <!-- 水面 -->
+    <rect y="150" width="360" height="170" fill="url(#pw)"/>
+    <ellipse cx="180" cy="150" rx="220" ry="60" fill="url(#pgl)"/>
+    <g stroke="#1c4046" stroke-width="1" opacity="0.5"><line x1="0" y1="166" x2="360" y2="166"/><line x1="0" y1="186" x2="360" y2="186"/><line x1="0" y1="212" x2="360" y2="212"/></g>
+    <!-- 水下仰起的脸（模糊苍白） -->
+    <g opacity="0.5"><ellipse cx="110" cy="210" rx="20" ry="24" fill="#5f7169"/><ellipse cx="104" cy="205" rx="4" ry="6" fill="#0a1010"/><ellipse cx="118" cy="205" rx="4" ry="6" fill="#0a1010"/></g>
+    <g opacity="0.35"><ellipse cx="240" cy="230" rx="18" ry="22" fill="#54655e"/><ellipse cx="234" cy="226" rx="3.5" ry="5" fill="#0a1010"/><ellipse cx="247" cy="226" rx="3.5" ry="5" fill="#0a1010"/></g>
+    <!-- 贴壁的苍白蹼手 -->
+    <g fill="#93a69d" stroke="#0c1412" stroke-width="1">
+      <g transform="translate(150 158)"><path d="M0 0 Q-2 -26 4 -30 M8 0 Q8 -30 12 -34 M18 0 Q20 -28 24 -30 M28 2 Q34 -22 36 -24 M0 0 Q18 -6 30 2 Z"/></g>
+      <g transform="translate(60 172) scale(0.85)"><path d="M0 0 Q-2 -24 4 -28 M8 0 Q8 -28 12 -32 M18 0 Q20 -26 24 -28 M26 2 Q32 -20 34 -22 M0 0 Q16 -6 28 2 Z"/></g>
+      <g transform="translate(268 176) scale(0.8)"><path d="M0 0 Q-2 -24 4 -28 M8 0 Q8 -28 12 -32 M18 0 Q20 -26 24 -28 M26 2 Q32 -20 34 -22 M0 0 Q16 -6 28 2 Z"/></g>
+    </g>
+  </svg>`,
+
+  // 塞缪尔·里德——调查员本人（还是个人，暖色，与怪物形成对照）
+  samuel: `<svg viewBox="0 0 300 360" preserveAspectRatio="xMidYMid slice">
+    <defs><radialGradient id="sbg" cx="50%" cy="40%" r="70%"><stop offset="0" stop-color="#1a1610"/><stop offset="1" stop-color="#060505"/></radialGradient>
+      <linearGradient id="sskin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c79a72"/><stop offset="1" stop-color="#7c5638"/></linearGradient></defs>
+    <rect width="300" height="360" fill="url(#sbg)"/>
+    <!-- 风衣肩 -->
+    <path d="M36 360 L58 262 Q150 232 242 262 L264 360 Z" fill="#2a2216"/>
+    <path d="M120 250 L124 300 L150 288 L176 300 L180 250 Z" fill="#1a140c"/>
+    <rect x="150" y="250" width="2" height="110" fill="#3a2e1c" opacity=".5"/>
+    <!-- 脖/领 -->
+    <path d="M126 250 Q150 262 174 250 L172 210 L128 210 Z" fill="url(#sskin)"/>
+    <!-- 脸 -->
+    <ellipse cx="150" cy="150" rx="60" ry="74" fill="url(#sskin)"/>
+    <!-- 礼帽 -->
+    <path d="M78 118 Q150 66 222 118 L222 128 Q150 96 78 128 Z" fill="#241d13"/>
+    <ellipse cx="150" cy="94" rx="60" ry="20" fill="#2c2416"/><path d="M96 94 Q150 60 204 94 Q150 78 96 94 Z" fill="#1c160d"/>
+    <!-- 眉眼（疲惫、警觉） -->
+    <path d="M104 138 Q124 130 140 138" stroke="#3a2818" stroke-width="3" fill="none"/><path d="M160 138 Q176 130 196 138" stroke="#3a2818" stroke-width="3" fill="none"/>
+    <ellipse cx="122" cy="150" rx="10" ry="6" fill="#fff" opacity=".85"/><circle cx="124" cy="150" r="4" fill="#241a12"/>
+    <ellipse cx="178" cy="150" rx="10" ry="6" fill="#fff" opacity=".85"/><circle cx="176" cy="150" r="4" fill="#241a12"/>
+    <path d="M112 148 Q122 144 132 148" stroke="#5a3e28" stroke-width="1" fill="none" opacity=".5"/>
+    <!-- 鼻 -->
+    <path d="M150 152 L143 180 Q150 184 158 180 Z" fill="#8a6040" opacity=".7"/>
+    <!-- 嘴（抿紧、坚定） -->
+    <path d="M126 198 Q150 206 174 198" stroke="#4a3020" stroke-width="3" fill="none"/>
+    <!-- 胡茬 -->
+    <path d="M116 196 Q150 224 184 196 Q150 214 116 196 Z" fill="#2a1c12" opacity=".45"/>
+    <!-- 记者证挂绳 -->
+    <path d="M120 254 L138 320" stroke="#4a3a24" stroke-width="2"/><rect x="130" y="316" width="24" height="16" fill="#241d12" stroke="#4a3a24"/><rect x="134" y="320" width="16" height="3" fill="#8a7a5a" opacity=".6"/>
+  </svg>`,
+
+  // 旅馆老妇人——枯瘦、眼白发黄、渔线缠指、藏着恐惧
+  oldwoman: `<svg viewBox="0 0 300 360" preserveAspectRatio="xMidYMid slice">
+    <defs><radialGradient id="obg" cx="50%" cy="40%" r="70%"><stop offset="0" stop-color="#141310"/><stop offset="1" stop-color="#050505"/></radialGradient>
+      <linearGradient id="oskin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b7ad86"/><stop offset="1" stop-color="#7f7452"/></linearGradient></defs>
+    <rect width="300" height="360" fill="url(#obg)"/>
+    <!-- 披肩 -->
+    <path d="M30 360 L54 250 Q150 214 246 250 L270 360 Z" fill="#181712"/>
+    <path d="M54 250 Q150 220 246 250 L240 280 Q150 250 60 280 Z" fill="#0f0e0a"/>
+    <!-- 瘦脖 -->
+    <path d="M128 250 Q150 258 172 250 L170 206 L130 206 Z" fill="url(#oskin)"/>
+    <g stroke="#5f5540" stroke-width="1.5" opacity=".5"><path d="M136 214 q14 6 28 0"/><path d="M138 224 q12 5 24 0"/></g>
+    <!-- 脸（凹陷） -->
+    <path d="M92 150 Q86 78 150 72 Q214 78 208 150 Q210 200 150 224 Q90 200 92 150 Z" fill="url(#oskin)"/>
+    <path d="M110 168 Q100 150 108 132" stroke="#6a5f46" stroke-width="2" fill="none" opacity=".5"/><path d="M190 168 Q200 150 192 132" stroke="#6a5f46" stroke-width="2" fill="none" opacity=".5"/>
+    <!-- 灰发 束起 -->
+    <path d="M92 120 Q150 60 208 120 L208 96 Q150 74 92 96 Z" fill="#3a382e"/>
+    <g stroke="#4a4638" stroke-width="2" fill="none" opacity=".7"><path d="M100 100 Q96 130 104 150"/><path d="M200 100 Q204 130 196 150"/></g>
+    <!-- 眼白发黄，眼神惊惧 -->
+    <ellipse cx="124" cy="150" rx="14" ry="9" fill="#c9c07a"/><circle cx="126" cy="150" r="5" fill="#3a3018"/><circle cx="126" cy="150" r="2" fill="#0a0805"/>
+    <ellipse cx="176" cy="150" rx="14" ry="9" fill="#c9c07a"/><circle cx="174" cy="150" r="5" fill="#3a3018"/><circle cx="174" cy="150" r="2" fill="#0a0805"/>
+    <path d="M108 138 Q124 132 140 138" stroke="#5a5038" stroke-width="2" fill="none"/><path d="M160 138 Q176 132 192 138" stroke="#5a5038" stroke-width="2" fill="none"/>
+    <!-- 鼻、抿唇 -->
+    <path d="M150 152 L144 182 Q150 186 156 182 Z" fill="#8a7f5a" opacity=".6"/>
+    <path d="M128 198 Q150 202 172 198" stroke="#4a4030" stroke-width="2.5" fill="none"/>
+    <!-- 渔线缠指的手（下缘，抓着） -->
+    <g fill="url(#oskin)" stroke="#5a5038" stroke-width="1">
+      <rect x="120" y="300" width="60" height="30" rx="8"/><rect x="120" y="300" width="10" height="30" rx="4"/><rect x="134" y="298" width="10" height="32" rx="4"/><rect x="148" y="298" width="10" height="32" rx="4"/><rect x="162" y="300" width="10" height="30" rx="4"/></g>
+    <g stroke="#8a7a4a" stroke-width="1" opacity=".7"><line x1="122" y1="308" x2="180" y2="306"/><line x1="122" y1="316" x2="180" y2="314"/><line x1="124" y1="324" x2="178" y2="322"/></g>
+  </svg>`,
+
+  // 港务长——和蔼笑脸下的青灰皮肤与颈侧鳃裂
+  harbormaster: `<svg viewBox="0 0 300 360" preserveAspectRatio="xMidYMid slice">
+    <defs><radialGradient id="hbg" cx="50%" cy="40%" r="70%"><stop offset="0" stop-color="#0f1512"/><stop offset="1" stop-color="#040605"/></radialGradient>
+      <linearGradient id="hskin2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9aa891"/><stop offset="1" stop-color="#5e6f5c"/></linearGradient></defs>
+    <rect width="300" height="360" fill="url(#hbg)"/>
+    <!-- 体面外套 + 高领 -->
+    <path d="M24 360 L52 250 Q150 214 248 250 L276 360 Z" fill="#161c18"/>
+    <path d="M108 252 L150 300 L192 252 L186 232 Q150 250 114 232 Z" fill="#0d120f"/>
+    <rect x="118" y="238" width="64" height="18" fill="#20261f"/>
+    <!-- 粗脖 + 鳃裂 -->
+    <path d="M116 250 Q150 264 184 250 L182 200 L118 200 Z" fill="url(#hskin2)"/>
+    <g stroke="#2a1518" stroke-width="4" opacity=".9"><line x1="122" y1="206" x2="140" y2="216"/><line x1="120" y1="220" x2="139" y2="228"/><line x1="120" y1="234" x2="140" y2="240"/></g>
+    <g stroke="#2a1518" stroke-width="4" opacity=".9"><line x1="178" y1="206" x2="160" y2="216"/><line x1="180" y1="220" x2="161" y2="228"/><line x1="180" y1="234" x2="160" y2="240"/></g>
+    <!-- 圆脸 -->
+    <ellipse cx="150" cy="146" rx="68" ry="76" fill="url(#hskin2)"/>
+    <!-- 稀发 -->
+    <path d="M84 120 Q150 74 216 120 L216 104 Q150 86 84 104 Z" fill="#3a4038" opacity=".7"/>
+    <!-- 笑起的眼（水泡、外凸） -->
+    <ellipse cx="120" cy="144" rx="16" ry="12" fill="#dfe6d4"/><circle cx="122" cy="146" r="7" fill="#3a4a3a"/><circle cx="122" cy="146" r="3" fill="#0a0f0a"/>
+    <ellipse cx="180" cy="144" rx="16" ry="12" fill="#dfe6d4"/><circle cx="178" cy="146" r="7" fill="#3a4a3a"/><circle cx="178" cy="146" r="3" fill="#0a0f0a"/>
+    <path d="M104 130 Q120 124 136 130" stroke="#2a3228" stroke-width="2" fill="none"/><path d="M164 130 Q180 124 196 130" stroke="#2a3228" stroke-width="2" fill="none"/>
+    <!-- 鼻 -->
+    <path d="M150 148 L142 178 Q150 184 158 178 Z" fill="#4e5c4c" opacity=".7"/>
+    <!-- 咧开的和蔼笑（太宽了一点） -->
+    <path d="M108 196 Q150 224 192 196 Q150 210 108 196 Z" fill="#1a221a"/>
+    <path d="M116 198 Q150 216 184 198" stroke="#0a0f0a" stroke-width="2" fill="none"/>
+    <g fill="#c8cdb8"><rect x="132" y="200" width="5" height="6"/><rect x="146" y="202" width="5" height="7"/><rect x="160" y="200" width="5" height="6"/></g>
+  </svg>`,
+
+  // 守塔人——半透明、蹼手，却还留着一双人的、疲惫怜悯的眼
+  keeper: `<svg viewBox="0 0 300 360" preserveAspectRatio="xMidYMid slice">
+    <defs><radialGradient id="kbg" cx="50%" cy="40%" r="70%"><stop offset="0" stop-color="#0c1412"/><stop offset="1" stop-color="#030605"/></radialGradient>
+      <linearGradient id="kskin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8ea59c" stop-opacity=".92"/><stop offset="1" stop-color="#3f544c" stop-opacity=".85"/></linearGradient></defs>
+    <rect width="300" height="360" fill="url(#kbg)"/>
+    <!-- 背后透出的暗 -->
+    <g opacity=".5" stroke="#0a1a18" stroke-width="2"><line x1="70" y1="120" x2="66" y2="360"/><line x1="150" y1="150" x2="150" y2="360"/><line x1="230" y1="120" x2="234" y2="360"/></g>
+    <!-- 佝偻的肩 -->
+    <path d="M50 360 L74 256 Q150 226 226 256 L250 360 Z" fill="#0e1613" opacity=".9"/>
+    <!-- 半透明脖 -->
+    <path d="M124 256 Q150 266 176 256 L174 208 L126 208 Z" fill="url(#kskin)"/>
+    <!-- 半透明的头（背景隐约透出） -->
+    <ellipse cx="150" cy="150" rx="60" ry="74" fill="url(#kskin)"/>
+    <ellipse cx="150" cy="150" rx="60" ry="74" fill="#0a1a18" opacity=".25"/>
+    <!-- 稀疏湿发 -->
+    <g stroke="#12201c" stroke-width="2" fill="none" opacity=".7"><path d="M108 92 Q104 130 110 160"/><path d="M150 84 Q150 120 150 150"/><path d="M192 92 Q196 130 190 160"/></g>
+    <!-- 一双还留着人性的、疲惫怜悯的眼 -->
+    <ellipse cx="124" cy="150" rx="13" ry="8" fill="#e8efe6"/><circle cx="124" cy="151" r="5" fill="#4a5a54"/><circle cx="124" cy="151" r="2.4" fill="#0a100e"/>
+    <ellipse cx="176" cy="150" rx="13" ry="8" fill="#e8efe6"/><circle cx="176" cy="151" r="5" fill="#4a5a54"/><circle cx="176" cy="151" r="2.4" fill="#0a100e"/>
+    <path d="M108 140 Q124 134 138 140" stroke="#2a3a34" stroke-width="2" fill="none"/><path d="M162 140 Q176 134 192 140" stroke="#2a3a34" stroke-width="2" fill="none"/>
+    <!-- 眼下疲惫的暗 -->
+    <path d="M112 160 Q124 164 136 160" stroke="#26362f" stroke-width="2" fill="none" opacity=".6"/><path d="M164 160 Q176 164 188 160" stroke="#26362f" stroke-width="2" fill="none" opacity=".6"/>
+    <!-- 鼻、下垂的嘴 -->
+    <path d="M150 152 L143 182 Q150 186 157 182 Z" fill="#3a4a44" opacity=".7"/>
+    <path d="M126 200 Q150 194 174 200" stroke="#2a3a34" stroke-width="2.5" fill="none"/>
+    <!-- 抬起的一只蹼手（求告/怜悯） -->
+    <g fill="url(#kskin)" stroke="#2a3a34" stroke-width="1">
+      <path d="M96 320 Q92 286 100 280 M108 318 Q108 280 114 276 M122 318 Q124 282 130 280 M136 320 Q142 288 146 288 M96 320 Q120 310 142 322 Z"/></g>
+    <path d="M100 296 Q104 300 108 296 M112 292 Q116 296 120 292 M124 294 Q128 298 132 294" stroke="#1a2a24" stroke-width="1" fill="none" opacity=".6"/>
+  </svg>`
+};
+
+/* ============ 角色数据 ============ */
+const PC = {
+  name:"塞缪尔·里德", job:"自由记者 · 1926",
+  san:65, sanMax:99, hp:11, hpMax:11,
+  skills:{ "侦查":60,"聆听":55,"图书馆":65,"话术":50,"心理学":55,"闪避":32,"手枪":40,"神秘学":10,"急救":40,"潜行":40 },
+  inv:["一封死者的来信","柯尔特 .38 左轮（装弹）","黄铜手电筒","记者证与笔记本","火柴与半包香烟","23 美元"]
+};
+
+/* ============ 剧本（手作分支 · 第一幕垂直切片） ============
+   node: { banner, loc, text:[{t,cls}], choices:[{label,tag,goto,check,once,if,set}] , onEnter }
+   check: {skill, target, hard, onSuccess(node), onFail(node)}
+================================================================ */
+const flags = {};
+const S = {}; // scenes
+
+S.arrival = {
+  banner:"harbor", loc:"寒鸦港 · 码头",
+  text:[
+    {t:"末班巴士把你吐在码头尽头，柴油味还没散，浓雾就贴上了你的脸——湿冷、带着烂海藻和某种更甜腻的腥气，像是有什么东西在雾里烂了很久。"},
+    {t:"车灯掉头远去。寒鸦港沉在雾里，只剩几盏昏黄的窗，和远处灯塔一次、一次、迟缓的旋转。海水拍着桩子，节奏不对——太慢了，像是黏的。"},
+    {t:"你摸了摸大衣内袋里那封信。埃德温·凯恩，你大学时最好的朋友，三周前被宣告溺亡。可这封信的邮戳，落在他死后第三天。", cls:"amber"},
+    {t:"「他们没让我走。来寒鸦港。」——只有这一行字。"}
+  ],
+  choices:[
+    {label:"停下来，仔细打量这座镇子。", tag:"侦查", check:{skill:"侦查",target:60,
+        success:"observe_ok", fail:"observe_fail"}},
+    {label:"顺着灯光，去镇口那家亮着招牌的『锈锚旅馆』。", tag:"前往", goto:"inn_out"},
+    {label:"先去码头边的邮局——这封信是从那里寄出的。", tag:"前往", goto:"post_out"}
+  ]
+};
+
+S.observe_ok = {
+  banner:"harbor", loc:"寒鸦港 · 码头",
+  text:[
+    {t:"你站定，让眼睛适应雾。细节浮出来，没有一处让你安心。", cls:"amber"},
+    {t:"每一扇亮灯的窗后，都有人。他们不动，只是看着你——你数出至少七个轮廓，没有一个拉上窗帘。教堂的尖顶歪了将近十度，顶上的十字架被人取了下来，断口是新的。"},
+    {t:"码头木板上钉着一块褪色的告示：『日落后禁止靠近海面。违者由港务会处置。』落款没有名字，只有一个盘绕的、像打了结的浪的符号。"}
+  ],
+  set:{seen_sigil:true, town_wrong:true},
+  choices:[
+    {label:"去『锈锚旅馆』落脚。", tag:"前往", goto:"inn_out"},
+    {label:"去邮局，信是从那儿寄出的。", tag:"前往", goto:"post_out"}
+  ]
+};
+S.observe_fail = {
+  banner:"harbor", loc:"寒鸦港 · 码头",
+  text:[
+    {t:"雾太厚，你看不真切。只觉得那些窗后的光一盏盏灭了，仿佛你的注视惊动了什么。后颈发凉。"},
+  ],
+  choices:[
+    {label:"去『锈锚旅馆』落脚。", tag:"前往", goto:"inn_out"},
+    {label:"去邮局。", tag:"前往", goto:"post_out"}
+  ]
+};
+
+S.inn_out = {
+  banner:"inn", loc:"锈锚旅馆 · 门厅",
+  text:[
+    {t:"旅馆里比外面还冷。柜台后一个瘦削的老妇人，指节缠着旧渔线，抬眼看你，眼白发黄。"},
+    {t:"「过夜？」她的声音像砂纸。「三块。楼上末尾那间。」她把登记簿转过来，钢笔尖悬着，等你签名。", cls:"dlg"}
+  ],
+  choices:[
+    {label:"翻看登记簿上之前的名字。", tag:"侦查", check:{skill:"侦查",target:60,success:"inn_book",fail:"inn_book_fail"}},
+    {label:"上前，与老妇人攀谈、盘问——你想问什么、想怎么试探她，都由你。", tag:"交谈", talk:"oldwoman"},
+    {label:"签名，上楼去房间。", tag:"前往", goto:"room_night", if:()=>true}
+  ]
+};
+S.inn_book = {
+  banner:"inn", loc:"锈锚旅馆 · 门厅",
+  text:[
+    {t:"你翻回前几页。大多是外地商人的名字，间隔越来越稀，像这镇子在慢慢断绝和外界的往来。"},
+    {t:"三周前的一行，被人用力划掉，几乎划破纸。但你认得那笔迹——你太认得了。是埃德温。他登记住进了这家旅馆，就在他『溺亡』的那天。", cls:"amber"},
+    {t:"划掉的笔迹是另一个人的。旁边空白处，有极小的一行铅笔字：『别喝井水。』"}
+  ],
+  set:{edwin_stayed:true, wellwater:true},
+  choices:[
+    {label:"追问老妇人这个划掉的名字。", tag:"话术", goto:"inn_ask"},
+    {label:"不动声色，签名上楼。", tag:"前往", goto:"room_night"}
+  ]
+};
+S.inn_book_fail = {
+  banner:"inn", loc:"锈锚旅馆 · 门厅",
+  text:[{t:"你刚翻开，老妇人的手就按住了簿子。「签你的，别翻别人的。」她把簿子抽走了。"}],
+  choices:[
+    {label:"问她埃德温·凯恩的事。", tag:"话术", goto:"inn_ask"},
+    {label:"签名上楼。", tag:"前往", goto:"room_night"}
+  ]
+};
+S.inn_psy = {
+  banner:"inn", loc:"锈锚旅馆 · 门厅",
+  text:[
+    {t:"她不是冷漠——她是怕。每当楼上传来一点声响，她的肩就绷一下，钢笔在簿子上顿出小小的墨点。她怕的东西在这栋楼里，而且她习惯了怕。", cls:"amber"},
+    {t:"你顺着她的目光瞥向楼梯口。那里什么都没有。可她盯着的，是天花板——楼上末尾那间，正是她要给你的房间。"}
+  ],
+  set:{she_afraid:true},
+  choices:[
+    {label:"问她：楼上那间，上一个客人怎么了？", tag:"话术", goto:"inn_ask"},
+    {label:"签名上楼。", tag:"前往", goto:"room_night"}
+  ]
+};
+S.inn_psy_fail = {
+  banner:"inn", loc:"锈锚旅馆 · 门厅",
+  text:[{t:"她的脸像退潮后的礁石，读不出任何东西。「签，还是不签？」"}],
+  choices:[
+    {label:"问她埃德温的事。", tag:"话术", goto:"inn_ask"},
+    {label:"签名上楼。", tag:"前往", goto:"room_night"}
+  ]
+};
+S.inn_ask = {
+  banner:"inn", loc:"锈锚旅馆 · 门厅",
+  portrait:"oldwoman", pcap:"旅 馆 老 妇 人",
+  text:[
+    {t:"你说出那个名字：埃德温·凯恩。"},
+    {t:"老妇人的钢笔停在半空，一滴墨在登记簿上慢慢洇开。她抬起那双发黄的眼看了你很久，久到你以为她不会答了。然后，她用几乎听不见的声音说：「那位先生……退房了。」——可她的目光，分明飘向了楼上，飘向天花板某个方向。", cls:"amber"},
+    {t:"「先生。」她忽然凑近，一股鱼腥和陈年海盐的气味涌来。渔线缠着的、枯瘦的手一把抓住你的手腕，冰得像刚从海里捞出来。「我不该说的……可你的眼睛，还是活人的眼睛。」她的指甲掐进你的皮肉，「拿上钥匙就走。锁好门。别开窗——不管你听见窗外有什么在叫你。半夜，要是听见有人湿淋淋地在走廊里走过，一步一停、滴着水——你就装死，千万、千万别应声。」", cls:"dlg"},
+    {t:"说完，她像是被自己的话吓着了，猛地缩回手，重新变回那副砂纸般冷漠的样子，仿佛刚才什么都没发生。"}
+  ],
+  set:{warned:true},
+  choices:[
+    {label:"接过钥匙，上楼。", tag:"前往", goto:"room_night"}
+  ]
+};
+
+S.post_out = {
+  banner:"post", loc:"寒鸦港 · 邮局",
+  text:[
+    {t:"邮局的门虚掩着，里面没有人，只有一盏油灯还亮着，说明有人刚离开、或者根本不敢关灯。柜台后的分拣格大多空着。"},
+    {t:"你想核对那封信的来处。"}
+  ],
+  choices:[
+    {label:"翻找柜台后的收发记录。", tag:"侦查", check:{skill:"侦查",target:60,success:"post_ok",fail:"post_fail"}},
+    {label:"离开，去『锈锚旅馆』过夜。", tag:"前往", goto:"inn_out"}
+  ]
+};
+S.post_ok = {
+  banner:"post", loc:"寒鸦港 · 邮局",
+  text:[
+    {t:"收发簿最后一页，你找到了那封信的记录。寄出人栏是空的，但投递员的备注让你的胃一沉：", cls:"amber"},
+    {t:"『第三格自投。无人经手。』——这封信不是任何人拿来寄的。它是自己出现在分拣格里的。"},
+    {t:"你抬头看那一整面分拣格。第三格深处，似乎还塞着什么。你伸手进去，指尖触到湿的、软的东西，抽出来——是一缕海藻，还在滴水，缠着一枚褪色的黄铜纽扣。埃德温大衣上的纽扣。"}
+  ],
+  san:{loss:3, reason:"死者的信自己出现在邮格里，而格子深处还在滴着海水"},
+  set:{button:true},
+  choices:[
+    {label:"够了。去旅馆，今晚必须合眼。", tag:"前往", goto:"inn_out"}
+  ]
+};
+S.post_fail = {
+  banner:"post", loc:"寒鸦港 · 邮局",
+  text:[{t:"记录本被雨水泡烂了，字迹糊成一团靛蓝。油灯忽然爆了个灯花，你决定别在这儿久留。"}],
+  choices:[
+    {label:"去『锈锚旅馆』过夜。", tag:"前往", goto:"inn_out"}
+  ]
+};
+
+S.room_night = {
+  banner:"room", loc:"锈锚旅馆 · 末尾房间 · 深夜",
+  text:[
+    {t:"房间比棺材大不了多少。一张铁床，一扇朝海的窗，玻璃上凝着水汽，从外面看不进来，你却总觉得，从里面能被什么看着。"},
+    {t:"你把左轮压在枕头下，吹熄了灯。灯塔的光每隔一会儿扫过天花板，一次，一次。你在这有节奏的明灭里，慢慢沉下去——"},
+    {t:"直到走廊里传来声音把你惊醒。"},
+    {t:"湿淋淋的脚步。一步，一停，一滩水落地的声音。它正沿着走廊，朝你这间的方向，慢慢挪过来。老妇人的话在你耳边响起：别应声。", cls:"amber"}
+  ],
+  set:{night:true},
+  choices:[
+    {label:"屏住呼吸，从门缝往外看。", tag:"侦查/意志", check:{skill:"侦查",target:60,hard:false,success:"peek",fail:"peek_fail"}},
+    {label:"握紧左轮，一动不动地等它过去。", tag:"潜行", check:{skill:"潜行",target:40,success:"wait_ok",fail:"wait_bad"}},
+    {label:"点亮手电，拉开门，直接面对它。", tag:"勇气", goto:"confront"}
+  ]
+};
+S.peek = {
+  banner:"room", loc:"末尾房间 · 门缝",
+  portrait:"edwin", pcap:"埃 德 温 · 凯 恩",
+  text:[
+    {t:"你把脸贴到冰凉的门板上。木头潮得发软，一股咸腥的冷气从门缝里渗进来，钻进你的鼻腔——是退了潮的海滩的味道，是烂在网里三天的鱼的味道。你眯起眼，从那道缝里望出去。", cls:"amber"},
+    {t:"走廊尽头那盏长明灯，只剩豆大的一点昏黄。灯下站着一个人。一动不动，任由身上的水，一滴、一滴，敲在木地板上——那声音在死寂里响得像钟。他脚下积起一小片黑亮的水，像一面朝下开的镜子。"},
+    {t:"是埃德温。你认得那件大衣，认得袖口的磨痕，认得那颗缺了的纽扣。可你不认得他站立的样子：肩膀塌成一个活人绝不会有的弧度，脑袋歪向一侧，歪得太多了——不是扭头，是那颗头颅被人从后面，随手摆了上去，摆歪了，没人来得及扶正。他的皮肤在昏光里泛着退潮泥滩的灰绿。"},
+    {t:"然后，他没有转身，就开口了。声音不是从他嘴里出来的——是从走廊的四面墙壁里，从地板下面，一起往外渗，湿的、咕嘟作响的，像是隔着半尺深的水在对你说话：", cls:"amber"},
+    {t:"「你来了。……可你不该来的，塞缪尔。」他停顿，喉咙里翻上来一串气泡的声音，「潮水涨到最高的那晚，他们会把你也洗干净。会很温柔的。就像……洗我一样。到时候，你也就不疼了。」", cls:"dlg"},
+    {t:"话音未落，他忽然极缓慢地，把那颗歪着的头，朝你藏身的门缝，转了过来。"}
+  ],
+  san:{loss:8, reason:"你死去的挚友，顶着一张溺毙三天的脸，转过头，隔着门缝看进你的眼睛"},
+  set:{edwin_returned:true, heard_hightide:true},
+  choices:[
+    {label:"死死捂住嘴，不出声，等它离开。", tag:"▸", goto:"peek_after"}
+  ]
+};
+S.peek_after = {
+  banner:"dark", loc:"末尾房间 · 拂晓",
+  text:[
+    {t:"你把惊叫连同呼吸一起咽回喉咙深处，指甲掐进掌心。那双浑浊的眼睛在门缝外停留了很久很久——久到你以为自己的心跳会把你出卖。", cls:"amber"},
+    {t:"终于，楼下传来一声悠长的、像鲸又像号角的呼唤。门缝外的东西顺从地偏过头，转身拖着水，一级一级走下了楼梯。水声，朝着海的方向，消失了。你保持着捂嘴的姿势，一直到窗玻璃上泛起铅灰色的、毫无暖意的晨光。"}
+  ],
+  choices:[
+    {label:"熬到天亮。", tag:"▸", goto:"dawn"}
+  ]
+};
+S.peek_fail = {
+  banner:"dark", loc:"末尾房间 · 黑暗",
+  text:[
+    {t:"你的手抖得厉害，撞响了门闩。走廊里的脚步声，停了。", cls:"amber"},
+    {t:"一段长得像一辈子的沉默。然后，一个湿冷的东西从门缝下面缓缓伸进来——五根发胀发白、蹼间连着薄膜的手指，正贴着地板摸索你的方向。你踩住枕头压住惊叫，退到墙角。手指在地板上停留了很久，终于抽了回去，水声远去。"},
+    {t:"你一夜没敢合眼。天亮时，门缝下的地板上，留着一小滩没干的、发咸的水。"}
+  ],
+  san:{loss:6, reason:"某种非人的手指从门缝下探入房间"},
+  set:{edwin_returned:true},
+  choices:[
+    {label:"熬到天亮。", tag:"▸", goto:"dawn"}
+  ]
+};
+S.wait_ok = {
+  banner:"room", loc:"末尾房间 · 深夜",
+  text:[
+    {t:"你把自己缩成一团黑暗，连心跳都摁住。脚步在你门外停了很久——你能听见水一滴、一滴落在地板上——然后，它继续朝走廊另一头挪去，下楼，消失在通往海的方向。", cls:"amber"},
+    {t:"天亮前你没再合眼。窗玻璃的水汽上，不知何时，从外侧被人画了那个打了结的浪的符号。三楼的窗，外面是三十尺高的海——没有人能从那里够到玻璃。"}
+  ],
+  san:{loss:2, reason:"整夜与走廊里那个东西隔着一门板对峙"},
+  set:{edwin_returned:true},
+  choices:[
+    {label:"熬到天亮。", tag:"▸", goto:"dawn"}
+  ]
+};
+S.wait_bad = {
+  banner:"dark", loc:"末尾房间 · 深夜",
+  text:[
+    {t:"你的膝盖撞到了铁床架，闷响在死寂里响得像枪声。门外的脚步猛地停了。", cls:"amber"},
+    {t:"门把手开始极缓慢地向下转动。你压根没锁——这镇上的门，本来就锁不住海里来的东西。门开了一道缝，一股咸腥的冷气挤进来。你举起左轮，没有扣扳机——你不知道那算不算杀人。它在门缝后停了很久，忽然，楼下传来一声悠长的、像号角又像鲸鸣的呼唤，门缝后的东西便顺从地退走了，下楼，向海而去。"}
+  ],
+  san:{loss:5, reason:"门把手在你眼前被外面的东西缓缓拧动"},
+  set:{edwin_returned:true, heard_hightide:true},
+  choices:[
+    {label:"熬到天亮。", tag:"▸", goto:"dawn"}
+  ]
+};
+S.confront = {
+  banner:"dark", loc:"末尾房间 · 门口",
+  portrait:"edwin", pcap:"埃 德 温 · 凯 恩",
+  text:[
+    {t:"你不是任人洗净的祭品。你一把扯开门闩，猛地拉开门，把手电的光柱直直刺进走廊——"},
+    {t:"光里站着埃德温。浑身滴水，缺一枚纽扣，脖子歪着。可手电的光照到他身上，没有被挡住——光穿过了他，落在他背后的墙上，投出的却根本不是一个人的影子：那是一团长着太多关节、还在缓缓舒展的东西，触须般的边缘在墙上无声地蠕动。", cls:"amber"},
+    {t:"他的脸就在离你三步的地方。灰绿、发胀，眼窝深陷成两个盛着黑水的洞。他朝你笑了——那张嘴一直裂到耳根，超过了任何人脸能承受的极限，里面没有牙，没有舌，只有一圈一圈向着喉咙深处蠕动收缩的、像海葵触手的东西，随着他的『呼吸』一开一合。", cls:"amber"},
+    {t:"「好啊。」它用埃德温的声音说，那声音却从裂开的喉咙里咕嘟着冒出来，「省得我进去找你了。」它抬起一只发白的、指间连着薄膜的手，朝你探过来。", cls:"dlg"}
+  ],
+  san:{loss:10, reason:"直面顶着挚友面孔、身后拖着非人影子的存在"},
+  choices:[
+    {label:"朝那东西开枪。", tag:"手枪", check:{skill:"手枪",target:40,success:"confront_win",fail:"confront_lose"}},
+    {label:"举着手电稳住声音，喊出他的名字——埃德温。", tag:"话术", check:{skill:"话术",target:50,success:"confront_talk",fail:"confront_lose"}}
+  ]
+};
+S.confront_win = {
+  banner:"dark", loc:"末尾房间 · 门口",
+  text:[
+    {t:"枪声在木楼里炸开。子弹打穿了那东西的胸口，涌出来的不是血，是一股发黑的海水和几缕蠕动的、断掉的触须。它踉跄后退，脸上埃德温的表情碎裂了一瞬，露出底下某种更古老的东西的错愕。", cls:"amber"},
+    {t:"楼下传来那声鲸鸣般的呼唤。它最后看了你一眼，那眼神里竟有一丝像是解脱的东西，然后转身拖着水下楼，向海而去。你握着还在发烫的枪管，浑身发抖，等到了天光。"}
+  ],
+  set:{edwin_returned:true, wounded_it:true, heard_hightide:true},
+  choices:[
+    {label:"熬到天亮。", tag:"▸", goto:"dawn"}
+  ]
+};
+S.confront_talk = {
+  banner:"dark", loc:"末尾房间 · 门口",
+  text:[
+    {t:"「埃德温！」你吼出这个名字，声音抖，却没退。", cls:"amber"},
+    {t:"那只探来的蹼手停在半空。它脸上那个不属于埃德温的笑，僵了一下。有那么一瞬间，浑浊的眼睛里浮起一点极痛苦的清明——是他，是你认识的那个人，被困在这具湿透的躯壳深处。「……跑，」他用尽全身力气挤出这个字，「高潮那晚之前，走。别信灯塔的光。」", cls:"dlg"},
+    {t:"然后楼下的呼唤响起，那点清明沉了下去，他转身离开，向海而去。"}
+  ],
+  san:{loss:2, reason:"在怪物的躯壳里认出挚友残存的意识，比什么都痛"},
+  set:{edwin_returned:true, edwin_warned:true, heard_hightide:true, clue_light:true},
+  choices:[
+    {label:"熬到天亮。", tag:"▸", goto:"dawn"}
+  ]
+};
+S.confront_lose = {
+  banner:"dark", loc:"末尾房间 · 门口",
+  text:[
+    {t:"你慢了半拍。那只冰冷的蹼手扣住你的手腕，一股蚀骨的寒意顺着血管窜上来，你眼前炸开一片深海的黑，无数细小的、发光的东西在黑暗里游动、注视。你几乎要沉进去——", cls:"amber"},
+    {t:"是楼下那声呼唤救了你。它松开手，服从地转身下楼。你瘫在地上，手腕上留下五道发紫的、蹼状的淤痕，冰冷至天明。"}
+  ],
+  san:{loss:6, reason:"被那只手攥住，意识被拖入一片注视着你的深海"},
+  hp:{loss:3, reason:"手腕被非人之物攥出蚀骨伤"},
+  set:{edwin_returned:true, heard_hightide:true},
+  choices:[
+    {label:"熬到天亮。", tag:"▸", goto:"dawn"}
+  ]
+};
+
+/* ===================== 第二幕 · 白昼调查（线索枢纽） ===================== */
+S.dawn = {
+  banner:"harbor", loc:"寒鸦港 · 清晨",
+  text:[
+    {t:"晨光是铅灰色的，太阳始终躲在雾后，像一枚泡胀的死鱼眼。寒鸦港在白天并不安全，只是把獠牙藏了起来。", cls:"amber"},
+    {t:"你活过了一夜。但你已经明白两件事：埃德温没有溺死——他被这镇子做成了别的东西；而昨夜那声呼唤、那句『潮水涨到最高那晚』，指向今晚。你在旅馆柜台捡到一张受潮的港务通告：今夜是天文大潮，满潮在午夜。"},
+    {t:"末班车走了，进出镇子的公路淹在雾里。你有一整个白天，去弄清楚寒鸦港到底把海里的什么东西喂饱了这么多年——以及，你还走不走得掉。"}
+  ],
+  set:{act2:true},
+  choices:[
+    {label:"回楼上，仔细搜查埃德温住过、被划掉名字的那间房。", tag:"侦查", goto:"loc_room", if:()=>!flags.did_room},
+    {label:"去镇中央那座尖顶歪斜、被摘了十字架的教堂。", tag:"前往", goto:"loc_church", if:()=>!flags.did_church},
+    {label:"去码头尽头的港务会——告示的落款、规矩，都出自那里。", tag:"前往", goto:"loc_hall", if:()=>!flags.did_hall},
+    {label:"去镇口的公用水井（登记簿夹层写着『别喝井水』）。", tag:"前往", goto:"loc_well", if:()=>!flags.did_well},
+    {label:"顶着雾走到岬角的灯塔，昨夜那东西是循着它的光走的。", tag:"前往", goto:"loc_light", if:()=>!flags.did_light},
+    {label:"天黑了。带上查到的一切，独自走上岬角的灯塔，做个了断。（线索越多，胜算越大——尤其务必去过灯塔或读过埃德温的笔记）", tag:"推进", goto:"nightfall"}
+  ]
+};
+
+S.loc_room = {
+  banner:"room", loc:"埃德温的房间",
+  text:[
+    {t:"老妇人别过脸，没拦你。那间房和你的一样小，床垫被人翻过。你俯身细找。"}
+  ],
+  choices:[
+    {label:"搜查床板与墙缝。", tag:"侦查", check:{skill:"侦查",target:60,success:"room_find",fail:"room_miss"}}
+  ]
+};
+S.room_find = {
+  banner:"room", loc:"埃德温的房间",
+  text:[
+    {t:"松动的踢脚线后面，塞着埃德温的野外笔记本，纸页被海水泡得发皱，字迹却是他的。你一页页读下去，胃越来越沉。", cls:"amber"},
+    {t:"『寒鸦港近百年没有饥荒、没有沉船、渔获永远丰盈——代价是，每逢大潮之夜，港务会要向下面那位「献洗礼」。他们不叫它死亡，叫「洗干净」：被选中的人沉入海沟，再从潮里回来，成为它的一部分，永远侍奉。』", cls:"dlg"},
+    {t:"最后一页只有几行仓促的字：『我知道得太多了。他们要洗我。灯塔的光不是航标——是唤它上浮的信标，午夜满潮时点亮。若有人读到这些：熄了那盏灯，它就上不来，仪式就破了。别信任何滴着水的人，哪怕那是我。』"}
+  ],
+  san:{loss:3, reason:"读到挚友留下的、记录自身被献祭全过程的笔记"},
+  set:{did_room:true, clue_journal:true, clue_light:true, know_lowtide:true},
+  choices:[
+    {label:"合上笔记，回到镇上。", tag:"▸", goto:"dawn"}
+  ]
+};
+S.room_miss = {
+  banner:"room", loc:"埃德温的房间",
+  text:[{t:"你翻遍了房间，只找到一枚和邮局那颗一样的、缺自埃德温大衣的黄铜纽扣。别的什么都没有——或者已经被人抢先拿走了。"}],
+  set:{did_room:true},
+  choices:[
+    {label:"回到镇上。", tag:"▸", goto:"dawn"}
+  ]
+};
+
+S.loc_church = {
+  banner:"church", loc:"寒鸦港 · 教堂",
+  text:[
+    {t:"教堂的门没有锁——在寒鸦港，锁是用来防外面的东西的，而里面供奉的东西，没人拦得住。你推门进去，一股比外头更浓的咸腥味扑面而来，像走进了退潮后的礁石缝。", cls:"amber"},
+    {t:"这里没有神。长椅被人整整齐齐地搬空了，堆在墙角朽烂。正墙上原本该挂十字架的地方，钉着一幅用鲸骨和贝壳拼成的巨大浮雕：一圈打了结的浪，围着一只向下俯视的、竖着瞳孔的眼。贝壳在昏光里泛着病态的珠光，鲸骨被摩挲得发亮——有人日日夜夜在这底下跪拜。"},
+    {t:"讲道台上摊着一本厚重的册子，不是圣经。你翻开一页，是密密麻麻的人名，每个名字后面跟着一个日期和一个潦草的记号，像账。最新的一条墨迹还没干透：埃德温·凯恩。地面湿漉漉的，教堂正中，一道石阶通向地下，从下面，隐隐传来海水一涨一落、拍打石壁的回声。"}
+  ],
+  choices:[
+    {label:"辨认这幅鲸骨浮雕与那个符号的含义。", tag:"神秘学", check:{skill:"神秘学",target:10,success:"church_lore",fail:"church_fail"}},
+    {label:"顺着石阶下到教堂地下。", tag:"潜行", goto:"church_crypt"}
+  ]
+};
+S.church_lore = {
+  banner:"church", loc:"寒鸦港 · 教堂",
+  text:[
+    {t:"你读过的那点神秘学知识，在此刻发冷地对上了号。这不是任何人类的神，也不是魔鬼——魔鬼还需要你的灵魂，而它连你的灵魂都不屑一顾。", cls:"amber"},
+    {t:"这个『结浪竖眼』的符号，属于传说中蛰伏在大陆架断崖之下、比人类古老得多的存在——沿海渔人不敢直呼其名，只低声唤作『潮下之主』。它不索求信仰、不索求祈祷，只索求身体。献给它的人不会死，会被它『改写』：肺变成鳃，指间生蹼，皮肤褪成礁石的灰绿，成为它伸向陆地的一段触须、一只耳目，永世侍奉。"},
+    {t:"而寒鸦港，用一个多世纪、一代又一代的活人，换来了海里永不枯竭的丰饶。册子上那些名字，不是死者名单——是收货单。"}
+  ],
+  san:{loss:3, reason:"确认了寒鸦港所侍奉之物的真正本质，以及那本册子是什么"},
+  set:{did_church:true, clue_church:true},
+  choices:[
+    {label:"顺石阶下去，看看册子上的人都去了哪里。", tag:"潜行", goto:"church_crypt"},
+    {label:"合上册子，离开教堂。", tag:"▸", goto:"dawn"}
+  ]
+};
+S.church_fail = {
+  banner:"church", loc:"寒鸦港 · 教堂",
+  text:[
+    {t:"你盯着那圈结浪与竖眼，越看越觉得那只眼睛也在看你。一阵莫名的头痛顺着后颈爬上来，胃里翻江倒海，眼前的鲸骨仿佛在极缓慢地蠕动。你读不出更多——有些知识，你的脑子本能地拒绝去理解。", cls:"amber"},
+    {t:"你只确信一件事：不该在这里久留。"}
+  ],
+  set:{did_church:true},
+  choices:[
+    {label:"顺石阶下去看看。", tag:"潜行", goto:"church_crypt"},
+    {label:"离开教堂。", tag:"▸", goto:"dawn"}
+  ]
+};
+S.church_crypt = {
+  banner:"dark", loc:"教堂地下 · 涨潮池",
+  portrait:"pool", pcap:"涨 潮 池",
+  text:[
+    {t:"石阶一级级往下沉，空气越来越湿、越来越咸，最后你踩进了没过脚踝的冰冷海水里。石阶尽头是一个半浸在海水中的圆形石室，海水随着远处看不见的潮汐，一涨、一落，缓慢地起伏——像一头巨兽平稳的呼吸，而你正站在它半张的口腔里。", cls:"amber"},
+    {t:"四壁的石钩上，挂满了空荡荡的衣服。一百多年份的：褪色的水手外套、发霉的婚纱、小到不可能属于成年人的童装、婴儿的襁褓。每一件，都对应一个曾被这镇子『洗干净』的人。而在最靠近石阶、还在滴水的那个钩子上，挂着埃德温那件缺了一枚纽扣的大衣。"},
+    {t:"然后你看见了水。", cls:"amber"},
+    {t:"暗绿的水面之下，贴着池壁，是数不清的、苍白发胀、指间生蹼的手。它们没有挣扎，没有攻击——只是静静地贴着，一张张仰起的脸沉在水里，睁着浑浊的眼，齐齐地、耐心地望向站在石阶上的你。它们在等。等今夜的潮，等那盏灯，等被叫醒。最靠近你的那张脸，隔着半尺海水缓缓漾动，五官虽然泡得走了形，你却还是一眼认出——那是埃德温。他也在望着你。他的嘴角，极轻微地，向上牵动了一下。"}
+  ],
+  san:{loss:6, reason:"目睹涨潮池中数十具『被洗净者』沉在水下、齐齐仰面等待的躯壳"},
+  set:{did_church:true, clue_church:true, saw_pool:true},
+  choices:[
+    {label:"踉跄着退回地面，离开这里。", tag:"▸", goto:"dawn"}
+  ]
+};
+
+S.loc_hall = {
+  banner:"hall", loc:"寒鸦港 · 港务会",
+  portrait:"harbormaster", pcap:"港 务 长",
+  text:[
+    {t:"港务会是全镇最体面的一栋楼：擦得发亮的橡木地板，墙上挂着泛黄的海图和一排排渔获记录，绿罩台灯投下一圈病态的光。空气里是老木头、烟草，和那股无处不在的咸腥。", cls:"amber"},
+    {t:"接待你的是港务长——一个圆脸、笑容可掬的老人。可当他凑近，你才看清：他的皮肤泛着一种不属于活人的青灰，眼睛微微外凸、水汪汪的，脖子两侧各有三道整齐的裂口，像旧疤，又像没长全的鳃。他每说一句话，那些裂口就极轻微地翕动一下。"},
+    {t:"「里德先生。」他伸出一只温软而微凉的手，「昨晚睡得可好？寒鸦港的夜，认生的人是睡不安稳的。」他笑得更深了，「今晚，镇上有个很古老的仪式。难得来位外乡的客人——我们很荣幸，想请您……观礼。」", cls:"dlg"}
+  ],
+  choices:[
+    {label:"上前，与港务长攀谈、盘问——你想问什么、想怎么试探他，都由你。", tag:"交谈", talk:"harbormaster"}
+  ]
+};
+S.hall_psy = {
+  banner:"hall", loc:"寒鸦港 · 港务会",
+  text:[
+    {t:"你迎着他的笑，读他。那笑里没有恶意——这才是最可怕的地方。那是一种农夫看待棚里牲口的温和，一种『你已经是我的了、急什么』的笃定。你读得清清楚楚：你不是客人，你是今夜要献上去的祭品之一。他们不慌不忙，是因为他们知道你根本跑不掉——满潮之前，海雾会封死通往镇外的每一条路。", cls:"amber"},
+    {t:"但你也读出了他笑容底下藏着的东西：恐惧。他真正敬畏、也真正怕的，是岬角灯塔顶端那盏信标灯。整场仪式全靠它在午夜引主上浮。你甚至捕捉到他无意识地瞥了一眼窗外灯塔的方向——那一瞥里有虔诚，也有一丝连他自己都不愿承认的、对『万一灯灭了』的战栗。灯若灭了，主上不来，这一镇人就要独自承受它百年未曾落空的饥饿与震怒。"}
+  ],
+  san:{loss:2, reason:"确认自己是今夜的祭品，且退路已被海雾封死"},
+  set:{did_hall:true, clue_hall:true, clue_light:true},
+  choices:[
+    {label:"不动声色地道谢、告辞。", tag:"▸", goto:"dawn"}
+  ]
+};
+S.hall_talk = {
+  banner:"hall", loc:"寒鸦港 · 港务会",
+  text:[
+    {t:"你装出一副被『古老仪式』勾起了兴致的记者嘴脸，恭维他、请教他。老人显然很久没能对一个『还会惊叹』的听众炫耀了，话匣子收不住。", cls:"amber"},
+    {t:"「您是文化人，会懂的。」他压低声音，语气近乎温柔，「午夜，灯塔的光会把主请上来。它一上浮，海就再赏我们一百年的丰足——鱼群、风向、平安。作为回礼，我们献上……最新鲜的。您今晚会亲眼看见的：被选中的人从潮水里走回来，皮肤发亮，再不会老，再不会病。那不是死，先生，那是恩典。」", cls:"dlg"},
+    {t:"他越说越入神，你却在心里把关键的一条记死了：一切系于午夜，系于那盏灯。灯，是这套百年机器唯一的开关。"}
+  ],
+  set:{did_hall:true, clue_hall:true, clue_light:true},
+  choices:[
+    {label:"连声称是，告辞。", tag:"▸", goto:"dawn"}
+  ]
+};
+S.hall_fail = {
+  banner:"hall", loc:"寒鸦港 · 港务会",
+  text:[
+    {t:"老人始终笑着，滴水不漏。你套不出话，也看不穿那张青灰的圆脸底下藏着什么。「今晚您就都明白了。」他起身，温软微凉的手搭上你的肩，把你一路『请』出了门。那句话像一道已经写好、只等执行的判决。", cls:"amber"},
+    {t:"你只确定一件事：今晚有事，一件大事，而且和你有关。"}
+  ],
+  set:{did_hall:true},
+  choices:[
+    {label:"离开港务会。", tag:"▸", goto:"dawn"}
+  ]
+};
+
+S.loc_well = {
+  banner:"well", loc:"寒鸦港 · 公用水井",
+  text:[
+    {t:"镇口的老井独自立在雾里，井绳被几代人的手磨得发亮。这是全镇唯一的水源。登记簿夹层那行铅笔字在你脑里反复回响：别喝井水。", cls:"amber"},
+    {t:"你摇动辘轳，把木桶打上来。桶身撞在井壁上，闷响顺着井筒往下沉，很久很久才到底——这口井，比一口井该有的，深得多。桶提到眼前，井水在雾光下呈现一种说不清的、偏暗绿的色泽。"}
+  ],
+  choices:[
+    {label:"就着雾光，仔细检查这桶水里有什么。", tag:"侦查", check:{skill:"侦查",target:60,success:"well_ok",fail:"well_fail"}},
+    {label:"不顾警告，舔一小口指尖——弄清他们让全镇喝了几代的到底是什么。", tag:"意志", goto:"well_taste"}
+  ]
+};
+S.well_ok = {
+  banner:"well", loc:"寒鸦港 · 公用水井",
+  text:[
+    {t:"你端着桶凑到眼前，屏息细看。水面浮着一层薄得几乎看不见的、发着虹彩的黏膜，像一层油。而桶底，沉着一小撮细小的、半透明的卵——它们还在极缓慢地、极轻微地蠕动。", cls:"amber"},
+    {t:"这不是井水。这是海水，被人一代代引进了全镇的水脉，掺进了每一口锅、每一壶茶、每一个婴儿的第一口。"},
+    {t:"一瞬间，你把所有事都串了起来：镇民青灰的皮肤、颈侧的鳃裂、外凸的眼、那股洗不掉的咸腥。他们不是被献祭才变的——他们喝着这个长大，一出生就已经在慢慢地、不可逆地，变成别的东西。埃德温写下『别喝井水』，是拼了命想让你保住『还是个人』的样子，好赶在午夜之前逃出去。你还记得他说的：退潮时，岬角的暗礁会露出来。"}
+  ],
+  san:{loss:2, reason:"发现全镇饮用水掺入海水与卵，镇民世代非人"},
+  set:{did_well:true, clue_well:true, know_lowtide:true},
+  choices:[
+    {label:"把那桶东西倒回井里，离开。", tag:"▸", goto:"dawn"}
+  ]
+};
+S.well_fail = {
+  banner:"well", loc:"寒鸦港 · 公用水井",
+  text:[
+    {t:"雾太重，光太暗，你端详了半天，只觉得这水有一股说不出的、暗暗的腥甜，桶底似乎沉着些细小的东西，看不真切。你的手在发抖。", cls:"amber"},
+    {t:"无论如何——那行铅笔字是对的。你没敢喝，把桶放下了。"}
+  ],
+  set:{did_well:true},
+  choices:[
+    {label:"离开水井。", tag:"▸", goto:"dawn"}
+  ]
+};
+S.well_taste = {
+  banner:"dark", loc:"寒鸦港 · 公用水井",
+  text:[
+    {t:"你没听埃德温的。你伸出食指探进桶里，蘸了一点，送到唇边。", cls:"amber"},
+    {t:"咸。腥。底下藏着一丝金属般的、诡异的甜。"},
+    {t:"就在那一瞬——你听见了。不是用耳朵。是在你脑子的最深处，一个庞大得没有边际、没有底的东西，缓慢地、满意地翻了个身，仿佛整片海都是它一具沉睡的躯体，而你刚刚，用自己的舌头，向它承认了你的存在，也让它记住了你的味道。你猛地把水吐掉，扑到井边干呕，把胆汁都吐了出来。", cls:"amber"},
+    {t:"呕吐平息了。可从这一刻起，海的声音，再没有离开过你的耳朵——哪怕你捂住耳朵，哪怕你逃到内陆千里之外。它认得你了。"}
+  ],
+  san:{loss:5, reason:"亲口尝下那水，与海面之下的存在建立了不该有的、再断不掉的联系"},
+  set:{did_well:true, clue_well:true, tasted:true, know_lowtide:true},
+  choices:[
+    {label:"踉跄着离开水井。", tag:"▸", goto:"dawn"}
+  ]
+};
+
+S.loc_light = {
+  banner:"lighthouse", loc:"岬角 · 灯塔",
+  portrait:"keeper", pcap:"守 塔 人",
+  text:[
+    {t:"灯塔孤零零钉在岬角的尽头，塔身爬满藤壶和黑色的海藻，像一根从海底长出来、又被硬插进陆地的骨头。灰蒙蒙的白昼里，海在它脚下的礁石上撞出一片阴沉的白沫。塔门虚掩着，里面渗出更浓的咸腥和一股鲸油的味道。", cls:"amber"},
+    {t:"角落里蜷着守塔人。你几乎认不出他是个人了——皮肤褪成了半透明，隐约能看见底下缓慢搏动的黑色轮廓；手指间连着薄膜。可当他抬起头，那双眼睛，还是一双人的眼睛，盛满了你这辈子见过的最深的疲惫和怜悯。他没有扑向你，只是看着你，像在看一个走向屠场却还不自知的孩子。"}
+  ],
+  san:{loss:1, reason:"直面一个尚存人性、却已半化为怪物的守塔人"},
+  set:{did_light:true},
+  choices:[
+    {label:"在塔底坐下，与守塔人交谈——问他灯、问他这镇子、问他自己。", tag:"交谈", talk:"keeper"},
+    {label:"不打扰他，记下塔顶机括的位置，回到镇上。", tag:"▸", set:{clue_light:true, know_mechanism:true}, goto:"dawn"}
+  ]
+};
+
+/* ===================== 第三幕 · 灯塔终局 ===================== */
+S.nightfall = {
+  banner:"dark", loc:"岬角 · 灯塔 · 满潮将至",
+  text:[
+    {t:"你没有等他们来请你观礼。天一擦黑，你就顶着越来越浓、越来越冷的雾，独自走上了岬角。", cls:"amber"},
+    {t:"身后，寒鸦港的人举着惨绿的灯笼，成队向海边的教堂涌去，喉咙里发出那种鲸鸣般的低唱。海水以肉眼可见的速度上涨，潮线一寸寸吞没岬角的礁石。灯塔顶端的信标灯还黑着——但塔身内部，某种机括已经开始咔哒、咔哒地转动，倒数着午夜。"},
+    {t:"你推开塔门，握紧了你带来的一切。上面就是那盏灯。今夜怎么收场，看你接下来做什么、以及——你还剩多少没被这地方夺走的东西。"}
+  ],
+  set:{act3:true},
+  choices:[
+    {label:"冲上塔顶，赶在午夜前毁掉那盏信标灯。", tag:"决心", check:{skill:"决心",target:60,success:"end_disrupt",fail:"climax_struggle"},
+       if:()=>flags.clue_light || flags.know_mechanism},
+    {label:"不逞英雄——趁全镇都在海边，退潮的暗礁露出来，摸黑走礁石滩逃出寒鸦港。", tag:"机敏", check:{skill:"机敏",target:55,success:"end_escape",fail:"climax_caught"},
+       if:()=>flags.know_lowtide},
+    {label:"走上灯塔，等午夜的灯亮起，去看看『主』究竟是什么。", tag:"意志", goto:"climax_witness"},
+  ]
+};
+
+S.climax_struggle = {
+  banner:"dark", loc:"灯塔 · 塔顶 · 午夜将至",
+  text:[
+    {t:"你冲上螺旋铁梯，机括的咔哒声越来越急。你扑向那具巨大的黄铜灯器——可它烫，滚烫，仿佛里面早已不是鲸油在燃，而是某种活的、迫不及待的东西。它烧穿了你的手套，你闻到自己皮肉的焦味。", cls:"amber"}
+  ],
+  hp:{loss:3, reason:"徒手扑向灼热的信标灯器"},
+  choices:[
+    {label:"忍痛，用左轮打碎灯器的透镜与油仓。", tag:"决心", check:{skill:"决心",target:55,success:"end_disrupt",fail:"end_escape_hurt"}},
+    {label:"力气用尽，认了——退下塔去。", tag:"放弃", goto:"climax_witness"}
+  ]
+};
+S.climax_caught = {
+  banner:"dark", loc:"寒鸦港 · 礁石滩",
+  text:[
+    {t:"你摸黑跳下礁石，可潮水比你以为的快。一脚踩空，海水灌进靴子，冰冷刺骨。等你抬头，惨绿的灯笼已经把你围成了半圈——他们一直看着你，从没打算真的让你走。", cls:"amber"}
+  ],
+  san:{loss:4, reason:"逃跑失败，被举着绿灯笼的镇民合围"},
+  choices:[
+    {label:"背水一战，向缺口开枪突围。", tag:"手枪", check:{skill:"手枪",target:40,success:"end_escape_hurt",fail:"end_taken"}},
+    {label:"束手就擒。", tag:"▸", goto:"end_taken"}
+  ]
+};
+S.climax_witness = {
+  banner:"dark", loc:"灯塔 · 午夜 · 满潮",
+  portrait:"eye", pcap:"潮 下 之 主",
+  text:[
+    {t:"午夜到了。塔内的机括发出最后一声闷响，齿轮咬合。头顶的信标灯毫无征兆地亮起——那不是光。那是一种深海沟底才有的、会让你的眼睛不由自主淌下泪来的幽绿，浓稠得像能滴落，直直地射向漆黑的海面。全镇的低唱在你脚下攀到了最高，又戛然而止。", cls:"amber"},
+    {t:"海，退了下去。", cls:"amber"},
+    {t:"不是退潮。是让路。岬角外那片黑色的海水，被下面某个正在上浮的、庞大到超出你全部理解的东西，从底部缓缓顶了起来，抬高，抬高，海水顺着它看不见边际的表面向两侧滚落如瀑。然后，在那团黑暗的正中，一只眼睛睁开了。"},
+    {t:"一只竖着瞳孔的眼睛，比整座灯塔还要高。它睁开的动作缓慢得近乎温柔，幽绿的虹膜里游动着无数细小的、发光的东西。它越过整座沉睡的寒鸦港，越过所有跪伏的镇民，不偏不倚地——落在了塔顶那个小小的、名叫塞缪尔·里德的你身上。"},
+    {t:"它没有愤怒。没有饥饿。没有任何一种你能命名的情绪。它只是『注意到了你』。而仅仅是被这样一件东西注意到，这件事本身，就足以让一个人类的脑子，像一张受了潮的纸，从正中间，无声地，烂开。", cls:"amber"}
+  ],
+  san:{loss:20, reason:"直视『潮下之主』上浮，并被那只眼睛注意到"},
+  choices:[
+    {label:"……", tag:"▸", goto:"end_witness"}
+  ]
+};
+
+/* ---------- 结局 ---------- */
+S.end_disrupt = {
+  banner:"dark", loc:"结局 · 熄 灯", end:true,
+  text:[
+    {t:"透镜炸裂，滚烫的鲸油泼洒，那点深海的幽绿在你眼前彻底熄灭了。", cls:"amber"},
+    {t:"就在午夜的钟点，信标该亮而未亮。海边的低唱先是错愕，继而变成一片绝望的哀嚎——上浮到一半的庞然之物，被拒之于水面之下，愤怒地翻搅起滔天巨浪，把整座教堂、连同海边跪着的一镇人，一口吞没。潮下之主没能得到它的洗礼，而寒鸦港，为这场失败付出了它自己。",},
+    {t:"你在灯塔冰冷的顶层一直躲到天亮。当第一缕真正的阳光穿透散去的雾——这是你来到此地后见过的第一缕——岬角下的镇子空了，只剩满地狼藉的绿灯笼和退去的水痕。你活着走出了寒鸦港。"},
+    {t:"你再没对任何人提起这三天。只是从此，每逢大潮的夜晚，你都会从梦里惊醒，听见远处的海，在低低地、耐心地，念着你的名字。", cls:"amber"},
+    {t:"—— 结局【熄灯断礼】· 你毁掉了信标，破了延续百年的献祭。代价是一镇人的性命与你余生的安眠。", cls:"amber"}
+  ],
+  choices:[{label:"↻ 重玩这个副本", tag:"重玩", goto:"__restart"}]
+};
+S.end_escape = {
+  banner:"harbor", loc:"结局 · 逃 离", end:true,
+  text:[
+    {t:"埃德温用最后一点自己换来的那句『别信灯塔的光、趁退潮走』，救了你的命。", cls:"amber"},
+    {t:"你避开信标射向海面的幽绿，借着满潮前最后露出的暗礁,一步一探地摸出了岬角。身后，午夜的灯亮了，海让开了路，某种庞大的东西上浮的轰鸣震得你牙关打颤——但你没有回头。你知道回头看它一眼会是什么下场。"},
+    {t:"天亮时你爬上了淹没在雾里的那条公路。走出去很远很远，直到再也听不见海。寒鸦港会继续存在，继续每一百年喂饱它的主；你没能拯救任何人，你只是——逃掉了。"},
+    {t:"这或许是懦弱。但你带着埃德温笔记本的复写、带着还完整的神智，活着回到了灯火通明的世界。有些真相，活人带出来，比死人烂在海里，要重得多。", cls:"amber"},
+    {t:"—— 结局【全身而退】· 你没当英雄，但你保住了命与理智，把寒鸦港的秘密带出了雾。", cls:"amber"}
+  ],
+  choices:[{label:"↻ 重玩这个副本", tag:"重玩", goto:"__restart"}]
+};
+S.end_escape_hurt = {
+  banner:"dark", loc:"结局 · 血 路", end:true,
+  text:[
+    {t:"三声枪响，撂倒了挡在缺口的三个青灰色身影——他们倒下时涌出的是黑色的海水。你踩着他们冲进雾里，子弹擦破了你的肩，钻心地疼，可疼意味着你还活着、还是个人。", cls:"amber"},
+    {t:"身后午夜的灯亮了，海退开，庞然之物上浮的轰鸣追着你穿过整片雾。你没有回头，凭着退潮暗礁的方向死命地跑，直到脚下重新踩上通往镇外的硬土路。"},
+    {t:"你带着一身伤和一本泡烂的笔记，活着逃出了寒鸦港。你会瘸着腿、做着噩梦度过余生，但你逃出来了。"},
+    {t:"—— 结局【浴血脱身】· 你杀出重围、身负重伤，带着真相与噩梦活了下来。", cls:"amber"}
+  ],
+  choices:[{label:"↻ 重玩这个副本", tag:"重玩", goto:"__restart"}]
+};
+S.end_taken = {
+  banner:"dark", loc:"结局 · 洗 礼", end:true,
+  text:[
+    {t:"你终究没能逃过。无数冰冷的蹼手抓住你，把你抬向海边那道通往涨潮池的石阶。你挣扎、嘶喊，海水却温柔地漫过你的口鼻，像一句安抚。", cls:"amber"},
+    {t:"午夜的灯亮起，主上浮了。你在窒息的最后一刻，看见埃德温青灰的脸凑近你，他的眼里没有恶意，只有一种同类相迎的、可怕的欣慰。「别怕，」他咕噜着说，「洗干净了，就不疼了。你看，我们又在一起了。」"},
+    {t:"寒鸦港的海面重归平静。一百年的丰饶又续上了。而潮水里，从此多了一双苍白的、蹼状的手，静静贴着池壁，仰着脸，等待着下一个大潮之夜——等待着下一个，循着一封回信而来的人。"},
+    {t:"—— 结局【被洗净者】· 你成了寒鸦港的一部分。也许一百年后，会有人收到一封你寄出的、邮戳落在你死后的信。", cls:"amber"}
+  ],
+  choices:[{label:"↻ 重玩这个副本", tag:"重玩", goto:"__restart"}]
+};
+S.end_witness = {
+  banner:"dark", loc:"结局 · 注 视", end:true,
+  text:[
+    {t:"你记住了那只眼睛的形状，而记住它，是要付出代价的。", cls:"amber"},
+    {t:"后来的事，你记不真切了。他们说，是渔民在三天后的下游滩涂上发现了你——安然无恙，一根头发都没少，只是再也不会说话，眼睛一直望着海的方向，嘴角挂着一丝谁也读不懂的微笑。"},
+    {t:"你被送进了内陆一家安静的疗养院。你不再害怕，因为你已经见过了那只眼睛，见过之后，人间再没有任何东西值得害怕，也再没有任何东西值得留恋。护士说，你偶尔会在纸上反复画同一个图案：一圈打了结的浪，围着一只向下的眼。"},
+    {t:"—— 结局【被注视者】· 你看见了主，主也看见了你。你活着，却把理智永远留在了寒鸦港的午夜。", cls:"amber"}
+  ],
+  onEnter:()=>{},
+  choices:[{label:"↻ 重玩这个副本", tag:"重玩", goto:"__restart"}]
+};
+
+/* ============ 大气层（Canvas 实时渲染：体积雾 + 微粒 + 胶片颗粒 + 理智染色） ============ */
+const Atmo = (function(){
+  let cv, ctx, W, H, dpr, raf=null, t=0;
+  let fog=[], parts=[], grain, sanTint=0, mood='harbor', ptype='dust';
+  const MOOD_TINT = {
+    harbor:[70,90,120], inn:[90,80,70], post:[70,85,95],
+    room:[55,60,80], dark:[40,45,65], climax:[30,60,70]
+  };
+  function make(){
+    cv=document.getElementById('atmo'); if(!cv) return; ctx=cv.getContext('2d');
+    resize(); window.addEventListener('resize', resize);
+    // 雾团
+    fog=[]; for(let i=0;i<7;i++) fog.push({x:Math.random(),y:0.2+Math.random()*0.7,
+      r:0.25+Math.random()*0.35, s:(Math.random()*0.2+0.05)*(Math.random()<.5?-1:1), a:0.05+Math.random()*0.06});
+    spawnParts();
+    // 颗粒噪声瓦片
+    grain=document.createElement('canvas'); grain.width=grain.height=140;
+    const g=grain.getContext('2d'), id=g.createImageData(140,140), d=id.data;
+    for(let i=0;i<d.length;i+=4){ const v=Math.random()*255; d[i]=d[i+1]=d[i+2]=v; d[i+3]=Math.random()*22; }
+    g.putImageData(id,0,0);
+  }
+  function resize(){ if(!cv)return; dpr=Math.min(window.devicePixelRatio||1,1.5);
+    W=cv.width=Math.floor(innerWidth*dpr); H=cv.height=Math.floor(innerHeight*dpr);
+    cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px'; }
+  function spawnParts(){ parts=[]; const n = ptype==='rain'?150:(ptype==='ember'?46:80);
+    for(let i=0;i<n;i++) parts.push(newPart()); }
+  function newPart(){ if(ptype==='rain') return {x:Math.random(),y:Math.random(),v:0.006+Math.random()*0.01,len:8+Math.random()*16,drift:0.0008};
+    if(ptype==='ember') return {x:Math.random(),y:Math.random(),v:-(0.0006+Math.random()*0.0016),sz:1+Math.random()*2,ph:Math.random()*6};
+    return {x:Math.random(),y:Math.random(),v:(Math.random()*0.0006+0.0002)*(Math.random()<.5?-1:1),vy:-(0.0002+Math.random()*0.0005),sz:0.6+Math.random()*1.6,ph:Math.random()*6}; }
+  function loop(){
+    if(!ctx) return; t+=1;
+    ctx.clearRect(0,0,W,H);
+    const base = MOOD_TINT[mood]||MOOD_TINT.dark;
+    // 理智越低越向病态红偏移
+    const rc=[ base[0]+(140-base[0])*sanTint, base[1]*(1-sanTint*0.7), base[2]*(1-sanTint*0.6) ];
+    // 雾
+    ctx.globalCompositeOperation='lighter';
+    fog.forEach(f=>{ f.x += f.s*0.0006; if(f.x>1.3)f.x=-0.3; if(f.x<-0.3)f.x=1.3;
+      const cx=f.x*W, cy=f.y*H, rr=f.r*W*(0.9+0.1*Math.sin(t*0.01+f.y*10));
+      const g=ctx.createRadialGradient(cx,cy,0,cx,cy,rr);
+      const a=f.a*(0.7+0.3*Math.sin(t*0.008+f.x*8));
+      g.addColorStop(0,`rgba(${rc[0]|0},${rc[1]|0},${rc[2]|0},${a})`);
+      g.addColorStop(1,'rgba(0,0,0,0)'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,rr,0,7); ctx.fill(); });
+    // 微粒
+    ctx.globalCompositeOperation='lighter';
+    parts.forEach(p=>{
+      if(ptype==='rain'){ p.y+=p.v; p.x+=p.drift; if(p.y>1){p.y=-0.05;p.x=Math.random();}
+        const x=p.x*W,y=p.y*H; ctx.strokeStyle='rgba(150,170,190,0.14)'; ctx.lineWidth=1*dpr;
+        ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x+2*dpr,y+p.len*dpr); ctx.stroke(); }
+      else { p.x+=p.v; p.y+=(p.vy||p.v); if(p.y<-0.05){p.y=1.05;p.x=Math.random();} if(p.y>1.05){p.y=-0.05;}
+        const x=p.x*W,y=p.y*H, tw=0.5+0.5*Math.sin(t*0.05+p.ph);
+        const col = ptype==='ember'? `rgba(200,${120+40*tw|0},60,${0.5*tw})` : `rgba(180,185,200,${0.28*tw})`;
+        ctx.fillStyle=col; ctx.beginPath(); ctx.arc(x,y,(p.sz||1)*dpr,0,7); ctx.fill(); }
+    });
+    ctx.globalCompositeOperation='source-over';
+    // 胶片颗粒（理智越低越强）
+    if(grain){ const gi=0.5+sanTint*0.9; ctx.globalAlpha=gi; const ox=Math.random()*140,oy=Math.random()*140;
+      for(let y=-oy;y<H;y+=140) for(let x=-ox;x<W;x+=140) ctx.drawImage(grain,x,y); ctx.globalAlpha=1; }
+    raf=requestAnimationFrame(loop);
+  }
+  function start(){ if(!cv) make(); if(!raf) loop(); }
+  function setScene(key, climax){ mood = climax?'climax':(key in MOOD_TINT?key:'dark');
+    const np = (key==='harbor')?'rain':(mood==='climax'?'ember':'dust');
+    if(np!==ptype){ ptype=np; if(ctx) spawnParts(); }
+    const v=document.getElementById('vig'); if(v){ const dark=(mood==='dark'||mood==='room'||mood==='climax');
+      v.style.background=`radial-gradient(130% 130% at 50% 42%, transparent ${dark?32:42}%, rgba(${8+sanTint*40|0},0,0,${0.72+sanTint*0.2}) 100%)`; } }
+  function setSan(san){ sanTint=Math.max(0,Math.min(1,(65-san)/60)); document.body.classList.toggle('low-san',san<=30); }
+  return { start, setScene, setSan };
+})();
+
+/* ============ 氛围音（Web Audio 实时合成 · 无音频文件 · 零成本） ============ */
+const Sound = (function(){
+  let ctx, master, bed=[], muted=false, heartT=null, dripT=null, hornT=null, tense=false, started=false;
+  function init(){
+    if(started) return; started=true;
+    try{ ctx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return; }
+    master = ctx.createGain(); master.gain.value = 0; master.connect(ctx.destination);
+    ramp(master.gain, muted?0:0.55, 2);
+    scheduleHeart();
+  }
+  function ramp(p,v,t){ if(!ctx)return; p.cancelScheduledValues(ctx.currentTime); p.setValueAtTime(p.value,ctx.currentTime); p.linearRampToValueAtTime(v, ctx.currentTime+t); }
+  function noiseSrc(){ const b=ctx.createBuffer(1,ctx.sampleRate*3,ctx.sampleRate); const d=b.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1; const s=ctx.createBufferSource(); s.buffer=b; s.loop=true; return s; }
+  function lfo(target, rate, depth, center){ const o=ctx.createOscillator(); o.frequency.value=rate; const g=ctx.createGain();
+    g.gain.value=depth; o.connect(g); g.connect(target); target.value=center; o.start(); bed.push(o); }
+  // 低频嗡鸣（不安的持续音）
+  function drone(freqs, vol, cutoff){ const mg=ctx.createGain(); mg.gain.value=0; const lp=ctx.createBiquadFilter();
+    lp.type='lowpass'; lp.frequency.value=cutoff||300; mg.connect(lp); lp.connect(master);
+    freqs.forEach(f=>{ const o=ctx.createOscillator(); o.type='sine'; o.frequency.value=f; const g=ctx.createGain(); g.gain.value=0.5;
+      o.connect(g); g.connect(mg); o.start(); bed.push(o); });
+    ramp(mg.gain, vol, 3); const l=ctx.createOscillator(); l.frequency.value=0.06; const lg=ctx.createGain(); lg.gain.value=vol*0.4;
+    l.connect(lg); lg.connect(mg.gain); l.start(); bed.push(l,mg); return mg; }
+  // 海风 / 潮声（带通噪声 + 缓慢起伏）
+  function wind(band, q, vol){ const s=noiseSrc(); const bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=band;
+    bp.Q.value=q; const g=ctx.createGain(); g.gain.value=0; s.connect(bp); bp.connect(g); g.connect(master); s.start();
+    ramp(g.gain, vol, 4); const l=ctx.createOscillator(); l.frequency.value=0.09; const lg=ctx.createGain(); lg.gain.value=vol*0.7;
+    l.connect(lg); lg.connect(g.gain); l.start(); bed.push(s,l,g); return g; }
+  function stopBed(){ bed.forEach(n=>{ try{ if(n.stop) n.stop(ctx.currentTime+2); if(n.gain) ramp(n.gain,0,1.5);}catch(e){} }); bed=[]; }
+  // 雾角 / 远处呼唤（偶发低音扫落）
+  function horn(){ if(!ctx||muted) return; const o=ctx.createOscillator(); o.type='sine'; const g=ctx.createGain();
+    o.connect(g); g.connect(master); const t=ctx.currentTime; o.frequency.setValueAtTime(120,t); o.frequency.exponentialRampToValueAtTime(70,t+3.5);
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.18,t+0.8); g.gain.linearRampToValueAtTime(0,t+3.5); o.start(t); o.stop(t+3.6); }
+  // 滴水
+  function drip(){ if(!ctx||muted) return; const s=noiseSrc(); const bp=ctx.createBiquadFilter(); bp.type='bandpass';
+    bp.frequency.value=1400+Math.random()*800; bp.Q.value=8; const g=ctx.createGain(); s.connect(bp); bp.connect(g); g.connect(master);
+    const t=ctx.currentTime; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.12,t+0.005); g.gain.exponentialRampToValueAtTime(0.0001,t+0.18);
+    s.start(t); s.stop(t+0.2); }
+  // 心跳（越紧张越快）
+  function thump(){ if(!ctx||muted||!tense) return; const t=ctx.currentTime;
+    [0,0.19].forEach((off,i)=>{ const o=ctx.createOscillator(); o.type='sine'; o.frequency.value=52; const g=ctx.createGain();
+      o.connect(g); g.connect(master); g.gain.setValueAtTime(0,t+off); g.gain.linearRampToValueAtTime(i?0.28:0.42,t+off+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001,t+off+0.16); o.start(t+off); o.stop(t+off+0.2); }); }
+  function scheduleHeart(){ const san = (window.PC?PC.san:60);
+    const iv = tense ? Math.max(430, 1300 - (65-san)*14) : 2600; thump(); heartT=setTimeout(scheduleHeart, iv); }
+  // 惊吓音效（不协和音簇 + 噪爆）
+  function stinger(big){ if(!ctx||muted) return; const t=ctx.currentTime; const freqs=big?[180,190,268,401]:[220,233,311];
+    freqs.forEach(f=>{ const o=ctx.createOscillator(); o.type='sawtooth'; o.frequency.value=f; const g=ctx.createGain();
+      const lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=1600; o.connect(g); g.connect(lp); lp.connect(master);
+      g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(big?0.22:0.15,t+0.01); g.gain.exponentialRampToValueAtTime(0.0001,t+(big?1.1:0.6));
+      o.start(t); o.stop(t+(big?1.2:0.7)); });
+    const s=noiseSrc(); const hp=ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=800; const g=ctx.createGain();
+    s.connect(hp); hp.connect(g); g.connect(master); g.gain.setValueAtTime(big?0.25:0.15,t); g.gain.exponentialRampToValueAtTime(0.0001,t+0.4);
+    s.start(t); s.stop(t+0.45); }
+  // 骨石骰子——低沉、有重量的敲击与落定
+  function knock(t, vol, hz){ const s=noiseSrc(); const lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=hz||700; lp.Q.value=1.0;
+    const g=ctx.createGain(); s.connect(lp); lp.connect(g); g.connect(master);
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol,t+0.006); g.gain.exponentialRampToValueAtTime(0.0001,t+0.11);
+    s.start(t); s.stop(t+0.14); }
+  function boom(t, vol, hz){ const o=ctx.createOscillator(); o.type='sine'; const g=ctx.createGain(); o.connect(g); g.connect(master);
+    o.frequency.setValueAtTime(hz,t); o.frequency.exponentialRampToValueAtTime(hz*0.55,t+0.22);
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol,t+0.01); g.gain.exponentialRampToValueAtTime(0.0001,t+0.3);
+    o.start(t); o.stop(t+0.34); }
+  // 缓慢翻滚：稀疏、低沉的骨石相击
+  function dice(){ if(!ctx||muted) return; const t0=ctx.currentTime;
+    [0.02,0.5,0.82,1.05,1.28,1.5].forEach(dt=>knock(t0+dt, 0.10+Math.random()*0.05, 420+Math.random()*380)); }
+  // 沉重落定：闷响 + 骨石撞击 + 低频余韵
+  function diceLand(){ if(!ctx||muted) return; const t=ctx.currentTime;
+    knock(t, 0.26, 520); knock(t+0.01, 0.16, 260); boom(t, 0.34, 66); }
+  const MOODS = {
+    harbor:()=>{ tense=false; drone([46,55,58],0.5,220); wind(320,0.8,0.16); startHorn(16000); },
+    inn:()=>{ tense=false; drone([50,74,110],0.42,260); wind(500,1.2,0.08); },
+    post:()=>{ tense=false; drone([48,60,90],0.4,240); wind(420,1,0.07); startDrip(3500); },
+    room:()=>{ tense=true; drone([42,49,63],0.5,180); wind(300,1.5,0.10); startDrip(2600); },
+    dark:()=>{ tense=true; drone([38,45,60,92],0.55,160); wind(260,2,0.12); startDrip(2000); }
+  };
+  function startHorn(iv){ clearTimeout(hornT); const loop=()=>{ horn(); hornT=setTimeout(loop, iv+Math.random()*8000); }; hornT=setTimeout(loop, 6000); }
+  function startDrip(iv){ clearTimeout(dripT); const loop=()=>{ drip(); dripT=setTimeout(loop, iv*0.5+Math.random()*iv); }; dripT=setTimeout(loop, 1500); }
+  function stopTimers(){ clearTimeout(hornT); clearTimeout(dripT); }
+  function setMood(key, climax){ if(!ctx) return; stopBed(); stopTimers();
+    const m = MOODS[key]||MOODS.dark; m();
+    if(climax){ tense=true; drone([33,39,41],0.5,120); startHorn(9000); ramp(master.gain, muted?0:0.7, 3); }
+    else ramp(master.gain, muted?0:0.55, 3); }
+  function toggle(){ muted=!muted; if(master) ramp(master.gain, muted?0:0.55, 0.4); return muted; }
+  return { init, setMood, stinger, dice, diceLand, toggle, isMuted:()=>muted };
+})();
+
+/* ============ 引擎 ============ */
+const el = id => document.getElementById(id);
+const narr = el('narr'), choicesBox = el('choices'), scroll = el('scroll');
+let cur = null, typing = false, pendingCheck = null, skipType = false;
+scroll.addEventListener('click', e=>{ if(typing && !e.target.closest('#free,#freego')) skipType = true; });
+
+function renderSheet(){
+  el('sanN').textContent = PC.san; el('hpN').textContent = PC.hp;
+  el('sanBar').style.width = Math.max(0,PC.san/PC.sanMax*100)+'%';
+  el('hpBar').style.width = Math.max(0,PC.hp/PC.hpMax*100)+'%';
+  const sk = el('skills'); sk.innerHTML='';
+  for(const k in PC.skills){ sk.insertAdjacentHTML('beforeend',
+    `<div class="row"><span class="sk">${k}</span><span class="n">${PC.skills[k]}</span></div>`); }
+  const inv = el('inv'); inv.innerHTML='';
+  PC.inv.forEach(i=> inv.insertAdjacentHTML('beforeend',`<li>${i}</li>`));
+}
+
+function setBanner(key){
+  const b = el('banner');
+  b.querySelector('svg')?.remove();
+  b.insertAdjacentHTML('afterbegin', BANNERS[key]||BANNERS.dark);
+}
+
+async function typeParas(paras){
+  typing = true; skipType = false;
+  for(const p of paras){
+    const div = document.createElement('div');
+    div.className = 'p '+(p.cls||'');
+    narr.appendChild(div);
+    const txt = p.t;
+    for(let i=0;i<txt.length;i++){
+      if(skipType){ div.textContent = txt; scroll.scrollTop = scroll.scrollHeight; break; }
+      div.textContent = txt.slice(0,i+1);
+      scroll.scrollTop = scroll.scrollHeight;
+      await sleep(txt[i].match(/[，。、—！？.…]/)?40:14);
+    }
+    if(!skipType) await sleep(120);
+  }
+  typing = false;
+  const hint = document.getElementById('skiphint'); if(hint) hint.style.opacity = skipType?0:.5;
+}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+function sysLine(text, kind){
+  const d = document.createElement('div');
+  d.className = 'sys '+(kind||'');
+  d.textContent = text; narr.appendChild(d);
+  scroll.scrollTop = scroll.scrollHeight;
+}
+
+function scare(big){
+  Sound.stinger(big);
+  const f=el('flash'), a=el('app');
+  f.classList.add('hit'); setTimeout(()=>f.classList.remove('hit'), big?150:90);
+  a.classList.remove('shake'); void a.offsetWidth; a.classList.add('shake');
+}
+function showPortrait(key, cap){
+  if(!ART[key]) return;
+  const p=el('portrait'), f=p.querySelector('.pframe');
+  f.querySelectorAll('svg').forEach(s=>s.remove());
+  f.insertAdjacentHTML('afterbegin', ART[key]);
+  f.querySelector('.pframe svg')?.classList.add('pbreathe');
+  f.querySelector('.pcap').textContent = cap||'';
+  p.style.display='flex'; p.classList.remove('show'); void p.offsetWidth; p.classList.add('show');
+  scare(true);
+}
+function hidePortrait(){ el('portrait').style.display='none'; }
+el('portrait').onclick = hidePortrait;
+function applySAN(loss, reason){
+  PC.san = Math.max(0, PC.san - loss);
+  renderSheet();
+  scare(loss>=6);
+  Atmo.setSan(PC.san); if(cur) Atmo.setScene(cur.banner, !!flags.act3);
+  sysLine(`▸ 理智检定失守：SAN −${loss}（${reason}）`, 'san');
+}
+function applyHP(loss, reason){
+  PC.hp = Math.max(0, PC.hp - loss);
+  renderSheet();
+  sysLine(`▸ 你受伤了：HP −${loss}（${reason}）`, 'bad');
+}
+function clueCount(){ return ['clue_journal','clue_church','clue_hall','clue_well','clue_light'].filter(k=>flags[k]).length; }
+
+async function go(key){
+  if(key==='__restart'){ PC.san=65; PC.hp=11; for(const k in flags) delete flags[k];
+    renderSheet(); go('arrival'); return; }
+  cur = S[key];
+  choicesBox.innerHTML=''; el('freewrap').style.display = cur.end?'none':'block';
+  setBanner(cur.banner);
+  try{ Sound.setMood(cur.banner, !!flags.act3); }catch(e){}
+  try{ Atmo.setSan(PC.san); Atmo.setScene(cur.banner, !!flags.act3); }catch(e){}
+  const bn=el('banner'); bn.classList.remove('flick'); void bn.offsetWidth; bn.classList.add('flick');
+  el('loc').textContent = cur.loc;
+  narr.innerHTML=''; scroll.scrollTop=0;
+  await typeParas(cur.text);
+  if(cur.portrait) showPortrait(cur.portrait, cur.pcap);
+  if(cur.set) Object.assign(flags, cur.set);
+  if(cur.san) applySAN(cur.san.loss, cur.san.reason);
+  if(cur.hp) applyHP(cur.hp.loss, cur.hp.reason);
+  if(cur.onEnter) try{ cur.onEnter(); }catch(e){}
+  if(clueCount()>0 && !cur.end){ el('loc').textContent = cur.loc + '　· 线索 '+clueCount()+'/5'; }
+  renderChoices();
+  save();
+}
+
+function renderChoices(){
+  choicesBox.innerHTML='';
+  (cur.choices||[]).forEach(c=>{
+    if(c.if && !c.if()) return;
+    const b = document.createElement('button');
+    b.className='choice';
+    const tagCls = c.check?'tag chk':'tag';
+    b.innerHTML = `<span class="${tagCls}">[${c.tag||'▸'}]</span>${c.label}`;
+    b.onclick = ()=>{ if(typing) return;
+      if(c.talk){ talk(c.talk); }
+      else if(c.check) openDice(c.check);
+      else if(c.set){ Object.assign(flags,c.set); go(c.goto); }
+      else go(c.goto);
+    };
+    choicesBox.appendChild(b);
+  });
+}
+
+/* ---- 骰子 ---- */
+function openDice(chk){
+  pendingCheck = chk;
+  el('dice').style.display='flex';
+  el('dskill').textContent = chk.skill;
+  const tgt = chk.hard ? Math.floor((PC.skills[chk.skill]||chk.target)/2) : (PC.skills[chk.skill]||chk.target);
+  chk._tgt = tgt;
+  el('dtarget').textContent = (chk.hard?'困难 ':'')+'目标 ≤ '+tgt;
+  el('d100').textContent='--'; el('dres').textContent=''; el('dres').className='';
+  try{ Dice3D.reset(); }catch(e){}
+  el('droll').style.display='inline-block'; el('dcont').style.display='none';
+}
+function thud(){ const b=el('dicebox'); if(!b) return; b.classList.remove('thud'); void b.offsetWidth; b.classList.add('thud'); }
+
+/* ---- 十面骰 d10：真 3D（Canvas + 四元数翻滚 + 落定到面） ---- */
+const Dice3D = (function(){
+  const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]];
+  const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+  const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+  const nrm=a=>{const l=Math.hypot(a[0],a[1],a[2])||1;return[a[0]/l,a[1]/l,a[2]/l];};
+  function qMul(a,b){return[a[3]*b[0]+a[0]*b[3]+a[1]*b[2]-a[2]*b[1],a[3]*b[1]-a[0]*b[2]+a[1]*b[3]+a[2]*b[0],a[3]*b[2]+a[0]*b[1]-a[1]*b[0]+a[2]*b[3],a[3]*b[3]-a[0]*b[0]-a[1]*b[1]-a[2]*b[2]];}
+  function qAxis(ax,ay,az,ang){const s=Math.sin(ang/2);return[ax*s,ay*s,az*s,Math.cos(ang/2)];}
+  function qN(q){const l=Math.hypot(q[0],q[1],q[2],q[3])||1;return[q[0]/l,q[1]/l,q[2]/l,q[3]/l];}
+  function qMat(q){const x=q[0],y=q[1],z=q[2],w=q[3];return[1-2*(y*y+z*z),2*(x*y-z*w),2*(x*z+y*w),2*(x*y+z*w),1-2*(x*x+z*z),2*(y*z-x*w),2*(x*z-y*w),2*(y*z+x*w),1-2*(x*x+y*y)];}
+  const mv=(m,v)=>[m[0]*v[0]+m[1]*v[1]+m[2]*v[2],m[3]*v[0]+m[4]*v[1]+m[5]*v[2],m[6]*v[0]+m[7]*v[1]+m[8]*v[2]];
+  function qSlerp(a,b,t){let d=a[0]*b[0]+a[1]*b[1]+a[2]*b[2]+a[3]*b[3];if(d<0){b=[-b[0],-b[1],-b[2],-b[3]];d=-d;}if(d>0.9995)return qN([a[0]+t*(b[0]-a[0]),a[1]+t*(b[1]-a[1]),a[2]+t*(b[2]-a[2]),a[3]+t*(b[3]-a[3])]);const th=Math.acos(d),s=Math.sin(th);const w1=Math.sin((1-t)*th)/s,w2=Math.sin(t*th)/s;return[w1*a[0]+w2*b[0],w1*a[1]+w2*b[1],w1*a[2]+w2*b[2],w1*a[3]+w2*b[3]];}
+  function qFromTo(v1,v2){const d=dot(v1,v2);if(d>0.999999)return[0,0,0,1];if(d<-0.999999)return qAxis(1,0,0,Math.PI);const c=cross(v1,v2);return qN([c[0],c[1],c[2],1+d]);}
+  // d10 网格（五角十二面锥台 = 十面骰）
+  const V=[[0,0,1.18],[0,0,-1.18]]; const ez=0.30;
+  for(let i=0;i<10;i++){const a=i*Math.PI/5;V.push([Math.cos(a),Math.sin(a),(i%2?-ez:ez)]);}
+  const e=k=>2+((k%10)+10)%10;
+  const FI=[]; for(let i=0;i<5;i++)FI.push([0,e(2*i),e(2*i+1),e(2*i+2)]); for(let i=0;i<5;i++)FI.push([1,e(2*i+3),e(2*i+2),e(2*i+1)]);
+  const F=FI.map((idx,i)=>{const p=idx.map(k=>V[k]);let n=nrm(cross(sub(p[1],p[0]),sub(p[2],p[0])));const c=[(p[0][0]+p[1][0]+p[2][0]+p[3][0])/4,(p[0][1]+p[1][1]+p[2][1]+p[3][1])/4,(p[0][2]+p[1][2]+p[2][2]+p[3][2])/4];if(dot(n,c)<0)n=[-n[0],-n[1],-n[2]];return{idx,num:i,normal:n,uq:qFromTo(n,[0,0,1])};});
+  const LIGHT=nrm([0.3,0.45,0.95]);
+  let cv,ctx,dice=[],raf=null,doneCB=null,t0=0,showNums=false; const TUMBLE=1080,SETTLE=620;
+  function faceQ(num){for(let i=0;i<F.length;i++)if(F[i].num===num)return F[i].uq;return[0,0,0,1];}
+  function initCanvas(){ if(cv)return true; cv=document.getElementById('dcanvas'); if(!cv)return false; ctx=cv.getContext('2d');
+    dice=[{cx:cv.width*0.30,map:v=>String(v*10).padStart(2,'0')},{cx:cv.width*0.70,map:v=>String(v)}];
+    dice.forEach(D=>{D.q=qMul(qAxis(1,0,0,-0.42),qAxis(0,1,0,0.5));D.yoff=0;D.q0=null;}); drawAll(); return true; }
+  function drawDie(D){
+    const S=cv.height*0.28, f=cv.height*2.2, cx=D.cx, cy=cv.height*0.46+D.yoff;
+    const m=qMat(D.q);
+    const P=V.map(v=>{const w=mv(m,v);const per=f/(f-w[2]*S);return{x:cx+w[0]*S*per,y:cy-w[1]*S*per,z:w[2]};});
+    const list=F.map(fc=>({fc,wn:mv(m,fc.normal),az:(P[fc.idx[0]].z+P[fc.idx[1]].z+P[fc.idx[2]].z+P[fc.idx[3]].z)/4}));
+    list.sort((a,b)=>a.az-b.az);
+    list.forEach(o=>{ if(o.wn[2]<=0.02) return;
+      const pts=o.fc.idx.map(k=>P[k]);
+      const sh=0.30+0.70*Math.max(0,dot(o.wn,LIGHT));
+      ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y); for(let i=1;i<4;i++)ctx.lineTo(pts[i].x,pts[i].y); ctx.closePath();
+      ctx.fillStyle=`rgb(${Math.round(44*sh+8)},${Math.round(40*sh+4)},${Math.round(32*sh-2)})`; ctx.fill();
+      ctx.strokeStyle='rgba(6,5,4,0.92)'; ctx.lineWidth=1.4; ctx.stroke();
+      if(showNums && o.wn[2]>0.30){
+        const nx=(pts[0].x+pts[1].x+pts[2].x+pts[3].x)/4, ny=(pts[0].y+pts[1].y+pts[2].y+pts[3].y)/4;
+        const a=Math.min(1,(o.wn[2]-0.24)*1.7), fs=Math.round(S*0.34*(0.7+0.5*o.wn[2]));
+        ctx.font=`bold ${fs}px "Courier New",monospace`; ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.shadowColor='rgba(0,0,0,0.9)'; ctx.shadowBlur=4;
+        ctx.fillStyle=`rgba(215,202,166,${a})`; ctx.fillText(D.map(o.fc.num), nx, ny); ctx.shadowBlur=0;
+      }
+    });
+  }
+  function drawAll(){ if(!ctx)return; ctx.clearRect(0,0,cv.width,cv.height); dice.forEach(drawDie); }
+  function loop(now){ const el=now-t0;
+    dice.forEach(D=>{
+      if(el<TUMBLE){ D.q=qN(qMul(D.spin,D.q)); const p=el/TUMBLE; D.yoff=-64*(1-p)*Math.abs(Math.cos(p*Math.PI*2.5)); }
+      else if(el<TUMBLE+SETTLE){ if(!D.q0)D.q0=D.q; const t=(el-TUMBLE)/SETTLE,te=1-Math.pow(1-t,3); D.q=qSlerp(D.q0,D.tq,te); D.yoff=-5*Math.sin(t*Math.PI)*(1-t); }
+      else { D.q=D.tq; D.yoff=0; }
+    });
+    showNums = el>=TUMBLE*0.82;
+    drawAll();
+    if(el<TUMBLE+SETTLE){ raf=requestAnimationFrame(loop); }
+    else { raf=null; showNums=true; drawAll(); if(doneCB){const cb=doneCB;doneCB=null;cb();} }
+  }
+  function roll(tens,units,cb){ if(!initCanvas()){ if(cb)cb(); return; } doneCB=cb; showNums=false;
+    dice[0].tq=faceQ(tens); dice[1].tq=faceQ(units);
+    dice.forEach(D=>{ D.q0=null; D.q=qN([Math.random()-.5,Math.random()-.5,Math.random()-.5,Math.random()-.5]);
+      const ax=nrm([Math.random()-.5,Math.random()-.5,Math.random()-.5]); D.spin=qAxis(ax[0],ax[1],ax[2],0.30+Math.random()*0.12); });
+    if(raf)cancelAnimationFrame(raf); t0=performance.now(); raf=requestAnimationFrame(loop);
+  }
+  function reset(){ if(!initCanvas())return; if(raf){cancelAnimationFrame(raf);raf=null;} showNums=false;
+    dice.forEach(D=>{D.q=qMul(qAxis(1,0,0,-0.42),qAxis(0,1,0,0.5));D.yoff=0;D.q0=null;}); drawAll(); }
+  return { roll, reset, init:initCanvas };
+})();
+
+el('droll').onclick = ()=>{
+  el('droll').style.display='none';
+  const d = el('d100'); d.textContent=''; el('dres').textContent=''; el('dres').className='';
+  const tens=Math.floor(Math.random()*10), units=Math.floor(Math.random()*10);
+  let roll = tens*10+units; if(roll===0) roll=100;
+  try{ Sound.dice(); }catch(e){}
+  setTimeout(()=>{ try{ Sound.diceLand(); }catch(e){} thud(); }, 620);
+  setTimeout(()=>{ try{ Sound.diceLand(); }catch(e){} thud(); }, 880);
+  Dice3D.roll(tens, units, ()=>{
+    try{ Sound.diceLand(); }catch(e){} thud();
+    d.innerHTML = `${String(tens*10).padStart(2,'0')}<span class="eq">+</span>${units}<span class="eq">=</span><b>${roll}</b>`;
+    const tgt = pendingCheck._tgt;
+    let res, cls, ok;
+    if(roll===1){res='大 成 功';cls='gr';ok=true;}
+    else if(roll<=Math.floor(tgt/5)){res='困 难 成 功';cls='gr';ok=true;}
+    else if(roll<=tgt){res='成 功';cls='ok';ok=true;}
+    else if(roll>=96){res='大 失 败';cls='fumble';ok=false;}
+    else {res='失 败';cls='fail';ok=false;}
+    el('dres').textContent=res; el('dres').className=cls;
+    if(!ok) try{ Sound.stinger(roll>=96); }catch(e){}
+    pendingCheck._ok = ok;
+    el('dcont').style.display='inline-block';
+  });
+};
+el('dcont').onclick = ()=>{
+  el('dice').style.display='none';
+  const chk = pendingCheck; pendingCheck=null;
+  if(chk.cb){ chk.cb(chk._ok); }          // 对话检定：回调而非跳场景
+  else go(chk._ok ? chk.success : chk.fail);
+};
+
+/* ===================== 活镇 · 盘问对话（结构化菜单 · 已烘焙 agent） ===================== */
+const NPC = {
+  harbormaster: {
+    name:'港务长', portrait:'harbormaster', banner:'hall', back:'dawn',
+    intro:[
+      {t:"你推门进去时，港务长正伏在案上，就着绿罩灯核一本厚厚的册子——一页页的人名，每个后面跟着日期。听见门响，他不慌不忙地合上册子，压在肘下，抬起那张青灰的圆脸，笑了。", cls:"amber"},
+      {t:"「里德先生。稀客。」他搁下钢笔，两手交叠，一副洗耳恭听的样子，「趁天黑前，您有什么想问的，尽管问。今晚以后……怕是没这么方便了。」", cls:"dlg"}
+    ],
+    topics:[
+      { id:'psy', tag:'心理学', once:true, you:"（你不接话，只是不动声色地打量他这张笑脸）",
+        check:{skill:'心理学',target:55},
+        sayOk:[
+          {t:"你迎着他的笑，一寸寸地读。那笑里没有一丝恶意——这才是最叫人发冷的地方。那是一种农夫看着棚里牲口的温和，一种『你已经是我的了，急什么』的笃定。你读得明明白白：你不是客人，你是今夜要送上去的牲口之一。", cls:"amber"},
+          {t:"你还读出了那副慈父面孔底下藏着的东西：恐惧。他无意识地朝窗外灯塔的方向瞥了一眼——那一瞥里有虔诚，也有一丝连他自己都不肯承认的、对『万一灯亮不起来』的战栗。"}
+        ],
+        okSet:{did_hall:true, clue_hall:true, clue_light:true}, okSan:{loss:1, reason:'看穿了他把你当作今夜的牲口'},
+        sayFail:[{t:"你盯着他看，可那张青灰的圆脸像退潮后的滩涂，笑意底下什么都读不出来。他任你打量，甚至把脸往灯下凑了凑，像是配合你看个够。"}] },
+
+      { id:'ritual', tag:'话术', once:true, you:"「您说的『古老仪式』……能不能让我这个外乡记者，开开眼？」",
+        check:{skill:'话术',target:50},
+        sayOk:[
+          {t:"你装出满脸被勾起的兴致，恭维他、请教他。老人显然很久没能对一个『还会惊叹』的听众炫耀了，话匣子收不住。", cls:"amber"},
+          {t:"「您是文化人，会懂的。」他压低声音，语气近乎温柔，「午夜，灯塔的光会把主请上来。它一上浮，海就再赏我们一百年的丰足——鱼群、风向、平安。作为回礼，我们献上最新鲜的。您今晚会亲眼看见的：被选中的人从潮里走回来，皮肤发亮，再不会老，再不会病。那不是死，先生，那是恩典。」", cls:"dlg"},
+          {t:"你把关键的一条死死记住：一切系于午夜、系于那盏灯。灯，是这台百年机器唯一的开关。"}
+        ],
+        okSet:{did_hall:true, clue_hall:true, clue_light:true},
+        sayFail:[{t:"「仪式嘛，看了才有意思，说破就没味道了。」他打了个太极，滴水不漏，「今晚您自然会懂。」"}] },
+
+      { id:'edwin', tag:'问', once:true, you:"「我是来找埃德温·凯恩的。他在哪儿？」",
+        say:[
+          {t:"港务长脸上的笑纹丝毫没动。「凯恩先生……」他慢条斯理地重复，仿佛在回忆一个很久以前的客人，「那位年轻人啊。他前些日子，退房了。」", cls:"dlg"},
+          {t:"可就在说『退房』两个字的时候，他的目光有一瞬——极快的一瞬——飘向了海的方向。", cls:"amber"}
+        ], set:{did_hall:true, asked_edwin:true} },
+
+      { id:'edwin_press', tag:'心理学', once:true, gate:(f)=>f.asked_edwin, you:"「退房。往哪儿退的？我怎么在登记簿上，看见他的名字被人划掉了？」",
+        check:{skill:'心理学',target:55},
+        sayOk:[
+          {t:"你盯死了他。这一次，那点破绽藏不住了——他的喉结动了一下，颈侧那三道旧疤似的鳃裂，极轻微地、湿润地翕动了一次。", cls:"amber"},
+          {t:"「先生，」他的声音第一次沉了下去，温和里透出一点不容置疑，「有些客人，是提前赴约了。凯恩先生很虔诚。今晚，您也许还能再见他一面。」他重新堆起笑，「别的，就别问了。」", cls:"dlg"}
+        ],
+        okSet:{clue_hall:true, edwin_taken:true},
+        sayFail:[{t:"「划掉？兴许是账房眼花。」他轻轻一笑，把话头滑了过去，「凯恩先生的事，您今晚就明白了。」"}] },
+
+      { id:'town', tag:'问', once:true, you:"「镇上的人……脸色都不太对。皮肤，还有脖子上那些。」",
+        say:[
+          {t:"「您观察得真细。」他不但不恼，反倒欣慰地点点头，抬手摸了摸自己颈侧那几道裂口，动作自然得像在整理领结，「这是主的恩泽在我们身上留的记号，先生。喝了这片水土长大的人，迟早都会有的。」", cls:"dlg"},
+          {t:"「一开始您会觉得难看。」他望着你，眼神近乎慈爱，「等您也有了，就会明白，那是再也不必怕老、不必怕病、不必怕死的证明。」"}
+        ], set:{did_hall:true} },
+
+      { id:'accuse', tag:'摊牌', once:true, gate:(f)=>f.clue_hall||f.clue_light, you:"「今晚要被『洗干净』的那个外乡人，就是我。对吧。」",
+        say:[
+          {t:"办公室里静了一瞬。港务长没有否认，没有惊讶，甚至没有收起笑——他只是像听见你终于说对了一道简单算术题那样，宽厚地颔了颔首。", cls:"amber"},
+          {t:"「您是个聪明人，里德先生。这样最好。」他站起身，温软微凉的手在你肩上轻轻一按，「聪明人会明白，跑是跑不掉的——满潮之前，雾会封死每一条路。您能做的，是体面地、心甘情愿地赴约。自愿的客人，主最欢喜。」", cls:"dlg"}
+        ], set:{did_hall:true, hall_knows:true} },
+
+      { id:'gun', tag:'恐吓', once:true, you:"（你掏出柯尔特，冰凉的枪口抵住他的额头）「叫全镇的人今晚都离我远点。否则我先送你去见你的主。」",
+        say:[
+          {t:"枪口顶着他的眉心，他却连眼都没眨。那张青灰的脸慢慢咧开，笑意一直漫到耳根，颈侧的鳃裂随着他平稳的呼吸，一开、一合。", cls:"amber"},
+          {t:"「开吧。」他轻声说，语气温和得像在哄孩子，「打穿我的脑袋，流出来的也是海水。可枪声一响，先生——」他往窗外扬了扬下巴。你顺着看去：不知何时，港务会外的雾里，已经无声地站满了举着灯笼的镇民，一张张青灰的脸，齐齐望着这扇窗。「——他们就会知道，今晚的客人，等不到午夜了。」", cls:"dlg"}
+        ],
+        san:{loss:3, reason:'拿枪指着一个不怕死的东西，却被满镇子无声的注视反噬'}, set:{hall_hostile:true, town_closed:true} },
+
+      { id:'leave', tag:'告辞', you:"（你压下所有情绪，不动声色地道谢，退了出去）",
+        say:[{t:"「慢走，里德先生。」他重新拿起钢笔，翻开那本压在肘下的册子，「午夜见。」他在某一行的末尾，落下了一个新的记号。", cls:"amber"}],
+        end:true, goto:'dawn' }
+    ]
+  },
+
+  oldwoman: {
+    name:'旅馆老妇人', portrait:'oldwoman', banner:'inn', back:'dawn',
+    intro:[
+      {t:"老妇人还守在柜台后。听见你走近，那双发黄的眼抬起来，警觉地扫过门口和楼梯——像是在确认没有别的东西在听。渔线缠着的枯手，在簿子上按得发白。", cls:"amber"},
+      {t:"「……你还没走。」她压着嗓子，几乎是叹息，「傻孩子。」", cls:"dlg"}
+    ],
+    topics:[
+      { id:'psy', tag:'心理学', once:true, you:"（你放缓语气，读她这副样子）",
+        check:{skill:'心理学',target:55},
+        sayOk:[
+          {t:"她不是冷漠——她是怕，怕到骨头里。每当楼上或街面传来一点动静，她的肩就绷一下。你读得出：她怕这镇子，也怕她自己；她帮你，是冒着天大的险，因为她心里还剩着一点、快被这地方磨没了的东西。", cls:"amber"},
+          {t:"「你的眼睛，」她忽然低声说，像是解释，又像是羡慕，「还是活人的眼睛。这镇上，很久没来过这样的眼睛了。」", cls:"dlg"}
+        ], okSet:{did_inn:true, she_afraid:true} },
+
+      { id:'edwin', tag:'问', once:true, you:"「埃德温·凯恩。他住过这儿。他在哪？」",
+        say:[
+          {t:"她的手抖了一下。「那位先生……」她习惯性地开口，说的却是另一套话的开头——然后她停住，飞快地看了一眼楼梯，声音更低了。", cls:"amber"},
+          {t:"「他和你一样，也是活人的眼睛。也是不肯走。」她闭了闭眼，「他现在……在能听见海的地方。你要是聪明，就别去找他——找到的，已经不是他了。」", cls:"dlg"}
+        ], set:{did_inn:true, edwin_taken:true} },
+
+      { id:'why', tag:'问', once:true, gate:(f)=>f.she_afraid, you:"「你为什么帮我？你也是这镇上的人。」",
+        say:[
+          {t:"她沉默了很久，枯手无意识地摸着自己的脖子——你这才看清，她颈侧也有几道浅浅的、正在成形的裂痕。", cls:"amber"},
+          {t:"「我在这柜台后头站了四十年。」她的声音发涩，「送走过多少客人，我数不清了。井水我也喝了一辈子——你看，」她抬了抬那只发白发胀的手，「我也快不是人了。」她盯着你，「可我想，临了临了，要是能有一个……是我放走的，不是我送出去的，也许我沉进那潮里的时候，能好受一点点。」", cls:"dlg"}
+        ], san:{loss:1, reason:'听一个半变的人，平静地讲述自己一生如何把人送去献祭'}, set:{did_inn:true} },
+
+      { id:'escape', tag:'问', once:true, gate:(f)=>f.she_afraid||f.warned, you:"「有没有办法出去？镇外的路都被雾封了。」",
+        say:[
+          {t:"「路是封了。」她压低声音，几乎贴到你耳边，「可海不会一直满着。今夜大潮，午夜涨到顶——但涨到顶之前，退到底的那阵子，岬角底下的暗礁会露出来，能走人。就那么一小会儿。」", cls:"amber"},
+          {t:"「记住：别信灯塔的光。跟着退潮的礁石走，别回头看海里。」她松开你，重新变回那副冷淡样子，「我能说的，就这些了。」", cls:"dlg"}
+        ], set:{did_inn:true, know_lowtide:true} },
+
+      { id:'warn', tag:'问', once:true, you:"「今晚我该怎么活下来？」",
+        say:[
+          {t:"她一把抓住你的手腕，渔线缠着的手冰得像海水，指甲掐进你的皮肉。「锁好门。别开窗——不管窗外有什么在叫你的名字。」", cls:"dlg"},
+          {t:"「半夜，要是听见有人湿淋淋地、一步一停地走过走廊，滴着水——你就装死，屏住气，千万、千万别应声。应了声的，没有一个能等到天亮。」"}
+        ], set:{did_inn:true, warned:true} },
+
+      { id:'gun', tag:'恐吓', once:true, you:"（你压不住火气，一把攥住她的手腕）「你到底还瞒着我什么？」",
+        say:[
+          {t:"她没有反抗，也没有喊。她只是抬起那双发黄的眼，静静地看着你，那眼神里没有恐惧，只有一种深不见底的疲惫和怜悯，看得你手上的劲一点点泄了。", cls:"amber"},
+          {t:"「孩子，」她轻轻抽回手，「我怕的东西，比你那把枪，可怕太多了。你冲我发这个火，没用的。省着点力气吧——今晚你用得上。」", cls:"dlg"}
+        ], set:{did_inn:true} },
+
+      { id:'leave', tag:'告辞', you:"（你谢过她，转身上楼/离开）",
+        say:[{t:"「去吧。」她重新低下头，翻开那本登记簿，「愿你比他们……都跑得快些。」她的钢笔，久久没有落下。", cls:"amber"}],
+        end:true, goto:'dawn' }
+    ]
+  },
+
+  keeper: {
+    name:'守塔人', portrait:'keeper', banner:'lighthouse', back:'dawn',
+    intro:[
+      {t:"守塔人蜷在塔底的阴影里，半透明的身体随着塔外的浪声，极轻微地起伏。他抬起那双还留着人性的、疲惫的眼看你，没有敌意。", cls:"amber"},
+      {t:"「又一个……活人。」他咕噜着，声音费力，「坐吧。天黑前，这塔里还算安静。你想知道什么，趁我还说得出话。」", cls:"dlg"}
+    ],
+    topics:[
+      { id:'light', tag:'问', once:true, you:"「顶上那盏灯，到底是什么？」",
+        say:[
+          {t:"「那不是航标。」他偏过头，望向头顶的螺旋铁梯，「是信标。午夜满潮，它会自己亮起来——不是照给船看的，是照给海底下那位看的。灯一亮，它就上浮。这镇子百年的丰足，全靠它。」", cls:"dlg"},
+          {t:"「机括在塔顶，我拦不住它。我早就……不是能拦它的东西了。」"}
+        ], set:{did_light:true, clue_light:true, know_mechanism:true} },
+
+      { id:'stop', tag:'问', once:true, gate:(f)=>f.clue_light||f.know_mechanism, you:"「怎么才能让它亮不起来？」",
+        say:[
+          {t:"他久久地看着你，那双人眼里，第一次亮起一点近乎渴望的光。", cls:"amber"},
+          {t:"「上去，塔顶。透镜后面有备用的鲸油和火柴——那是给它添火的。可同样在那儿，也有法子让它这辈子再亮不起来：砸了透镜，泼了油仓。」他顿了顿，「灯灭了，主上不来，仪式就破了。代价是……这一镇喝了一辈子井水的人，要独自去受它的震怒。你得想清楚，今晚你想让谁失望。」", cls:"dlg"}
+        ], set:{did_light:true, clue_light:true, know_mechanism:true} },
+
+      { id:'who', tag:'问', once:true, you:"「你是谁？怎么会变成……这样？」",
+        say:[
+          {t:"「很多年前，我也像你今晚这样，觉得自己能阻止这一切。」他低下头，看着自己生蹼的手，「我爬上过那座塔。我失败了。」", cls:"amber"},
+          {t:"「他们没杀我。杀了太便宜。」他的声音里没有怨，只有一片死水般的平静，「他们把我改成一半，留在这儿，守着我当年想毁掉的那盏灯——一年又一年。这是给『英雄』的罚。」", cls:"dlg"}
+        ], san:{loss:1, reason:'听一个失败的前人，平静地讲述他被留下受罚的下场'}, set:{did_light:true} },
+
+      { id:'want', tag:'问', once:true, gate:(f)=>f.did_light, you:"「你想要什么？我能为你做什么？」",
+        say:[
+          {t:"「我想要什么？」他重复着，像是很久没人问过他这句话，「我想睡。真正地、不会再醒来地睡。」", cls:"dlg"},
+          {t:"「你要是真上得了塔顶，真下得了手——那就替我，把这一切了结了。灯，还有我。别可怜我留我一条命，那不是慈悲。」他望着你，「答应我。」"}
+        ], set:{did_light:true, keeper_plea:true} },
+
+      { id:'pity', tag:'心理学', once:true, you:"（你没说话，只是看着他这双还属于人的眼睛）",
+        check:{skill:'心理学',target:55},
+        sayOk:[
+          {t:"你读懂了那双眼里的东西：不是求生，是求死；不是恨这镇子，是恨自己当年没成。他被困在一具越来越不像人的躯壳里，唯一还撑着他的，是一个执念——盼着有人替他，把那盏灯，也把他，一起了断。", cls:"amber"},
+          {t:"你忽然明白，他会是今夜你在这镇上，唯一真心站在你这边的人。"}
+        ], okSet:{did_light:true, keeper_ally:true},
+        sayFail:[{t:"他的脸半透明着，那点情绪像水底的影子，你没能完全看清。但你确信，他至少不想害你。"}] },
+
+      { id:'leave', tag:'告辞', you:"（你记下塔顶的位置，向他告别）",
+        say:[{t:"「去吧。」他重新蜷回阴影里，「午夜之前，别让他们看出你要做什么。」他闭上眼，「……谢谢你，肯听一个死人说话。」", cls:"amber"}],
+        end:true, goto:'dawn' }
+    ]
+  }
+};
+let dlg=null;
+function talk(key){
+  const npc=NPC[key]; if(!npc) return;
+  dlg={npc, used:{}}; cur=null;
+  choicesBox.innerHTML=''; el('freewrap').style.display='none';
+  setBanner(npc.banner); try{ Sound.setMood(npc.banner,!!flags.act3); }catch(e){} try{ Atmo.setSan(PC.san); Atmo.setScene(npc.banner,!!flags.act3); }catch(e){}
+  el('loc').textContent = npc.name+' · 交谈';
+  narr.innerHTML=''; scroll.scrollTop=0;
+  if(npc.portrait) setTimeout(()=>showPortrait(npc.portrait, npc.name), 250);
+  typeParas(npc.intro).then(dlgMenu);
+}
+function dlgMenu(){
+  choicesBox.innerHTML='';
+  dlg.npc.topics.forEach(tp=>{
+    if(tp.once && dlg.used[tp.id]) return;
+    if(tp.gate && !tp.gate(flags)) return;
+    const b=document.createElement('button'); b.className='choice';
+    const tagCls = tp.check?'tag chk':'tag';
+    b.innerHTML=`<span class="${tagCls}">[${tp.tag||'问'}]</span>${tp.label||tp.you||''}`;
+    b.onclick=()=>{ if(typing) return; dlgPick(tp); };
+    choicesBox.appendChild(b);
+  });
+  scroll.scrollTop=scroll.scrollHeight;
+}
+function dlgPick(tp){
+  dlg.used[tp.id]=true;
+  if(tp.you){ const d=document.createElement('div'); d.className='p'; d.style.color='#9fb0c8'; d.textContent='› '+tp.you; narr.appendChild(d); scroll.scrollTop=scroll.scrollHeight; }
+  if(tp.check){ openDice({skill:tp.check.skill, target:tp.check.target, hard:tp.check.hard, cb:(ok)=>dlgDeliver(tp,ok)}); return; }
+  dlgDeliver(tp, true);
+}
+async function dlgDeliver(tp, ok){
+  const lines = tp.check ? (ok? tp.sayOk : tp.sayFail) : tp.say;
+  await typeParas(lines||[]);
+  const eff = tp.check ? (ok? tp.okSet : tp.failSet) : tp.set;
+  if(eff) Object.assign(flags, eff);
+  const sl = tp.check ? (ok? tp.okSan : tp.failSan) : tp.san;
+  if(sl) applySAN(sl.loss, sl.reason);
+  if(tp.end){ const back=tp.goto||dlg.npc.back||'dawn'; dlg=null; go(back); return; }
+  dlgMenu();
+}
+
+/* ---- 自由输入（v0.1 关键词兜底 + KP 说明）---- */
+/* ===== AI 守秘人（Claude Haiku · 直连 Anthropic API · Key 仅本地） ===== */
+const KP = (function(){
+  const MODEL='claude-haiku-4-5-20251001', ENDPOINT='https://api.anthropic.com/v1/messages';
+  let history=[];
+  function key(){ try{ return localStorage.getItem('coc_api_key')||''; }catch(e){ return ''; } }
+  function setKey(k){ try{ localStorage.setItem('coc_api_key',(k||'').trim()); }catch(e){} }
+  function hasKey(){ return !!key(); }
+  function reset(){ history=[]; }
+  const BIBLE =
+`〖世界观圣经·只有你(KP)知道，绝不能直接倒给玩家，只能让他一点点自己拼出来〗
+背景：1926年，新英格兰雾港"寒鸦港"。调查员塞缪尔·里德收到大学挚友埃德温·凯恩的信，邮戳却在其"溺亡"后三天，信上写：他们没让我走，来寒鸦港。
+真相：全镇一个多世纪来向海沟深处的存在"潮下之主"献活人换取丰饶。被选中者不死，被"洗净"成它的触须耳目（青灰皮肤、颈侧鳃裂）。井水掺了海水与卵，镇民早已非人。埃德温发现真相要逃，被洗成了"回来的人"。
+机关：岬角灯塔顶端的信标灯不是航标，是午夜满潮时唤主上浮的信标；熄灭它，仪式即破。今夜正是天文大潮，满潮在午夜。
+氛围铁律：压抑、失控、不可名状。绝不把怪物解释清楚、绝不给出万能解法、绝不当有求必应的助手；玩家越想把一切弄得安全可知，你越要留白、回避、让恐惧生长。恐怖来自暗示而非血腥。`;
+  function sys(){
+    const sk = Object.entries(PC.skills).map(([k,v])=>k+v).join(' ');
+    const now = (typeof cur==='object'&&cur&&cur.text)? cur.text.map(t=>t.t).join(' ').slice(0,240) : '';
+    return `你是《克苏鲁的呼唤》单人跑团的守秘人(KP)。用中文、第二人称"你"，为玩家(调查员塞缪尔·里德)主持一场恐怖跑团。
+${BIBLE}
+〖当前状态〗地点：${cur?cur.loc:'寒鸦港'}。理智SAN ${PC.san}/99，生命HP ${PC.hp}/11。技能：${sk}。此刻情形：${now}
+〖你的职责〗玩家会用自由文本说出任何行动，你都要合乎情理地接住并推进，而不是把他拉回选项。需要检定时你自己暗掷d100（≤对应技能=成功，反之失败），用一句话交代结果即可，不必报数字。目睹超常/恐怖时扣理智。
+〖输出格式〗2到4段，紧凑有画面感，克制留白。如本回合理智下降，在最后另起一行只输出标记：〔SAN-数字〕（例：〔SAN-4〕）。如受伤，输出：〔HP-数字〕。没有变化就不输出标记。不要解释规则，不要跳出角色，不要写"作为AI"。`;
+  }
+  async function act(playerText){
+    history.push({role:'user', content:playerText});
+    if(history.length>12) history=history.slice(-12);
+    const res = await fetch(ENDPOINT,{ method:'POST',
+      headers:{'content-type':'application/json','x-api-key':key(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body: JSON.stringify({ model:MODEL, max_tokens:640, system:sys(), messages:history }) });
+    if(!res.ok){ let m=res.status; try{ const e=await res.json(); m=(e.error&&e.error.message)||m; }catch(_){}
+      history.pop(); throw new Error(m); }
+    const data=await res.json();
+    const text=(data.content||[]).map(c=>c.text||'').join('').trim();
+    history.push({role:'assistant', content:text});
+    return text;
+  }
+  return { act, hasKey, setKey, key, reset };
+})();
+
+async function typeKP(text){
+  typing=true; skipType=false;
+  const div=document.createElement('div'); div.className='p kp'; narr.appendChild(div);
+  div.innerHTML='<b>〔KP〕</b> ';
+  const base=div.innerHTML;
+  for(let i=0;i<text.length;i++){ if(skipType){ div.innerHTML=base+text; break; }
+    div.innerHTML=base+text.slice(0,i+1); scroll.scrollTop=scroll.scrollHeight;
+    await sleep(text[i].match(/[，。、—！？.…\n]/)?34:13); }
+  typing=false; scroll.scrollTop=scroll.scrollHeight;
+}
+function applyKPtags(text){
+  let clean=text, m;
+  if(m=text.match(/〔?\s*SAN\s*[-−]\s*(\d+)\s*〕?/i)){ const n=+m[1]; clean=clean.replace(m[0],'').trim();
+    setTimeout(()=>applySAN(n,'那一刻，有什么东西在你脑中永久地改变了'), 300); }
+  if(m=text.match(/〔?\s*HP\s*[-−]\s*(\d+)\s*〕?/i)){ const n=+m[1]; clean=clean.replace(m[0],'').trim();
+    setTimeout(()=>applyHP(n,'你受了伤'), 500); }
+  return clean;
+}
+
+el('freego').onclick = doFree;
+el('free').addEventListener('keydown',e=>{ if(e.key==='Enter') doFree(); });
+async function doFree(){
+  if(typing) return;
+  const v = el('free').value.trim(); if(!v) return;
+  el('free').value='';
+  const d=document.createElement('div'); d.className='p'; d.style.color='#8ea0c0';
+  d.textContent = '› '+v; narr.appendChild(d); scroll.scrollTop = scroll.scrollHeight;
+
+  if(!KP.hasKey()){
+    const kp=document.createElement('div'); kp.className='p amber';
+    kp.innerHTML='（守秘人还没上线。点右上角 <b style="color:var(--phos)">⚙ AI</b> 填入 API Key，我就能接住你写的任何行动、真正带你自由探索。）';
+    narr.appendChild(kp); scroll.scrollTop=scroll.scrollHeight; return;
+  }
+  const think=document.createElement('div'); think.className='thinking'; think.innerHTML='守秘人落笔中<i>……</i>';
+  narr.appendChild(think); scroll.scrollTop=scroll.scrollHeight;
+  try{
+    const raw = await KP.act(v);
+    think.remove();
+    const clean = applyKPtags(raw);
+    await typeKP(clean);
+    save();
+  }catch(err){
+    think.remove();
+    const e=document.createElement('div'); e.className='sys bad';
+    e.textContent='▸ 守秘人失联：'+err.message+'（检查 ⚙ AI 里的 Key / 额度 / 网络）';
+    narr.appendChild(e); scroll.scrollTop=scroll.scrollHeight;
+  }
+}
+
+/* ---- AI 设置面板 ---- */
+function refreshAIbtn(){ el('ai').classList.toggle('on', KP.hasKey()); }
+el('ai').onclick = ()=>{ el('kpkey').value = KP.key(); el('kpstatus').textContent=''; el('kpstatus').className='status'; el('kpset').style.display='flex'; el('kpkey').focus(); };
+el('kpclose').onclick = ()=>{ el('kpset').style.display='none'; };
+el('kpset').onclick = (e)=>{ if(e.target===el('kpset')) el('kpset').style.display='none'; };
+el('kpsave').onclick = ()=>{
+  const k=el('kpkey').value.trim();
+  if(!k){ el('kpstatus').textContent='请先填入 Key'; el('kpstatus').className='status err'; return; }
+  KP.setKey(k); KP.reset(); refreshAIbtn();
+  el('kpstatus').textContent='✓ 已启用。现在回到游戏，在输入框写任何行动试试。'; el('kpstatus').className='status ok';
+  setTimeout(()=>el('kpset').style.display='none', 1400);
+};
+
+/* ---- 存档 ---- */
+function save(){ try{ localStorage.setItem('hanya_save', JSON.stringify({cur:findKey(cur),san:PC.san,hp:PC.hp,flags})); }catch(e){} }
+function findKey(node){ for(const k in S) if(S[k]===node) return k; return 'arrival'; }
+function load(){ try{ const s=JSON.parse(localStorage.getItem('hanya_save')); if(s&&S[s.cur]){PC.san=s.san;PC.hp=s.hp;Object.assign(flags,s.flags||{});return s.cur;} }catch(e){} return null; }
+
+/* ---- 启动 ---- */
+renderSheet(); refreshAIbtn();
+try{ Dice3D.init(); }catch(e){}
+// 标题幕背景 = 港口场景 + 大气雾（进游戏前就有氛围）
+try{ el('titlebg').innerHTML = BANNERS.harbor; Atmo.start(); Atmo.setScene('harbor', false); }catch(e){}
+function enterGame(sceneKey){
+  el('title').style.display='none';
+  try{ el('titlebg').innerHTML=''; }catch(e){}   // 清掉标题幕的港口图，避免与场景图重复 id
+  try{ Sound.init(); }catch(e){}
+  try{ Atmo.start(); }catch(e){}
+  try{ renderSheet(); }catch(e){}
+  go(sceneKey);                                   // 无论音效/大气是否失败，场景一定渲染
+}
+el('startBtn').onclick = ()=>{ let saved=null; try{ saved=load(); }catch(e){} enterGame(saved || 'arrival'); };
+el('mute').onclick = ()=>{ try{ const m = Sound.toggle(); el('mute').textContent = m?'♪ 静':'♪ 声'; }catch(e){} };
+el('newgame').onclick = (e)=>{ e.preventDefault(); try{ localStorage.removeItem('hanya_save'); }catch(_){}
+  PC.san=65; PC.hp=11; for(const k in flags) delete flags[k]; document.body.classList.remove('low-san');
+  enterGame('arrival'); };
+</script>
+</body>
+</html>

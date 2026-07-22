@@ -1,0 +1,3107 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>活神之手 · 克苏鲁的呼唤</title>
+<style>
+  :root{
+    --bg:#07070a; --bg2:#0c0d12; --panel:#0f1016; --edge:#23252f;
+    --ink:#c8c2b6;          /* 主文字 泛黄旧纸 */
+    --amber:#d9a441;        /* 叙事琥珀 */
+    --phos:#79c6a0;         /* 磷光绿(系统/检定) */
+    --blood:#a12b2b;        /* 血红 */
+    --blood2:#c94a3a;
+    --dim:#6b6a72; --san:#7fb0d8;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:
+      radial-gradient(1000px 700px at 50% -15%, #14101a 0%, var(--bg) 55%),
+      var(--bg);
+    color:var(--ink);
+    font-family:"Courier New",'PingFang SC',"Microsoft YaHei",monospace;
+    font-size:15px; line-height:1.85; letter-spacing:.3px;
+    -webkit-font-smoothing:none;
+    image-rendering:pixelated;
+    overflow:hidden;
+  }
+  /* CRT 扫描线 + 暗角 覆盖层 */
+  body::after{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:50;
+    background:
+      radial-gradient(120% 120% at 50% 50%, transparent 55%, rgba(0,0,0,.55) 100%),
+      repeating-linear-gradient(0deg, rgba(0,0,0,.16) 0px, rgba(0,0,0,.16) 1px, transparent 2px, transparent 3px);
+    mix-blend-mode:multiply;
+  }
+  /* 大气层画布（体积雾/微粒/颗粒 实时渲染） */
+  #atmo{position:fixed;inset:0;z-index:0;pointer-events:none}
+  #vig{position:fixed;inset:0;z-index:49;pointer-events:none;
+    background:radial-gradient(130% 130% at 50% 42%, transparent 42%, rgba(0,0,0,.72) 100%);
+    transition:background 1.2s ease}
+  #app{display:flex; height:100vh; gap:0; position:relative; z-index:1}
+  /* ===== 左：角色卡 ===== */
+  #sheet{
+    width:270px; flex:0 0 270px; background:linear-gradient(180deg,#0d0e14,#0a0a0f);
+    border-right:1px solid var(--edge); padding:16px 14px; overflow-y:auto;
+  }
+  #sheet h2{font-size:12px;color:var(--phos);letter-spacing:2px;margin:0 0 3px;text-transform:uppercase}
+  .role{font-size:16px;color:var(--amber);margin-bottom:2px}
+  .role small{color:var(--dim);font-size:11px;display:block;letter-spacing:1px}
+  .bar-wrap{margin:12px 0}
+  .bar-label{display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px}
+  .bar-label .k{color:var(--dim)}
+  .bar-label .v{color:var(--san)}
+  .bar{height:12px;background:#161620;border:1px solid var(--edge);position:relative;overflow:hidden}
+  .bar > i{display:block;height:100%;transition:width .6s ease}
+  .bar.san > i{background:linear-gradient(90deg,#3a5a7a,var(--san))}
+  .bar.hp > i{background:linear-gradient(90deg,#5a2020,var(--blood2))}
+  .sect{margin-top:16px;border-top:1px dashed var(--edge);padding-top:10px}
+  .sect h3{font-size:11px;color:var(--dim);letter-spacing:2px;margin:0 0 7px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:2px 10px;font-size:12.5px}
+  .grid .row{display:flex;justify-content:space-between;padding:1px 0}
+  .grid .row .sk{color:var(--ink)}
+  .grid .row .n{color:var(--phos)}
+  .stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;font-size:12px}
+  .stats .st{background:#12121a;border:1px solid var(--edge);padding:4px 5px;text-align:center}
+  .stats .st b{display:block;color:var(--amber);font-size:14px}
+  .stats .st span{color:var(--dim);font-size:10px;letter-spacing:1px}
+  #inv{font-size:12px;color:var(--ink)}
+  #inv li{margin:1px 0;list-style:none;padding-left:12px;position:relative}
+  #inv li::before{content:"▪";position:absolute;left:0;color:var(--blood)}
+
+  /* ===== 中：叙事 ===== */
+  #stage{flex:1;display:flex;flex-direction:column;min-width:0}
+  #banner{height:240px;flex:0 0 240px;border-bottom:1px solid var(--edge);position:relative;overflow:hidden;background:#04050a}
+  #banner svg{width:100%;height:100%;display:block;position:absolute;inset:0;transform-origin:50% 60%;
+    animation:kenburns 34s ease-in-out infinite alternate}
+  @keyframes kenburns{0%{transform:scale(1.01) translate(-0.5%,0)}100%{transform:scale(1.05) translate(1%,-1%)}}
+  /* 场景景深/光晕/底部融入叙事区 */
+  #banner::before{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;
+    background:
+      radial-gradient(90% 120% at 50% 20%, rgba(60,40,80,.14), transparent 60%),
+      linear-gradient(180deg, rgba(4,5,10,.35) 0%, transparent 26%, transparent 62%, rgba(6,7,12,.85) 92%, var(--bg) 100%)}
+  #banner::after{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;
+    box-shadow:inset 0 0 120px 20px rgba(0,0,0,.7);mix-blend-mode:multiply}
+  #banner.flick svg{animation:kenburns 26s ease-in-out infinite alternate, bflick .2s 2}
+  @keyframes bflick{0%,100%{filter:none}50%{filter:brightness(1.8) contrast(1.3)}}
+  #loc{position:absolute;left:18px;bottom:14px;z-index:4;font-size:12px;color:var(--phos);letter-spacing:3px;
+    text-shadow:0 0 8px #000,0 2px 0 #000;background:rgba(5,6,10,.55);padding:3px 11px;border:1px solid var(--edge);
+    backdrop-filter:blur(2px)}
+  #scroll{flex:1;overflow-y:auto;padding:30px 34px 10px;position:relative}
+  #narr{max-width:680px;margin:0 auto}
+  .p{margin:0 0 15px;white-space:pre-wrap}
+  .p.amber{color:var(--amber)}
+  .sys{color:var(--phos);font-size:13px;border-left:2px solid var(--phos);padding-left:10px;margin:14px auto;max-width:680px}
+  .sys.bad{color:var(--blood2);border-color:var(--blood)}
+  .sys.san{color:var(--san);border-color:var(--san)}
+  .dlg{color:#cfc8ff}
+  /* 选项 */
+  #choices{max-width:680px;margin:6px auto 30px;display:flex;flex-direction:column;gap:9px}
+  .choice{
+    background:linear-gradient(180deg,#12131b,#0d0e14);border:1px solid var(--edge);
+    color:var(--ink);text-align:left;padding:11px 14px;font-family:inherit;font-size:14px;
+    cursor:pointer;transition:.12s;position:relative;
+  }
+  .choice:hover{border-color:var(--amber);color:#fff;background:#191722;transform:translateX(3px)}
+  .choice .tag{color:var(--phos);font-size:11px;letter-spacing:1px;margin-right:8px}
+  .choice .tag.chk{color:var(--blood2)}
+  .choice:disabled{opacity:.35;cursor:not-allowed;text-decoration:line-through}
+  /* 自由输入 */
+  #freewrap{max-width:680px;margin:0 auto 26px}
+  #freewrap .lbl{font-size:11px;color:var(--dim);letter-spacing:1px;margin-bottom:5px}
+  #freerow{display:flex;gap:8px}
+  #free{flex:1;background:#0b0c11;border:1px solid var(--edge);color:var(--ink);
+    font-family:inherit;font-size:14px;padding:9px 12px}
+  #free:focus{outline:none;border-color:var(--phos)}
+  #freego{background:#151620;border:1px solid var(--edge);color:var(--phos);
+    font-family:inherit;padding:0 16px;cursor:pointer}
+  #freego:hover{border-color:var(--phos);background:#1a1c28}
+
+  /* ===== 惊吓：红闪 / 抖动 / 静音键 / 低语 ===== */
+  #flash{position:fixed;inset:0;z-index:55;pointer-events:none;opacity:0;
+    background:radial-gradient(120% 120% at 50% 50%, rgba(150,10,10,.0) 40%, rgba(140,0,0,.55) 100%);
+    transition:opacity .5s ease}
+  #flash.hit{opacity:1;transition:opacity .06s ease}
+  #app.shake{animation:shake .5s cubic-bezier(.36,.07,.19,.97)}
+  @keyframes shake{
+    10%{transform:translate(-3px,2px)}20%{transform:translate(4px,-3px)}30%{transform:translate(-5px,1px) rotate(-.3deg)}
+    40%{transform:translate(4px,3px)}50%{transform:translate(-3px,-2px)}60%{transform:translate(3px,2px)}
+    70%{transform:translate(-4px,1px) rotate(.3deg)}80%{transform:translate(2px,-2px)}90%{transform:translate(-2px,1px)}100%{transform:translate(0,0)}}
+  #topbtns{position:absolute;right:10px;top:9px;z-index:6;display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;max-width:72%}
+  #topbtns button{background:rgba(5,6,10,.6);border:1px solid var(--edge);color:var(--dim);
+    font-family:inherit;font-size:13px;padding:3px 9px;cursor:pointer;letter-spacing:1px;white-space:nowrap}
+  #topbtns button:hover{color:var(--phos);border-color:var(--phos)}
+  #ai.on,#motion.on{color:var(--phos);border-color:#2c5a44}
+  #sheetbtn,#mini{display:none}
+  .p.whisper{color:#8a6a9a;font-style:italic;text-shadow:0 0 8px rgba(120,60,140,.4);opacity:.85}
+  body.low-san{animation:breathe 5s infinite}
+  @keyframes breathe{0%,100%{filter:none}50%{filter:saturate(.6) brightness(.92) hue-rotate(-8deg)}}
+
+  /* ===== 减弱动效（光敏友好）· 顶栏按钮样式见 #topbtns ===== */
+  body.reduce-motion #flash{display:none!important}
+  body.reduce-motion #app.shake{animation:none!important}
+  body.reduce-motion .flick,body.reduce-motion #banner.flick svg,body.reduce-motion .pbreathe,body.reduce-motion.low-san{animation:none!important}
+  body.reduce-motion.low-san{filter:saturate(.72) brightness(.95)}
+  #title .cwarn{color:#c08a5a;font-size:11.5px;letter-spacing:1px;margin:-16px 0 28px;opacity:.85;max-width:440px}
+  #title .dex{color:#8a8272;font-size:11.5px;letter-spacing:1px;margin-top:18px;line-height:2;max-width:440px}
+  #title .dex .got{color:var(--amber)}
+  #title .dex .lock{color:#4a463e}
+  .p.kp{color:#d7cbe4;border-left:2px solid #6b4e86;padding-left:12px}
+  .p.kp b{color:#b79adf}
+  .thinking{color:#8a7aa8;font-size:13px;letter-spacing:2px;margin:10px auto;max-width:680px}
+  .thinking i{opacity:.5;animation:dots 1.2s infinite}
+  @keyframes dots{0%,100%{opacity:.2}50%{opacity:.9}}
+  #kpset{position:fixed;inset:0;z-index:65;display:none;align-items:center;justify-content:center;background:rgba(3,3,6,.85)}
+  #kpbox{width:460px;max-width:92vw;background:var(--panel);border:1px solid var(--edge);padding:24px;
+    box-shadow:0 0 0 1px #000,0 20px 60px -20px #000}
+  #kpbox h3{color:var(--phos);font-size:15px;letter-spacing:2px;margin:0 0 4px}
+  #kpbox .desc{color:var(--dim);font-size:12.5px;line-height:1.7;margin-bottom:16px}
+  #kpbox label{display:block;color:var(--ink);font-size:12px;letter-spacing:1px;margin:0 0 6px}
+  #kpkey{width:100%;background:#0b0c11;border:1px solid var(--edge);color:var(--ink);font-family:inherit;
+    font-size:13px;padding:10px 12px;letter-spacing:1px}
+  #kpkey:focus{outline:none;border-color:var(--phos)}
+  #kpbox .row2{display:flex;gap:10px;margin-top:18px}
+  #kpbox button{flex:1;font-family:inherit;font-size:13px;padding:10px;cursor:pointer;letter-spacing:2px;border:1px solid var(--edge);background:#151620;color:var(--ink)}
+  #kpsave{border-color:#2c5a44!important;color:var(--phos)!important}
+  #kpbox button:hover{border-color:var(--amber);color:#fff}
+  #kpbox .note{color:var(--dim);font-size:11px;line-height:1.7;margin-top:14px;border-top:1px dashed var(--edge);padding-top:12px}
+  #kpbox .note b{color:#8a9ab0}
+  #kpbox .status{font-size:12px;margin-top:10px;min-height:16px}
+  #kpbox .status.ok{color:var(--phos)} #kpbox .status.err{color:var(--blood2)}
+
+  /* ===== 怪物特写 / 立绘 ===== */
+  #portrait{position:fixed;inset:0;z-index:58;display:none;align-items:center;justify-content:center;
+    background:radial-gradient(60% 60% at 50% 45%, rgba(8,4,6,.72), rgba(2,2,4,.95));cursor:pointer}
+  #portrait .pframe{position:relative;width:min(70vh,440px);max-width:88vw;
+    border:1px solid #2a2230;box-shadow:0 0 0 1px #000, 0 0 80px -10px #000, inset 0 0 60px rgba(0,0,0,.6);
+    background:#050406;overflow:hidden;transform:scale(.96);opacity:0}
+  #portrait.show .pframe{animation:reveal .9s ease forwards}
+  @keyframes reveal{0%{transform:scale(.96) translateY(6px);opacity:0;filter:brightness(2.2) contrast(1.4)}
+    12%{opacity:1;filter:brightness(2) contrast(1.5)}18%{filter:none}100%{transform:scale(1) translateY(0);opacity:1;filter:none}}
+  /* 平静揭示（正常 NPC）：慢淡入、无强光闪 */
+  #portrait.show.calm .pframe{animation:revealCalm 1.25s ease-out forwards}
+  @keyframes revealCalm{0%{transform:scale(.985) translateY(12px);opacity:0}60%{opacity:1}100%{transform:scale(1) translateY(0);opacity:1}}
+  #portrait .pframe svg{width:100%;height:100%;display:block}
+  #portrait .pframe::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(120% 120% at 50% 45%, transparent 55%, rgba(0,0,0,.6) 100%),
+      repeating-linear-gradient(0deg, rgba(0,0,0,.16) 0, rgba(0,0,0,.16) 1px, transparent 2px, transparent 3px)}
+  #portrait .pcap{position:absolute;left:0;right:0;bottom:0;z-index:2;text-align:center;
+    color:#c7b6d6;font-size:13px;letter-spacing:3px;padding:12px;background:linear-gradient(0deg,rgba(4,3,6,.9),transparent)}
+  #portrait .phint{position:absolute;bottom:-26px;left:0;right:0;text-align:center;color:var(--dim);font-size:11px;letter-spacing:2px;opacity:.6}
+  .pbreathe{animation:pbreathe 6s ease-in-out infinite}
+  @keyframes pbreathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+
+  /* ===== 骰子弹层 ===== */
+  #dice{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;
+    background:rgba(3,3,6,.82)}
+  #dicebox{width:340px;background:var(--panel);border:1px solid var(--edge);padding:26px;text-align:center;
+    box-shadow:0 0 0 1px #000,0 20px 60px -20px #000}
+  #dicebox .what{color:var(--dim);font-size:12px;letter-spacing:2px}
+  #dicebox .skill{color:var(--amber);font-size:17px;margin:4px 0 2px}
+  #dicebox .target{color:var(--phos);font-size:12px;margin-bottom:18px}
+  /* 百分骰 · 十面滚筒骰（真 3D 立体） */
+  #dtray{position:relative;height:170px;display:flex;align-items:center;justify-content:center;margin:6px 0 8px}
+  #dtray::before{content:"";position:absolute;width:150px;height:150px;border-radius:50%;
+    border:1px solid rgba(90,70,70,.16);box-shadow:inset 0 0 40px rgba(60,20,20,.14);
+    background:radial-gradient(circle, rgba(30,10,12,.2), transparent 68%);animation:sigil 44s linear infinite}
+  #dtray::after{content:"";position:absolute;width:108px;height:108px;border-radius:50%;
+    border:1px dashed rgba(80,64,64,.12);animation:sigil 66s linear infinite reverse}
+  @keyframes sigil{to{transform:rotate(360deg)}}
+  #dcanvas{position:relative;z-index:2;display:block}
+  .diewrap{position:relative;width:64px;height:64px;z-index:2}
+  .dlbl{position:absolute;bottom:-24px;left:0;right:0;text-align:center;font-size:10px;color:#5f5540;letter-spacing:2px}
+  .barrel{position:absolute;inset:0;transform-style:preserve-3d;transform:rotateY(-15deg) rotateX(0deg);
+    will-change:transform;filter:drop-shadow(0 13px 9px rgba(0,0,0,.72))}
+  .bface{position:absolute;left:50%;top:50%;width:64px;height:32px;margin:-16px 0 0 -32px;
+    display:flex;align-items:center;justify-content:center;
+    font-family:"Courier New",monospace;font-weight:bold;font-size:18px;letter-spacing:1px;color:#c9bb99;
+    background:linear-gradient(180deg,#373127 0%,#221d16 52%,#0e0b08 100%);
+    border:1px solid #090705;box-shadow:inset 0 2px 3px rgba(255,236,196,.07),inset 0 -5px 9px rgba(0,0,0,.62);
+    backface-visibility:hidden;text-shadow:0 1px 0 #000,0 0 2px #000}
+  .bcap{position:absolute;left:50%;top:50%;width:96px;height:96px;margin:-48px 0 0 -48px;
+    background:radial-gradient(circle at 42% 36%,#2b261e,#0d0a07 78%);border:1px solid #090705;backface-visibility:hidden;
+    clip-path:polygon(100% 50%,90.45% 79.39%,65.45% 97.55%,34.55% 97.55%,9.55% 79.39%,0 50%,9.55% 20.61%,34.55% 2.45%,65.45% 2.45%,90.45% 20.61%)}
+  .diewrap.rolling{animation:diedrop 1.35s cubic-bezier(.3,.62,.4,1) forwards}
+  .diewrap.units.rolling{animation-delay:.12s}
+  @keyframes diedrop{
+    0%{transform:translate(-54px,-160px)}
+    38%{transform:translate(-12px,0)}      /* 第一次落地 */
+    48%{transform:translate(-5px,-22px)}
+    64%{transform:translate(3px,0)}         /* 弹起 */
+    78%{transform:translate(4px,-7px)}
+    90%{transform:translate(0,0)}100%{transform:translate(0,0)}}
+  #d100{font-family:"Courier New",monospace;font-size:46px;color:#c8bd9c;letter-spacing:2px;font-weight:bold;line-height:1;margin:8px 0 2px;min-height:46px;
+    text-shadow:0 0 20px rgba(0,0,0,.9)}
+  #d100 .eq{color:#5f5748;font-size:20px;margin:0 8px}
+  #d100 b{color:#e6dcc0}
+  #dicebox.thud{animation:dbthud .34s ease}
+  @keyframes dbthud{0%{transform:translateY(0)}18%{transform:translate(1px,5px) scale(.996)}44%{transform:translateY(-2px)}72%{transform:translateY(1px)}100%{transform:translateY(0)}}
+  #dres{font-size:16px;margin:12px 0 20px;min-height:22px;letter-spacing:2px}
+  #dres.ok{color:var(--phos)} #dres.gr{color:#8ef0b0} #dres.fail{color:var(--blood2)} #dres.fumble{color:var(--blood)}
+  #droll{background:var(--blood);border:1px solid var(--blood2);color:#fff;font-family:inherit;
+    font-size:15px;padding:10px 26px;cursor:pointer;letter-spacing:2px}
+  #droll:hover{background:var(--blood2)}
+  #dcont{display:none;background:#151620;border:1px solid var(--edge);color:var(--ink);
+    font-family:inherit;font-size:14px;padding:9px 24px;cursor:pointer;letter-spacing:2px}
+  #dcont:hover{border-color:var(--amber);color:#fff}
+
+  /* 标题幕 */
+  #title{position:fixed;inset:0;z-index:70;background:#050609;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;overflow:hidden}
+  #titlebg{position:absolute;inset:0;z-index:0;opacity:.85}
+  #titlebg svg{width:100%;height:100%;object-fit:cover;filter:saturate(.85) brightness(1.05) contrast(1.05);
+    animation:kenburns 40s ease-in-out infinite alternate;transform-origin:50% 55%}
+  #title .veil{position:absolute;inset:0;z-index:1;
+    background:
+      radial-gradient(680px 460px at 50% 44%, rgba(6,5,10,.28), rgba(4,4,7,.82) 80%),
+      linear-gradient(180deg, rgba(4,5,10,.55), rgba(4,4,7,.15) 42%, rgba(3,3,6,.92))}
+  #title > *:not(#titlebg):not(.veil){position:relative;z-index:2}
+  #title h1{font-size:42px;color:#e6e0d4;letter-spacing:12px;margin:0 0 8px;
+    text-shadow:0 0 40px rgba(0,0,0,.9),0 0 14px rgba(160,40,40,.25),0 3px 0 #000}
+  #title .en{color:var(--blood2);letter-spacing:5px;font-size:11.5px;margin-bottom:30px;opacity:.75}
+  #title .rule{width:120px;height:1px;background:linear-gradient(90deg,transparent,var(--blood),transparent);margin:0 0 26px;opacity:.7}
+  #title .by{color:#9a938a;font-size:13px;max-width:460px;line-height:2.1;margin-bottom:32px}
+  #title button{background:none;border:1px solid var(--blood);color:var(--blood2);font-family:inherit;
+    font-size:15px;padding:12px 40px;cursor:pointer;letter-spacing:4px}
+  #title button:hover{background:var(--blood);color:#fff}
+  #title .warn{color:var(--dim);font-size:10.5px;margin-top:26px;letter-spacing:1px;opacity:.6}
+  .flick{animation:flick 6s infinite}
+  @keyframes flick{0%,97%,100%{opacity:1}98%{opacity:.4}99%{opacity:.85}}
+  ::-webkit-scrollbar{width:8px}::-webkit-scrollbar-thumb{background:#22232c}::-webkit-scrollbar-track{background:#0a0a0e}
+  /* ===== 掷骰技能值 ===== */
+  #dskill .sv{color:var(--amber);font-size:.82em;margin-left:3px}
+  #dtarget b{color:var(--phos)}
+  /* ===== 回想 backlog ===== */
+  #backlog{position:fixed;inset:0;z-index:66;display:none;align-items:center;justify-content:center;background:rgba(3,3,6,.86)}
+  #blogbox{width:640px;max-width:92vw;max-height:82vh;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--edge);padding:20px 22px;box-shadow:0 0 0 1px #000,0 20px 60px -20px #000}
+  #blogbox h3{margin:0 0 12px;color:var(--phos);letter-spacing:2px;font-size:14px}
+  #bloglist{overflow-y:auto;padding-right:8px}
+  #bloglist .ent{margin:0 0 16px;border-left:2px solid var(--edge);padding-left:12px}
+  #bloglist .ent .loc{color:var(--amber);font-size:11px;letter-spacing:2px;margin-bottom:5px}
+  #bloglist .ent p{margin:0 0 7px;color:var(--ink);font-size:13.5px;line-height:1.85;white-space:pre-wrap}
+  #bloglist .empty{color:var(--dim);font-size:13px}
+  #blogclose{margin-top:14px;align-self:flex-end;background:#1a1622;border:1px solid var(--edge);color:var(--ink);font-family:inherit;padding:6px 18px;cursor:pointer;letter-spacing:2px}
+  /* ===== 通关侦探小结 ===== */
+  .summary{max-width:680px;margin:26px auto 8px;border:1px solid var(--edge);background:linear-gradient(180deg,#111019,#0c0b12);padding:18px 20px}
+  .summary h4{margin:0 0 12px;color:var(--amber);letter-spacing:3px;font-size:13px;border-bottom:1px dashed var(--edge);padding-bottom:8px}
+  .summary .kv{display:flex;justify-content:space-between;gap:14px;font-size:13px;margin:5px 0}
+  .summary .kv .lab{color:var(--dim)}
+  .summary .kv .val{color:var(--phos);text-align:right}
+  .summary ul.clues{margin:10px 0 2px;padding:0}
+  .summary .clues li{font-size:12.5px;color:var(--ink);margin:3px 0;list-style:none;padding-left:14px;position:relative}
+  .summary .clues li::before{content:"▸";position:absolute;left:0;color:var(--amber)}
+  /* ===== 时间 / 小镇地图 ===== */
+  .clock{color:var(--amber);font-size:12px;letter-spacing:1px;margin-top:5px;opacity:.9}
+  .mapwrap{max-width:820px;margin:0 auto}
+  .maphud{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;color:var(--amber);font-size:14px;letter-spacing:2px}
+  .maphud .mp{color:var(--phos)}
+  .mapframe{position:relative;border:1px solid #241d14;overflow:hidden}
+  .mapframe > svg{display:block;width:100%}
+  .pinlayer{position:absolute;inset:0}
+  .pin{position:absolute;transform:translate(-50%,-100%);background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;font-family:inherit;padding:0}
+  .pin .dot{width:15px;height:15px;border-radius:50% 50% 50% 0;transform:rotate(45deg);border:2px solid #0a0806;box-shadow:0 2px 6px #000}
+  .pin .lbl{margin-top:6px;font-size:12px;letter-spacing:1px;background:rgba(6,7,10,.8);border:1px solid #2a2318;padding:2px 8px;white-space:nowrap;color:#cfc6b8}
+  .pin.ok .dot{background:#e0b45a} .pin.ok .lbl{color:#f0d9a8}
+  .pin.ok:hover .dot,.pin.sel .dot{background:#ffd888;box-shadow:0 0 12px #e0b45a}
+  .pin.sel .lbl{border-color:#e0b45a}
+  .pin.done{opacity:.75} .pin.done .dot{background:#4a6a4a} .pin.done .lbl{color:#7a9a7a}
+  .pin.lock{opacity:.45} .pin.lock .dot{background:#3a3a3a} .pin.lock .lbl{color:#7a7a7a}
+  .pin.here .dot{background:#7fb0d8!important;animation:herepulse 2s ease-in-out infinite}
+  @keyframes herepulse{0%,100%{box-shadow:0 0 0 3px rgba(127,176,216,.22),0 0 10px #7fb0d8}50%{box-shadow:0 0 0 7px rgba(127,176,216,.06),0 0 18px #7fb0d8}}
+  .pin.here .lbl{color:#bcd8ef;border-color:#3a5a7a}
+  body.reduce-motion .pin.here .dot{animation:none;box-shadow:0 0 0 3px rgba(127,176,216,.22),0 0 10px #7fb0d8}
+  .machoice.trav{border-color:#2a3548}
+  .machoice[disabled]{opacity:.42;cursor:not-allowed}
+  .machoice[disabled]:hover{border-color:#241d14;background:#12100d;color:var(--ink)}
+  .maptip.travnote{color:#b3a894;border-left-color:#4a3a22;background:rgba(20,14,8,.42);margin-bottom:10px;line-height:1.85}
+  .mapact{margin:14px auto 4px;max-width:820px;min-height:40px}
+  .maptip{color:#9a9184;font-size:13px;line-height:1.8;background:rgba(10,9,8,.5);border-left:2px solid #2a2318;padding:8px 12px}
+  .maptip .mwarn{color:var(--blood2)}
+  .mactitle{color:var(--amber);font-size:13px;letter-spacing:2px;margin:0 0 8px}
+  .machoice{display:block;width:100%;text-align:left;background:#12100d;border:1px solid #241d14;color:var(--ink);font-family:inherit;font-size:14px;padding:11px 14px;margin:0 0 8px;cursor:pointer;letter-spacing:.5px}
+  .machoice:hover{border-color:var(--amber);background:#1a1610;color:#f0e0c0}
+  .machoice .cost{color:var(--dim);font-size:12px}
+  /* ===== CoC 机制：奖惩骰 / 推动 / 疯狂发作 ===== */
+  .dmod{font-size:11.5px;padding:1px 7px;border:1px solid;border-radius:3px;margin-left:6px;letter-spacing:1px}
+  .dmod.bonus{color:#6fbf8f;border-color:#2c5a44}
+  .dmod.pen{color:#d07a5a;border-color:#5a2c22}
+  .dmodnote{color:var(--dim);font-size:11.5px;letter-spacing:0}
+  #dwarn{color:var(--blood2);font-size:12.5px;letter-spacing:.5px;min-height:15px;margin:7px 0 2px;line-height:1.5}
+  #dpush{background:#2a1a10;border:1px solid #6a3a20;color:#e0a060;font-family:inherit;font-size:14px;padding:9px 18px;cursor:pointer;letter-spacing:2px;margin-right:6px}
+  #dpush:hover{border-color:#e0a060;color:#ffc080}
+  #madness{position:fixed;inset:0;z-index:68;display:none;align-items:center;justify-content:center;
+    background:radial-gradient(70% 70% at 50% 45%, rgba(40,6,10,.82), rgba(2,1,3,.97));cursor:pointer}
+  #madness.show #madbox{animation:madin .85s ease forwards}
+  @keyframes madin{0%{opacity:0;transform:scale(1.06) translateY(-8px);filter:blur(6px)}100%{opacity:1;transform:none;filter:none}}
+  #madbox{max-width:560px;padding:32px 30px;text-align:center}
+  #madk{color:#c8506a;font-size:15px;letter-spacing:8px;margin-bottom:20px;text-shadow:0 0 14px rgba(160,20,40,.6)}
+  #madt{color:#d8c6c0;font-size:16px;line-height:2.05;letter-spacing:.5px}
+  #madt b{color:#e88a6a;font-style:normal}
+  .madhint{margin-top:26px;color:#7a5a5a;font-size:11px;letter-spacing:3px;opacity:.7}
+  body.reduce-motion #madness.show #madbox{animation:none}
+  #phobias{color:#c8506a;font-size:11.5px;letter-spacing:1px;margin-top:6px;line-height:1.6}
+  #phobias b{color:#e08a6a;font-weight:normal}
+  /* ===== 移动端 ===== */
+  @media(max-width:720px){
+    #sheet{position:fixed;left:0;top:0;bottom:0;width:80%;max-width:290px;z-index:70;transform:translateX(-102%);transition:transform .28s ease;box-shadow:0 0 40px #000}
+    #sheet.open{transform:translateX(0)}
+    #banner{height:150px;flex-basis:150px}
+    #scroll{padding:18px 15px 8px}
+    #narr,.sys,.summary{max-width:100%}
+    #sheetbtn,#mini{display:block}
+    #mini{position:absolute;left:12px;top:11px;z-index:5;font-size:11px;letter-spacing:1px;color:var(--phos);background:rgba(5,6,10,.62);border:1px solid var(--edge);padding:2px 8px}
+    #mini b{color:var(--san)} #mini i{color:var(--blood2);font-style:normal}
+    #loc{font-size:11px;letter-spacing:2px}
+    #topbtns{max-width:82%}
+    #blogbox,#kpbox{max-height:86vh}
+  }
+</style>
+</head>
+<body>
+
+<canvas id="atmo"></canvas>
+<div id="vig"></div>
+
+<div id="app">
+  <!-- 角色卡 -->
+  <aside id="sheet">
+    <h2>调查员</h2>
+    <div class="role" id="pcname">漫特沃夫·埃大伯里</div>
+    <div class="role"><small id="pcjob">语言学教授 · 1922 · SEU</small></div>
+    <div class="clock" id="clock"></div>
+    <div id="phobias"></div>
+
+    <div class="bar-wrap">
+      <div class="bar-label"><span class="k">理智 SAN</span><span class="v"><span id="sanN">65</span>/99</span></div>
+      <div class="bar san"><i id="sanBar" style="width:65%"></i></div>
+    </div>
+    <div class="bar-wrap">
+      <div class="bar-label"><span class="k">生命 HP</span><span class="v"><span id="hpN">11</span>/11</span></div>
+      <div class="bar hp"><i id="hpBar" style="width:100%"></i></div>
+    </div>
+
+    <div class="sect">
+      <h3>属性</h3>
+      <div class="stats">
+        <div class="st"><b>45</b><span>力量</span></div>
+        <div class="st"><b>50</b><span>体质</span></div>
+        <div class="st"><b>60</b><span>体型</span></div>
+        <div class="st"><b>45</b><span>敏捷</span></div>
+        <div class="st"><b>80</b><span>智力</span></div>
+        <div class="st"><b>85</b><span>教育</span></div>
+      </div>
+    </div>
+
+    <div class="sect">
+      <h3>技能</h3>
+      <div class="grid" id="skills"></div>
+    </div>
+
+    <div class="sect">
+      <h3>随身物</h3>
+      <ul id="inv"></ul>
+    </div>
+  </aside>
+
+  <!-- 舞台 -->
+  <main id="stage">
+    <div id="banner"><div id="loc">阿诺兹堡</div><div id="mini"></div>
+      <div id="topbtns">
+        <button id="sheetbtn" title="调查员卡">☰</button>
+        <button id="log" title="回想（本轮读过的文字）">📖 回想</button>
+        <button id="ai" title="AI 守秘人设置">⚙ AI</button>
+        <button id="mute" title="音效开关">♪ 声</button>
+        <button id="motion" title="减弱闪烁/抖屏（光敏友好）">🌀 动</button>
+      </div></div>
+    <div id="scroll">
+      <div id="narr"></div>
+      <div id="choices"></div>
+      <div id="freewrap">
+        <div class="lbl">▸ 或者，说出你想做的（自由行动）　<span style="opacity:.55">· 提示：点击叙述文字可跳过逐字动画</span></div>
+        <div id="freerow">
+          <input id="free" placeholder="例如：搜查房间 / 观察那个人 / 打开信封……" autocomplete="off">
+          <button id="freego">行动</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="flash"></div>
+
+<!-- 怪物特写 / 立绘 -->
+<div id="portrait"><div class="pframe"><div class="pcap"></div><div class="phint">▸ 点击继续</div></div></div>
+
+<!-- AI 守秘人设置 -->
+<div id="kpset"><div id="kpbox">
+  <h3>AI 守秘人（KP）</h3>
+  <div class="desc">填入一个 Anthropic API Key，游戏的自由输入框就会变成真·守秘人——你写任何行动，AI 都会以克苏鲁守秘人的身份实时接住，用便宜的 Claude Haiku 模型，一整局大约几美分。</div>
+  <label>Anthropic API Key（仅存本地浏览器，绝不上传）</label>
+  <input id="kpkey" type="password" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
+  <div class="status" id="kpstatus"></div>
+  <div class="row2">
+    <button id="kpsave">保存并启用</button>
+    <button id="kpclose">关闭</button>
+  </div>
+  <div class="note">
+    <b>怎么拿 key：</b>去 console.anthropic.com → API Keys 创建，充一点额度即可（和你的 Claude 订阅是两笔账）。<br>
+    <b>省钱：</b>默认用 Claude Haiku + 只发精简上下文，一局约几美分。<br>
+    <b>隐私：</b>Key 只存在你本机浏览器 localStorage，游戏是本地网页，只有你操作时才把当前剧情片段发给 Anthropic 生成回应。
+  </div>
+</div></div>
+
+<!-- 骰子 -->
+<div id="dice"><div id="dicebox">
+  <div class="what">技能检定</div>
+  <div class="skill" id="dskill">侦查</div>
+  <div class="target" id="dtarget">目标 ≤ 60</div>
+  <div id="dtray"><canvas id="dcanvas" width="380" height="170"></canvas></div>
+  <div id="d100">--</div>
+  <div id="dres"></div>
+  <div id="dwarn"></div>
+  <button id="droll">掷 d100</button>
+  <button id="dpush">推动检定 ⟳</button>
+  <button id="dcont">继续 ▸</button>
+</div></div>
+
+<!-- 疯狂发作 -->
+<div id="madness"><div id="madbox">
+  <div id="madk">疯 狂 发 作</div>
+  <div id="madt"></div>
+  <div class="madhint">▸ 点击继续</div>
+</div></div>
+
+<!-- 回想 backlog -->
+<div id="backlog"><div id="blogbox">
+  <h3>回想 · 本轮读过的文字</h3>
+  <div id="bloglist"></div>
+  <button id="blogclose">合 上</button>
+</div></div>
+
+<!-- 标题 -->
+<div id="title">
+  <div id="titlebg"></div>
+  <div class="veil"></div>
+  <h1 class="flick">活 神 之 手</h1>
+  <div class="en">THE YELLOW SIGN &nbsp;·&nbsp; CALL OF CTHULHU</div>
+  <div class="rule"></div>
+  <div class="by">1920 年代，阿卡姆。一枚刻着黄衣之印的吊坠落入你手中，一位学者的厄运就此开始倒数。<br><span style="color:var(--amber)">「接着我沉入了深渊，听见身着黄衣的王向我的灵魂耳语：落入活神之手中，是件可怕的事。」</span></div>
+  <div class="cwarn">⚠ 本作含闪烁、震动与惊吓效果；光敏感者可在游戏内顶栏「🌀 动」一键减弱。</div>
+  <button id="startBtn">拆 开 包 裹</button>
+  <div id="newgame" style="margin-top:14px"><a href="#" style="color:var(--dim);font-size:12px;letter-spacing:2px;text-decoration:none;border-bottom:1px dotted var(--dim)">从头开始（清除存档）</a></div>
+  <div id="endingdex" class="dex"></div>
+  <div class="warn">《活神之手》· 改编自罗伯特·钱伯斯《黄衣之印》（自用）· 语言学教授埃大伯里 · 点子王系统 idea-0012</div>
+</div>
+
+<script>
+/* ============ 像素风场景横幅 (纯 SVG rect，无外部资源) ============ */
+const BANNERS = {
+  harbor: `<svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid slice" shape-rendering="crispEdges">
+    <defs><linearGradient id="tsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a2f3c"/><stop offset="0.6" stop-color="#4a3f42"/><stop offset="1" stop-color="#6b4a38"/></linearGradient></defs>
+    <rect width="320" height="120" fill="url(#tsky)"/>
+    <rect x="0" y="78" width="320" height="42" fill="#14100e"/>
+    <rect x="14" y="46" width="46" height="34" fill="#0f0d0c"/><rect x="14" y="42" width="46" height="5" fill="#161210"/><rect x="30" y="34" width="14" height="8" fill="#0f0d0c"/>
+    <rect x="22" y="56" width="8" height="8" fill="#e0a840" opacity=".75"/><rect x="44" y="56" width="8" height="8" fill="#3a2c16" opacity=".5"/>
+    <rect x="72" y="52" width="40" height="28" fill="#12100d"/><rect x="82" y="60" width="9" height="10" fill="#d99a34" opacity=".7"/><rect x="96" y="60" width="9" height="10" fill="#12100d"/>
+    <rect x="150" y="20" width="20" height="60" fill="#0e0c0b"/><polygon points="150,20 160,4 170,20" fill="#0c0a09"/><rect x="157" y="34" width="6" height="10" fill="#2a2420"/>
+    <rect x="128" y="58" width="20" height="22" fill="#0f0d0c"/><rect x="176" y="54" width="34" height="26" fill="#12100d"/><rect x="184" y="62" width="8" height="9" fill="#c98f2e" opacity=".6"/>
+    <rect x="228" y="50" width="44" height="30" fill="#100e0c"/><rect x="238" y="58" width="9" height="10" fill="#d99a34" opacity=".65"/><rect x="256" y="58" width="9" height="10" fill="#3a2c16" opacity=".5"/>
+    <rect x="286" y="44" width="30" height="36" fill="#0e0c0b"/><rect x="294" y="54" width="8" height="9" fill="#e0a840" opacity=".55"/>
+    <g fill="#5a3a1e" opacity=".8"><circle cx="118" cy="48" r="9"/><circle cx="126" cy="52" r="8"/><circle cx="222" cy="46" r="10"/><circle cx="214" cy="52" r="8"/></g>
+    <rect x="112" y="56" width="3" height="24" fill="#0a0806"/><rect x="220" y="54" width="3" height="26" fill="#0a0806"/>
+    <rect x="104" y="60" width="3" height="26" fill="#0d0b0a"/><rect x="102" y="58" width="7" height="4" fill="#1a1512"/><circle cx="105" cy="60" r="3" fill="#e8b45a" opacity=".7"/>
+    <g fill="#3a2c1a" opacity=".6"><rect x="60" y="100" width="6" height="2"/><rect x="140" y="106" width="7" height="2"/><rect x="240" y="102" width="6" height="2"/><rect x="190" y="110" width="6" height="2"/></g>
+  </svg>`,
+  inn: `<svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid slice" shape-rendering="crispEdges">
+    <defs><radialGradient id="ilamp" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#e8b45a" stop-opacity="0.5"/><stop offset="0.5" stop-color="#b57a2a" stop-opacity="0.18"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient></defs>
+    <rect width="320" height="120" fill="#0d0a08"/>
+    <rect x="0" y="20" width="320" height="1" fill="#181009" opacity=".6"/><rect x="0" y="54" width="320" height="1" fill="#181009" opacity=".5"/>
+    <!-- 左侧冷光窗 -->
+    <rect x="14" y="24" width="26" height="34" fill="#0c1016"/><rect x="16" y="26" width="10" height="30" fill="#20303e" opacity=".5"/><rect x="28" y="26" width="10" height="30" fill="#1a2836" opacity=".45"/>
+    <rect x="26" y="24" width="2" height="34" fill="#0a0a0c"/>
+    <!-- 楼梯上行入黑（右） -->
+    <polygon points="250,120 320,120 320,30 288,30" fill="#080605"/>
+    <rect x="262" y="60" width="58" height="4" fill="#0c0908"/><rect x="272" y="74" width="48" height="4" fill="#0c0908"/><rect x="282" y="88" width="38" height="4" fill="#0c0908"/><rect x="292" y="102" width="28" height="4" fill="#0c0908"/>
+    <rect x="292" y="34" width="12" height="22" fill="#050404"/><rect x="296" y="38" width="4" height="10" fill="#141018" opacity=".8"/>
+    <!-- 吊灯 + 暖光晕 -->
+    <ellipse cx="150" cy="70" rx="115" ry="72" fill="url(#ilamp)"/>
+    <rect x="148" y="8" width="4" height="18" fill="#1a140c"/><rect x="144" y="26" width="12" height="8" fill="#2a1e10"/><rect x="146" y="28" width="8" height="5" fill="#f0c060" opacity=".9"/>
+    <!-- 前台柜 + 登记簿 -->
+    <rect x="80" y="82" width="150" height="38" fill="#100b07"/><rect x="80" y="82" width="150" height="4" fill="#20160c"/><rect x="80" y="86" width="150" height="2" fill="#3a2814" opacity=".5"/>
+    <rect x="120" y="80" width="26" height="4" fill="#1c150e"/><rect x="122" y="79" width="22" height="2" fill="#3a2e1e" opacity=".7"/>
+    <!-- 钥匙挂钩 -->
+    <rect x="60" y="30" width="30" height="16" fill="#0c0907"/>
+    <rect x="64" y="34" width="1" height="6" fill="#8a6a2a"/><rect x="70" y="34" width="1" height="5" fill="#8a6a2a"/><rect x="76" y="34" width="1" height="6" fill="#6a4e1e"/><rect x="82" y="34" width="1" height="4" fill="#8a6a2a"/>
+  </svg>`,
+  post: `<svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid slice" shape-rendering="crispEdges">
+    <defs><radialGradient id="liblamp" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#4a7a4e" stop-opacity=".45"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient></defs>
+    <rect width="320" height="120" fill="#0c0b09"/>
+    <g fill="#12100c">
+      <rect x="6" y="8" width="40" height="104"/><rect x="70" y="14" width="34" height="98"/><rect x="216" y="14" width="34" height="98"/><rect x="274" y="8" width="40" height="104"/>
+    </g>
+    <g opacity=".85">
+      <g><rect x="8" y="12" width="36" height="2" fill="#20180f"/><rect x="8" y="34" width="36" height="2" fill="#20180f"/><rect x="8" y="56" width="36" height="2" fill="#20180f"/><rect x="8" y="78" width="36" height="2" fill="#20180f"/><rect x="8" y="100" width="36" height="2" fill="#20180f"/></g>
+      <g fill="#4a3a22"><rect x="10" y="16" width="4" height="16"/><rect x="15" y="16" width="5" height="16"/><rect x="21" y="18" width="4" height="14"/><rect x="26" y="16" width="5" height="16"/><rect x="32" y="17" width="4" height="15"/><rect x="37" y="16" width="5" height="16"/>
+        <rect x="10" y="38" width="5" height="16"/><rect x="16" y="38" width="4" height="16"/><rect x="21" y="40" width="5" height="14"/><rect x="27" y="38" width="4" height="16"/><rect x="32" y="38" width="5" height="16"/><rect x="38" y="39" width="4" height="15"/>
+        <rect x="10" y="60" width="4" height="16"/><rect x="15" y="60" width="5" height="16"/><rect x="21" y="60" width="4" height="16"/><rect x="26" y="62" width="5" height="14"/><rect x="32" y="60" width="4" height="16"/><rect x="37" y="60" width="5" height="16"/></g>
+      <g fill="#3a3020"><rect x="72" y="18" width="30" height="2"/><rect x="72" y="40" width="30" height="2"/><rect x="72" y="62" width="30" height="2"/><rect x="72" y="84" width="30" height="2"/>
+        <rect x="74" y="22" width="4" height="16"/><rect x="79" y="22" width="4" height="16"/><rect x="84" y="24" width="4" height="14"/><rect x="90" y="22" width="4" height="16"/><rect x="96" y="23" width="4" height="15"/></g>
+      <g fill="#3a3020"><rect x="218" y="18" width="30" height="2"/><rect x="218" y="40" width="30" height="2"/><rect x="218" y="62" width="30" height="2"/>
+        <rect x="220" y="22" width="4" height="16"/><rect x="226" y="22" width="4" height="16"/><rect x="232" y="24" width="4" height="14"/><rect x="238" y="22" width="4" height="16"/></g>
+      <g fill="#4a3a22"><rect x="278" y="14" width="4" height="16"/><rect x="284" y="16" width="4" height="14"/><rect x="290" y="14" width="4" height="16"/><rect x="296" y="15" width="4" height="15"/><rect x="302" y="14" width="4" height="16"/></g>
+    </g>
+    <rect x="126" y="6" width="64" height="48" fill="#0a0d12"/><rect x="130" y="10" width="56" height="40" fill="#1c2634" opacity=".5"/><rect x="157" y="8" width="2" height="44" fill="#070a0e"/><rect x="128" y="30" width="60" height="2" fill="#070a0e"/>
+    <rect x="0" y="100" width="320" height="20" fill="#080706"/>
+    <ellipse cx="160" cy="92" rx="60" ry="28" fill="url(#liblamp)"/>
+    <rect x="120" y="86" width="80" height="34" fill="#0b0908"/><rect x="120" y="86" width="80" height="3" fill="#1a140c"/>
+    <rect x="152" y="70" width="16" height="6" fill="#1d3a22"/><rect x="158" y="62" width="4" height="10" fill="#0d140c"/><rect x="150" y="76" width="20" height="2" fill="#2c5a34" opacity=".8"/>
+    <rect x="132" y="82" width="26" height="4" fill="#2a2318" opacity=".7"/><rect x="166" y="83" width="18" height="3" fill="#221c12" opacity=".6"/>
+  </svg>`,
+  room: `<svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid slice" shape-rendering="crispEdges">
+    <defs><radialGradient id="stlamp" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#e0b45a" stop-opacity=".4"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient></defs>
+    <rect width="320" height="120" fill="#0e0b08"/>
+    <rect x="0" y="0" width="150" height="120" fill="#100c09"/>
+    <g>
+      <rect x="6" y="6" width="138" height="2" fill="#20180f"/><rect x="6" y="34" width="138" height="2" fill="#20180f"/><rect x="6" y="62" width="138" height="2" fill="#20180f"/><rect x="6" y="90" width="138" height="2" fill="#20180f"/><rect x="6" y="116" width="138" height="2" fill="#20180f"/>
+    </g>
+    <g>
+      <rect x="8" y="10" width="5" height="22" fill="#5a2820"/><rect x="14" y="10" width="6" height="22" fill="#3a4a2a"/><rect x="21" y="12" width="4" height="20" fill="#7a5a2a"/><rect x="26" y="10" width="6" height="22" fill="#2a3a52"/><rect x="33" y="11" width="5" height="21" fill="#5a4a2a"/><rect x="39" y="10" width="6" height="22" fill="#402838"/><rect x="46" y="12" width="5" height="20" fill="#6a3020"/>
+      <rect x="70" y="10" width="6" height="22" fill="#2a4a3a"/><rect x="77" y="11" width="4" height="21" fill="#7a6a3a"/><rect x="82" y="10" width="6" height="22" fill="#4a2830"/><rect x="89" y="12" width="5" height="20" fill="#2a3a4a"/><rect x="95" y="10" width="6" height="22" fill="#5a4020"/>
+      <rect x="8" y="38" width="6" height="22" fill="#3a2a4a"/><rect x="15" y="39" width="5" height="21" fill="#6a5020"/><rect x="21" y="38" width="6" height="22" fill="#2a4a30"/><rect x="28" y="40" width="4" height="20" fill="#7a3020"/><rect x="33" y="38" width="6" height="22" fill="#2a3850"/>
+      <rect x="60" y="38" width="6" height="22" fill="#5a3a20"/><rect x="67" y="39" width="5" height="21" fill="#3a4a5a"/><rect x="73" y="38" width="6" height="22" fill="#6a2a30"/><rect x="80" y="40" width="5" height="20" fill="#4a5a2a"/><rect x="86" y="38" width="6" height="22" fill="#302840"/><rect x="93" y="39" width="5" height="21" fill="#7a5a2a"/><rect x="99" y="38" width="6" height="22" fill="#2a4a4a"/>
+      <rect x="8" y="66" width="6" height="22" fill="#6a4020"/><rect x="15" y="67" width="5" height="21" fill="#2a3a4a"/><rect x="21" y="66" width="6" height="22" fill="#5a2830"/><rect x="28" y="68" width="4" height="20" fill="#4a5a2a"/><rect x="33" y="66" width="6" height="22" fill="#3a2a4a"/><rect x="40" y="67" width="5" height="21" fill="#7a6a3a"/>
+      <rect x="70" y="66" width="6" height="22" fill="#2a4a3a"/><rect x="77" y="68" width="5" height="20" fill="#6a3020"/><rect x="83" y="66" width="6" height="22" fill="#2a3852"/>
+    </g>
+    <rect x="104" y="64" width="40" height="30" fill="#050403"/>
+    <rect x="106" y="66" width="36" height="4" fill="#1a1108" opacity=".7"/>
+    <rect x="0" y="118" width="150" height="2" fill="#050403"/>
+    <rect x="214" y="18" width="72" height="66" fill="#0a0c12"/><rect x="218" y="22" width="64" height="58" fill="#1c2634" opacity=".55"/>
+    <rect x="248" y="20" width="2" height="60" fill="#070a0e"/><rect x="218" y="48" width="64" height="2" fill="#070a0e"/>
+    <rect x="250" y="48" width="8" height="3" fill="#8a6a2a" opacity=".7"/>
+    <ellipse cx="185" cy="96" rx="70" ry="34" fill="url(#stlamp)"/>
+    <rect x="176" y="86" width="60" height="34" fill="#0d0a07"/><rect x="176" y="86" width="60" height="4" fill="#20160c"/>
+    <rect x="196" y="78" width="4" height="10" fill="#1a140c"/><rect x="188" y="72" width="20" height="8" fill="#3a2c14"/><rect x="190" y="74" width="16" height="5" fill="#e8b45a" opacity=".85"/>
+    <rect x="204" y="82" width="22" height="4" fill="#3a2e1c" opacity=".7"/>
+  </svg>`,
+  dark: `<svg viewBox="0 0 200 60" preserveAspectRatio="none"><rect width="200" height="60" fill="#050406"/></svg>`,
+  graveyard: `<svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid slice" shape-rendering="crispEdges">
+    <defs><linearGradient id="gvsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1c222c"/><stop offset="1" stop-color="#38343a"/></linearGradient>
+      <radialGradient id="gvmoon" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#c8ccc0" stop-opacity=".6"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient></defs>
+    <rect width="320" height="120" fill="url(#gvsky)"/>
+    <ellipse cx="256" cy="26" rx="30" ry="26" fill="url(#gvmoon)"/><circle cx="256" cy="26" r="10" fill="#d4d8cc" opacity=".55"/>
+    <rect x="0" y="20" width="320" height="4" fill="#2a2932" opacity=".5"/><rect x="0" y="34" width="240" height="3" fill="#262530" opacity=".45"/>
+    <rect x="0" y="86" width="320" height="34" fill="#141813"/>
+    <g fill="#0d1210"><ellipse cx="40" cy="70" rx="26" ry="22"/><ellipse cx="300" cy="66" rx="30" ry="26"/></g>
+    <rect x="36" y="70" width="4" height="24" fill="#080a08"/><rect x="298" y="66" width="4" height="30" fill="#080a08"/>
+    <g stroke="#0a0d0a" stroke-width="2" fill="none" opacity=".7"><path d="M40 70 Q30 58 24 62"/><path d="M40 70 Q52 56 60 60"/><path d="M300 66 Q288 52 280 58"/><path d="M300 66 Q312 54 318 60"/></g>
+    <rect x="150" y="30" width="10" height="60" fill="#2a2e30"/><polygon points="150,30 155,20 160,30" fill="#22262a"/><rect x="149" y="30" width="12" height="3" fill="#33383a"/>
+    <rect x="98" y="52" width="16" height="38" fill="#23282a"/><rect x="96" y="50" width="20" height="4" fill="#2c3234"/><rect x="103" y="40" width="6" height="12" fill="#23282a"/><rect x="99" y="44" width="14" height="4" fill="#23282a"/>
+    <rect x="60" y="60" width="18" height="30" fill="#20252700"/><path d="M60 66 A9 9 0 0 1 78 66 L78 90 L60 90 Z" fill="#22282a"/>
+    <rect x="200" y="58" width="16" height="32" fill="#21262800"/><path d="M200 64 A8 8 0 0 1 216 64 L216 90 L200 90 Z" fill="#20262a"/>
+    <rect x="230" y="62" width="20" height="28" fill="#1e2426"/><rect x="228" y="60" width="24" height="4" fill="#262c2e"/>
+    <rect x="118" y="74" width="34" height="16" fill="#191f20"/><rect x="116" y="72" width="38" height="4" fill="#212829"/>
+    <g stroke="#0e1210" stroke-width="1" opacity=".5"><line x1="0" y1="92" x2="320" y2="92"/></g>
+    <g fill="#3a2c1a" opacity=".55"><rect x="88" y="102" width="6" height="2"/><rect x="170" y="106" width="7" height="2"/><rect x="250" y="100" width="6" height="2"/><rect x="130" y="110" width="6" height="2"/></g>
+  </svg>`,
+  tomb: `<svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid slice" shape-rendering="crispEdges">
+    <defs><radialGradient id="tbmouth" cx="50%" cy="55%" r="55%"><stop offset="0" stop-color="#000" stop-opacity="1"/><stop offset="0.7" stop-color="#0a0806" stop-opacity="1"/><stop offset="1" stop-color="#141010" stop-opacity="1"/></radialGradient></defs>
+    <rect width="320" height="120" fill="#0a0908"/>
+    <rect x="0" y="0" width="320" height="120" fill="#0d0b0a"/>
+    <g stroke="#050403" stroke-width="1" opacity=".7"><line x1="0" y1="28" x2="320" y2="28"/><line x1="0" y1="64" x2="320" y2="64"/><line x1="70" y1="0" x2="70" y2="64"/><line x1="150" y1="0" x2="150" y2="28"/><line x1="240" y1="28" x2="240" y2="64"/></g>
+    <rect x="24" y="70" width="120" height="34" fill="#151210"/><rect x="24" y="70" width="120" height="5" fill="#221c18"/>
+    <polygon points="30,70 60,58 150,58 144,70" fill="#0c0a09"/>
+    <rect x="52" y="60" width="70" height="4" fill="#0a0806" transform="rotate(-6 87 62)"/>
+    <path d="M196 120 Q196 66 232 60 Q268 66 268 120 Z" fill="url(#tbmouth)"/>
+    <path d="M196 120 Q196 66 232 60 Q268 66 268 120" fill="none" stroke="#060403" stroke-width="3"/>
+    <g stroke="#1a1512" stroke-width="1.5" opacity=".6" fill="none"><path d="M206 92 q6 -10 14 -6"/><path d="M244 96 q-6 -12 -12 -8"/><path d="M214 108 q8 -8 16 -4"/></g>
+    <rect x="0" y="112" width="320" height="8" fill="#070605"/>
+  </svg>`,
+
+  // 教堂内景（被摘十字架，鲸骨拼成的结浪竖眼浮雕）
+  church: `<svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid slice" shape-rendering="crispEdges">
+    <defs><linearGradient id="cwin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#26323c"/><stop offset="1" stop-color="#0a1016"/></linearGradient>
+      <radialGradient id="cgl" cx="50%" cy="42%" r="60%"><stop offset="0" stop-color="#26343a" stop-opacity=".5"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient></defs>
+    <rect width="320" height="120" fill="#090b0d"/>
+    <rect x="0" y="0" width="320" height="120" fill="url(#cgl)"/>
+    <!-- 拱顶暗梁 -->
+    <path d="M40 0 L160 34 L280 0" stroke="#141a1e" stroke-width="2" fill="none"/>
+    <rect x="158" y="30" width="4" height="90" fill="#0c1114"/>
+    <!-- 后墙拱窗（碎） -->
+    <rect x="132" y="12" width="56" height="52" fill="#0a0d12"/><path d="M132 30 A28 28 0 0 1 188 30 L188 64 L132 64 Z" fill="url(#cwin)" opacity=".5"/>
+    <rect x="150" y="40" width="20" height="24" fill="#060a0e"/>
+    <!-- 鲸骨浮雕：结浪 + 竖眼 -->
+    <g stroke="#b9b09a" stroke-width="2.5" fill="none" opacity=".85">
+      <path d="M120 84 q20 -14 40 0 q20 14 40 0"/><path d="M122 92 q19 -12 38 0 q19 12 38 0"/></g>
+    <ellipse cx="160" cy="74" rx="16" ry="22" fill="none" stroke="#c6bda6" stroke-width="2.5"/>
+    <path d="M160 56 Q166 74 160 92 Q154 74 160 56 Z" fill="#0a0d0c"/>
+    <!-- 空长椅 -->
+    <rect x="30" y="92" width="70" height="6" fill="#0d1012"/><rect x="30" y="104" width="70" height="6" fill="#0c0f11"/>
+    <rect x="220" y="92" width="70" height="6" fill="#0d1012"/><rect x="220" y="104" width="70" height="6" fill="#0c0f11"/>
+    <!-- 中央通往地下的石阶（淌水回声） -->
+    <rect x="140" y="104" width="40" height="16" fill="#05080a"/><rect x="146" y="110" width="28" height="2" fill="#16303a" opacity=".6"/>
+    <!-- 湿地面反光 -->
+    <rect x="0" y="116" width="320" height="4" fill="#0a1418" opacity=".5"/>
+  </svg>`,
+
+  // 白天的岬角灯塔（藤壶塔身、灰海、乱云）
+  lighthouse: `<svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid slice" shape-rendering="crispEdges">
+    <defs><linearGradient id="lsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1c2530"/><stop offset="1" stop-color="#33403e"/></linearGradient>
+      <linearGradient id="lsea2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#20303a"/><stop offset="1" stop-color="#0c161c"/></linearGradient></defs>
+    <rect width="320" height="120" fill="url(#lsky)"/>
+    <!-- 乱云 -->
+    <rect x="0" y="20" width="200" height="6" fill="#28313c" opacity=".6"/><rect x="120" y="34" width="200" height="5" fill="#242d38" opacity=".5"/>
+    <!-- 海 -->
+    <rect x="0" y="74" width="320" height="46" fill="url(#lsea2)"/>
+    <g stroke="#3a4e54" stroke-width="1" opacity=".5"><line x1="0" y1="82" x2="320" y2="82"/><line x1="0" y1="96" x2="320" y2="96"/><line x1="0" y1="110" x2="320" y2="110"/></g>
+    <!-- 礁岩 -->
+    <path d="M150 120 L170 74 Q196 66 220 74 L240 120 Z" fill="#161c1e"/>
+    <path d="M150 120 L170 74 Q182 70 190 74 L188 120 Z" fill="#1c2426"/>
+    <!-- 塔身（条纹+藤壶） -->
+    <rect x="184" y="18" width="20" height="60" fill="#c9c3b2"/><rect x="184" y="18" width="8" height="60" fill="#dcd6c6"/>
+    <rect x="184" y="28" width="20" height="8" fill="#3a2418"/><rect x="184" y="44" width="20" height="8" fill="#3a2418"/><rect x="184" y="60" width="20" height="8" fill="#3a2418"/>
+    <g fill="#6f7466" opacity=".8"><rect x="186" y="70" width="3" height="3"/><rect x="196" y="66" width="3" height="3"/><rect x="189" y="62" width="2" height="2"/><rect x="199" y="72" width="2" height="2"/></g>
+    <!-- 灯室（白天熄灭） -->
+    <rect x="180" y="8" width="28" height="12" fill="#20242c"/><rect x="182" y="10" width="24" height="8" fill="#0d1014"/><rect x="178" y="4" width="32" height="5" fill="#2a2e36"/>
+    <rect x="192" y="0" width="4" height="4" fill="#141820"/>
+    <!-- 海鸟 -->
+    <path d="M60 30 l6 2 l6 -2" stroke="#0c1114" stroke-width="1.5" fill="none"/><path d="M90 22 l5 2 l5 -2" stroke="#0c1114" stroke-width="1.5" fill="none"/>
+  </svg>`,
+
+  // 港务会办公室（正式却阴冷，绿罩灯、海图、灰港窗光）
+  hall: `<svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid slice" shape-rendering="crispEdges">
+    <defs><radialGradient id="hlamp2" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#4a7a4e" stop-opacity=".5"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
+      <linearGradient id="hwin2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2c3a44"/><stop offset="1" stop-color="#101a20"/></linearGradient></defs>
+    <rect width="320" height="120" fill="#0e0f0c"/>
+    <rect x="0" y="72" width="320" height="48" fill="#0a0b09"/>
+    <!-- 灰港窗光 -->
+    <rect x="232" y="16" width="60" height="56" fill="#0a1015"/><rect x="236" y="20" width="52" height="48" fill="url(#hwin2)" opacity=".6"/>
+    <rect x="260" y="18" width="2" height="52" fill="#0a1015"/><rect x="236" y="42" width="52" height="2" fill="#0a1015"/>
+    <!-- 墙上海图 -->
+    <rect x="30" y="20" width="52" height="40" fill="#14140e"/><rect x="34" y="24" width="44" height="32" fill="#2a2a1c" opacity=".6"/>
+    <g stroke="#4a4a30" stroke-width="1" opacity=".5" fill="none"><path d="M40 40 q12 -8 24 2"/><circle cx="56" cy="38" r="6"/></g>
+    <!-- 大办公桌 -->
+    <rect x="70" y="78" width="180" height="42" fill="#120d08"/><rect x="70" y="78" width="180" height="4" fill="#241a0e"/>
+    <!-- 绿罩台灯 + 光晕 -->
+    <ellipse cx="120" cy="80" rx="60" ry="40" fill="url(#hlamp2)"/>
+    <rect x="112" y="60" width="16" height="6" fill="#1d3a22"/><rect x="118" y="52" width="3" height="10" fill="#0d140c"/><rect x="110" y="66" width="20" height="2" fill="#2c5a34" opacity=".8"/>
+    <!-- 台上文件 -->
+    <rect x="150" y="74" width="24" height="4" fill="#3a3428" opacity=".7"/><rect x="180" y="75" width="18" height="3" fill="#2a2620" opacity=".6"/>
+  </svg>`,
+
+  // 镇口公用水井（雾中石井、井绳、暗水）
+  // 金博尔宅·客厅——壁炉/翼椅/台灯/落地书架（托马斯接待处，取代旅馆大堂借用）
+  parlor: `<svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid slice" shape-rendering="crispEdges">
+  <defs>
+    <radialGradient id="plamp" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#e6b05a" stop-opacity=".5"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
+    <radialGradient id="pfire" cx="50%" cy="60%" r="55%"><stop offset="0" stop-color="#e07a2a" stop-opacity=".55"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="320" height="120" fill="#0d0a08"/>
+  <!-- 护墙板 + 壁纸竖线 -->
+  <rect x="0" y="0" width="320" height="66" fill="#100b08"/>
+  <rect x="0" y="66" width="320" height="2" fill="#1c140c" opacity=".6"/>
+  <g stroke="#1a120a" stroke-width="1" opacity=".5"><line x1="46" y1="6" x2="46" y2="66"/><line x1="132" y1="6" x2="132" y2="66"/><line x1="248" y1="6" x2="248" y2="66"/></g>
+  <!-- 壁炉(左) -->
+  <rect x="20" y="40" width="74" height="80" fill="#0a0705"/>
+  <rect x="15" y="35" width="84" height="8" fill="#171009"/>
+  <rect x="31" y="52" width="52" height="68" fill="#050303"/>
+  <ellipse cx="57" cy="104" rx="30" ry="16" fill="url(#pfire)"/>
+  <g fill="#e08a34" opacity=".85"><rect x="45" y="99" width="6" height="5"/><rect x="55" y="101" width="7" height="5"/><rect x="65" y="99" width="5" height="5"/></g>
+  <rect x="35" y="112" width="44" height="4" fill="#2a1810"/>
+  <!-- 壁炉上方画框 + 台钟 -->
+  <rect x="34" y="9" width="34" height="24" fill="#1a120a"/><rect x="37" y="12" width="28" height="18" fill="#241a10" opacity=".7"/>
+  <rect x="76" y="24" width="12" height="12" fill="#160f08"/><circle cx="82" cy="30" r="3" fill="#3a2c18"/>
+  <!-- 右侧落地书架 -->
+  <rect x="288" y="18" width="32" height="102" fill="#0c0906"/>
+  <g fill="#3a2e1c" opacity=".55"><rect x="292" y="30" width="24" height="2"/><rect x="292" y="48" width="24" height="2"/><rect x="292" y="66" width="24" height="2"/><rect x="292" y="84" width="24" height="2"/></g>
+  <g fill="#5a4a2a" opacity=".45"><rect x="294" y="34" width="4" height="12"/><rect x="300" y="34" width="4" height="12"/><rect x="306" y="34" width="3" height="12"/><rect x="294" y="52" width="3" height="12"/><rect x="300" y="52" width="4" height="12"/></g>
+  <!-- 地毯 -->
+  <rect x="0" y="112" width="320" height="8" fill="#140d09"/>
+  <rect x="112" y="110" width="132" height="10" fill="#3a1e16" opacity=".5"/><rect x="126" y="112" width="104" height="6" fill="#5a2c1e" opacity=".3"/>
+  <!-- 翼状扶手椅(中) -->
+  <path d="M150 119 L150 72 Q152 60 166 60 L206 60 Q220 60 222 72 L222 119 Z" fill="#120d09"/>
+  <path d="M150 80 Q150 64 164 64 L164 119 L150 119 Z" fill="#1c150d"/>
+  <path d="M222 80 Q222 64 208 64 L208 119 L222 119 Z" fill="#1c150d"/>
+  <rect x="164" y="90" width="44" height="15" fill="#241a12"/>
+  <rect x="164" y="88" width="44" height="3" fill="#2e2216"/>
+  <!-- 边几 + 台灯(右) -->
+  <ellipse cx="256" cy="72" rx="46" ry="30" fill="url(#plamp)"/>
+  <rect x="244" y="88" width="26" height="32" fill="#0f0a07"/>
+  <rect x="254" y="68" width="6" height="20" fill="#1a130c"/>
+  <path d="M247 60 L267 60 L263 70 L251 70 Z" fill="#3a2c14"/><path d="M250 62 L264 62 L261 68 L253 68 Z" fill="#e8b45a" opacity=".9"/>
+</svg>`,
+  well: `<svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid slice" shape-rendering="crispEdges">
+    <defs><radialGradient id="wwater" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#16323a"/><stop offset="1" stop-color="#050c10"/></radialGradient></defs>
+    <rect width="320" height="120" fill="#0b0d0f"/>
+    <!-- 雾带 -->
+    <rect x="0" y="30" width="320" height="8" fill="#1c2830" opacity=".4"/><rect x="0" y="52" width="320" height="6" fill="#18242c" opacity=".35"/>
+    <!-- 远处屋影 -->
+    <rect x="10" y="40" width="40" height="30" fill="#0c1116" opacity=".8"/><rect x="270" y="44" width="42" height="26" fill="#0c1116" opacity=".8"/>
+    <!-- 石井 -->
+    <ellipse cx="160" cy="86" rx="66" ry="20" fill="#12161a"/><ellipse cx="160" cy="82" rx="60" ry="17" fill="#0a0f12"/>
+    <ellipse cx="160" cy="82" rx="46" ry="12" fill="url(#wwater)"/>
+    <ellipse cx="160" cy="80" rx="46" ry="12" fill="none" stroke="#1a2a30" stroke-width="1" opacity=".6"/>
+    <!-- 井壁砖 -->
+    <g stroke="#1c2024" stroke-width="1" opacity=".7"><line x1="104" y1="86" x2="108" y2="100"/><line x1="130" y1="92" x2="132" y2="106"/><line x1="188" y1="92" x2="190" y2="106"/><line x1="214" y1="86" x2="210" y2="100"/></g>
+    <rect x="100" y="86" width="120" height="20" fill="#0e1215" opacity=".5"/>
+    <!-- 井架与绳 -->
+    <rect x="112" y="30" width="4" height="54" fill="#161210"/><rect x="204" y="30" width="4" height="54" fill="#161210"/><rect x="110" y="28" width="100" height="4" fill="#1c1712"/>
+    <rect x="158" y="32" width="1.5" height="42" fill="#2a2418"/><rect x="150" y="72" width="18" height="8" fill="#241c12"/>
+    <!-- 一点虹光黏膜 -->
+    <ellipse cx="166" cy="80" rx="10" ry="3" fill="#2e6a5a" opacity=".3"/>
+  </svg>`
+};
+
+/* ============ 怪物特写 / 立绘（细节向 SVG 插画） ============ */
+const ART = {
+  // 溺水归来的埃德温——歪着头、滴水、嘴裂开、里面是蠕动的海葵
+  edwin: `<svg viewBox="0 0 300 360" preserveAspectRatio="xMidYMid slice">
+    <defs>
+      <radialGradient id="ebg" cx="50%" cy="42%" r="70%"><stop offset="0" stop-color="#0c141a"/><stop offset="1" stop-color="#030507"/></radialGradient>
+      <linearGradient id="eskin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fa19a"/><stop offset="0.5" stop-color="#6f8880"/><stop offset="1" stop-color="#3f5650"/></linearGradient>
+      <radialGradient id="esock" cx="50%" cy="45%" r="60%"><stop offset="0" stop-color="#0a0f10"/><stop offset="0.7" stop-color="#04070a"/><stop offset="1" stop-color="#0a1418"/></radialGradient>
+    </defs>
+    <rect width="300" height="360" fill="url(#ebg)"/>
+    <!-- 渗水的暗背景纹 -->
+    <g opacity="0.5" stroke="#12333a" stroke-width="1">
+      <line x1="40" y1="0" x2="46" y2="360"/><line x1="120" y1="0" x2="118" y2="360"/><line x1="250" y1="0" x2="256" y2="360"/><line x1="200" y1="0" x2="196" y2="360"/></g>
+    <!-- 肩与湿大衣 -->
+    <path d="M40 360 L60 250 Q150 210 240 250 L262 360 Z" fill="#141a1c"/>
+    <path d="M60 250 Q150 214 240 250 L236 274 Q150 240 66 274 Z" fill="#0d1214"/>
+    <rect x="150" y="250" width="2" height="110" fill="#243033" opacity="0.6"/>
+    <!-- 脖子（歪的） -->
+    <g transform="rotate(-11 150 210)">
+      <path d="M120 250 Q150 262 180 250 L176 200 L124 200 Z" fill="url(#eskin)"/>
+      <!-- 颈侧鳃裂 -->
+      <g stroke="#2a1518" stroke-width="3" opacity="0.85"><line x1="128" y1="214" x2="140" y2="222"/><line x1="126" y1="224" x2="139" y2="231"/><line x1="126" y1="234" x2="140" y2="240"/></g>
+      <!-- 头 -->
+      <ellipse cx="150" cy="150" rx="66" ry="80" fill="url(#eskin)"/>
+      <path d="M86 150 Q84 96 150 78 Q216 96 214 150 Q214 120 150 108 Q86 120 86 150 Z" fill="#3d524c" opacity="0.6"/>
+      <!-- 湿发 -->
+      <g stroke="#0b1416" stroke-width="3" fill="none" opacity="0.9">
+        <path d="M92 96 Q100 150 96 210"/><path d="M110 82 Q112 140 106 200"/><path d="M150 74 Q150 130 150 150"/><path d="M190 82 Q188 140 196 205"/><path d="M208 96 Q202 150 206 210"/></g>
+      <path d="M86 96 Q150 62 214 96 L214 118 Q150 90 86 118 Z" fill="#0a1214"/>
+      <!-- 眼窝：空洞，一点乳白微光 -->
+      <ellipse cx="120" cy="146" rx="19" ry="14" fill="url(#esock)"/><ellipse cx="180" cy="146" rx="19" ry="14" fill="url(#esock)"/>
+      <circle cx="123" cy="148" r="3" fill="#9fb4b0" opacity="0.7"/><circle cx="177" cy="148" r="3" fill="#9fb4b0" opacity="0.7"/>
+      <path d="M101 140 Q120 133 139 140" stroke="#233" stroke-width="1.5" fill="none"/><path d="M161 140 Q180 133 199 140" stroke="#233" stroke-width="1.5" fill="none"/>
+      <!-- 鼻梁阴影 -->
+      <path d="M150 150 L144 178 Q150 182 156 178 Z" fill="#3a4e48" opacity="0.7"/>
+      <!-- 嘴：裂到耳根，内里发黑，一圈向内蠕动的海葵触手 -->
+      <path d="M104 196 Q150 176 196 196 Q150 236 104 196 Z" fill="#07100f"/>
+      <path d="M112 197 Q150 184 188 197 Q150 224 112 197 Z" fill="#040a0a"/>
+      <g stroke="#1c3a34" stroke-width="2.5" fill="none" opacity="0.9">
+        <path d="M126 200 q-4 8 2 12"/><path d="M138 202 q-2 9 3 12"/><path d="M150 203 q0 9 0 13"/><path d="M162 202 q2 9 -3 12"/><path d="M174 200 q4 8 -2 12"/></g>
+      <!-- 缺牙的一点惨白 -->
+      <rect x="146" y="192" width="3" height="4" fill="#b8c4c0" opacity="0.6"/>
+    </g>
+    <!-- 全身滴水 -->
+    <g stroke="#2e5a60" stroke-width="1.5" opacity="0.55">
+      <line x1="96" y1="230" x2="96" y2="300"/><line x1="150" y1="252" x2="150" y2="330"/><line x1="206" y1="232" x2="206" y2="300"/><line x1="120" y1="244" x2="120" y2="290"/><line x1="184" y1="246" x2="184" y2="292"/></g>
+    <circle cx="150" cy="336" r="3" fill="#2e5a60" opacity="0.6"/><circle cx="96" cy="304" r="2" fill="#2e5a60" opacity="0.5"/>
+  </svg>`,
+  jefferson: `<svg viewBox="0 0 300 360" preserveAspectRatio="xMidYMid slice">
+    <defs><radialGradient id="jbg" cx="50%" cy="40%" r="70%"><stop offset="0" stop-color="#161310"/><stop offset="1" stop-color="#060504"/></radialGradient>
+      <linearGradient id="jskin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c08a5e"/><stop offset="1" stop-color="#7c5236"/></linearGradient></defs>
+    <rect width="300" height="360" fill="url(#jbg)"/>
+    <path d="M34 360 L58 256 Q150 224 242 256 L266 360 Z" fill="#3a3226"/>
+    <path d="M58 256 Q150 226 242 256 L236 288 Q150 256 64 288 Z" fill="#2a2418"/>
+    <rect x="112" y="250" width="24" height="34" fill="#4a3a24" transform="rotate(-8 124 267)"/><rect x="150" y="250" width="24" height="34" fill="#443622" transform="rotate(9 162 267)"/>
+    <path d="M126 250 Q150 262 174 250 L172 206 L128 206 Z" fill="url(#jskin)"/>
+    <ellipse cx="150" cy="150" rx="60" ry="72" fill="url(#jskin)"/>
+    <path d="M92 150 Q88 96 150 82 Q212 96 208 150 Q208 120 150 108 Q92 120 92 150 Z" fill="#5a3c26" opacity=".5"/>
+    <path d="M80 118 Q150 74 220 118 L224 128 Q150 96 76 128 Z" fill="#2a2016"/>
+    <ellipse cx="150" cy="96" rx="74" ry="24" fill="#241a10"/><path d="M76 96 Q150 62 224 96 Q150 84 76 96 Z" fill="#180f08"/>
+    <rect x="150" y="82" width="34" height="16" fill="#2e2214" rx="6"/>
+    <path d="M104 140 Q124 132 140 141" stroke="#3a2414" stroke-width="4" fill="none"/><path d="M160 141 Q176 132 196 140" stroke="#3a2414" stroke-width="4" fill="none"/>
+    <ellipse cx="123" cy="152" rx="9" ry="6" fill="#efe8d8"/><circle cx="124" cy="152" r="4" fill="#3a2a18"/><circle cx="124" cy="152" r="1.6" fill="#0a0805"/>
+    <ellipse cx="177" cy="152" rx="9" ry="6" fill="#efe8d8"/><circle cx="176" cy="152" r="4" fill="#3a2a18"/><circle cx="176" cy="152" r="1.6" fill="#0a0805"/>
+    <path d="M112 150 Q123 146 134 150" stroke="#6a4a30" stroke-width="1" fill="none" opacity=".5"/>
+    <path d="M150 152 L142 182 Q150 188 159 182 Z" fill="#8a5c3a" opacity=".7"/>
+    <path d="M124 200 Q150 210 176 200" stroke="#3a2414" stroke-width="3" fill="none"/>
+    <path d="M108 196 Q150 226 192 196 Q150 216 108 196 Z" fill="#2e2014" opacity=".55"/>
+    <path d="M96 170 Q120 176 140 172 M160 172 Q180 176 204 170" stroke="#5a3c26" stroke-width="2" fill="none" opacity=".45"/>
+    <rect x="236" y="120" width="10" height="220" fill="#2a2014"/><rect x="234" y="118" width="14" height="8" fill="#3a2c1a"/>
+    <ellipse cx="240" cy="126" rx="9" ry="5" fill="#4a5a3a"/>
+    <rect x="70" y="300" width="24" height="40" rx="4" fill="#241a12"/><rect x="74" y="304" width="16" height="6" fill="#3a2c1a"/><rect x="80" y="296" width="4" height="8" fill="#4a3a24"/>
+  </svg>`,
+  douglas: `<svg viewBox="0 0 300 360" preserveAspectRatio="xMidYMid slice">
+    <defs><radialGradient id="dbg" cx="50%" cy="38%" r="72%"><stop offset="0" stop-color="#101613"/><stop offset="1" stop-color="#040605"/></radialGradient>
+      <linearGradient id="dskin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9aa892"/><stop offset="0.5" stop-color="#78896e"/><stop offset="1" stop-color="#485440"/></linearGradient></defs>
+    <rect width="300" height="360" fill="url(#dbg)"/>
+    <g opacity=".5" stroke="#0a1a14" stroke-width="2"><line x1="60" y1="150" x2="56" y2="360"/><line x1="240" y1="150" x2="244" y2="360"/></g>
+    <path d="M44 360 L70 258 Q150 226 230 258 L256 360 Z" fill="#141b16"/>
+    <path d="M120 252 L150 300 L180 252 L176 236 Q150 252 124 236 Z" fill="#0e130f"/>
+    <path d="M122 254 Q150 266 178 254 L176 204 L124 204 Z" fill="url(#dskin)"/>
+    <g stroke="#2a1518" stroke-width="3" opacity=".8"><line x1="128" y1="212" x2="142" y2="220"/><line x1="126" y1="224" x2="141" y2="230"/></g>
+    <ellipse cx="150" cy="146" rx="62" ry="76" fill="url(#dskin)"/>
+    <path d="M150 150 Q150 200 150 214 Q168 208 176 190 Q186 210 150 224 Q114 210 124 190 Q132 208 150 214 Z" fill="#3a4a3a" opacity=".4"/>
+    <ellipse cx="150" cy="92" rx="58" ry="30" fill="url(#dskin)"/>
+    <path d="M96 92 Q150 60 204 92 Q150 80 96 92 Z" fill="#3a4a3a" opacity=".5"/>
+    <g stroke="#26362f" stroke-width="1.5" opacity=".5" fill="none"><path d="M110 70 Q150 60 190 70"/><path d="M104 88 Q150 78 196 88"/></g>
+    <path d="M100 148 Q120 138 138 148" stroke="#26362f" stroke-width="3" fill="none"/><path d="M162 148 Q180 138 200 148" stroke="#26362f" stroke-width="3" fill="none"/>
+    <ellipse cx="120" cy="156" rx="17" ry="13" fill="#e8efe6"/><circle cx="121" cy="157" r="7" fill="#4a5a52"/><circle cx="121" cy="157" r="3" fill="#0a100e"/><circle cx="123" cy="154" r="1.5" fill="#fff" opacity=".7"/>
+    <ellipse cx="180" cy="156" rx="17" ry="13" fill="#e8efe6"/><circle cx="179" cy="157" r="7" fill="#4a5a52"/><circle cx="179" cy="157" r="3" fill="#0a100e"/><circle cx="181" cy="154" r="1.5" fill="#fff" opacity=".7"/>
+    <circle cx="120" cy="156" r="18" fill="none" stroke="#2a3a34" stroke-width="1.5" opacity=".6"/><circle cx="180" cy="156" r="18" fill="none" stroke="#2a3a34" stroke-width="1.5" opacity=".6"/><line x1="138" y1="156" x2="162" y2="156" stroke="#2a3a34" stroke-width="1.5" opacity=".6"/>
+    <path d="M110 172 Q120 176 132 172 M168 172 Q180 176 190 172" stroke="#24322c" stroke-width="2" fill="none" opacity=".6"/>
+    <path d="M150 156 Q142 190 138 200 Q150 206 162 200 Q158 190 150 156 Z" fill="#3a4a44" opacity=".7"/>
+    <ellipse cx="150" cy="204" rx="12" ry="7" fill="#1a2420"/>
+    <path d="M124 216 Q150 210 176 216" stroke="#26362f" stroke-width="2.5" fill="none"/>
+    <g fill="#c8cdb8"><rect x="140" y="208" width="4" height="6"/><rect x="156" y="208" width="4" height="6"/></g>
+    <rect x="96" y="300" width="108" height="60" fill="#1a231b"/><rect x="96" y="300" width="108" height="4" fill="#2a3a2a"/>
+    <rect x="124" y="286" width="52" height="20" fill="#3a2c1a" transform="rotate(-4 150 296)"/><rect x="124" y="286" width="6" height="20" fill="#5a2820" transform="rotate(-4 150 296)"/><rect x="170" y="286" width="4" height="20" fill="#2a3a52" transform="rotate(-4 150 296)"/>
+    <g fill="url(#dskin)" stroke="#26362f" stroke-width="1"><path d="M110 312 q-3 -14 3 -18 M120 310 q0 -16 5 -18 M132 312 q4 -14 8 -14 M110 312 q16 -6 30 2 Z"/></g>
+  </svg>`,
+
+  // 潮下之主的眼——一只比灯塔还高、竖瞳的巨眼从黑水中睁开
+  eye: `<svg viewBox="0 0 400 340" preserveAspectRatio="xMidYMid slice">
+    <defs>
+      <radialGradient id="ybg" cx="50%" cy="40%" r="75%"><stop offset="0" stop-color="#0a1512"/><stop offset="0.6" stop-color="#04090a"/><stop offset="1" stop-color="#010304"/></radialGradient>
+      <radialGradient id="yscl" cx="50%" cy="50%" r="55%"><stop offset="0" stop-color="#b7c9a4"/><stop offset="0.55" stop-color="#7f9a6f"/><stop offset="1" stop-color="#26361f"/></radialGradient>
+      <radialGradient id="yiris" cx="50%" cy="50%" r="52%"><stop offset="0" stop-color="#7fe3b0"/><stop offset="0.35" stop-color="#2f9a6a"/><stop offset="0.72" stop-color="#0c3a2a"/><stop offset="1" stop-color="#04140f"/></radialGradient>
+      <radialGradient id="yglow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#59e0a0" stop-opacity="0.5"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
+    </defs>
+    <rect width="400" height="340" fill="url(#ybg)"/>
+    <!-- 隐约庞大轮廓 -->
+    <path d="M0 300 Q120 210 200 250 Q300 210 400 300 L400 340 L0 340 Z" fill="#050c0a" opacity="0.8"/>
+    <ellipse cx="200" cy="150" rx="260" ry="150" fill="url(#yglow)"/>
+    <!-- 眼睑（横向巨睑，竖眼） -->
+    <path d="M60 150 Q200 20 340 150 Q200 280 60 150 Z" fill="#0c1a14"/>
+    <path d="M74 150 Q200 40 326 150 Q200 260 74 150 Z" fill="#050d0a"/>
+    <!-- 眼白 + 血丝 -->
+    <ellipse cx="200" cy="150" rx="120" ry="104" fill="url(#yscl)"/>
+    <g stroke="#7a2020" stroke-width="1.4" opacity="0.55" fill="none">
+      <path d="M92 120 Q140 140 150 150"/><path d="M100 190 Q150 168 160 160"/><path d="M300 118 Q258 142 250 152"/><path d="M296 196 Q252 170 244 160"/><path d="M120 96 Q160 132 168 148"/></g>
+    <!-- 虹膜 -->
+    <circle cx="200" cy="150" r="96" fill="url(#yiris)"/>
+    <g stroke="#0a2c20" stroke-width="1.5" opacity="0.6">
+      <line x1="200" y1="60" x2="200" y2="90"/><line x1="200" y1="210" x2="200" y2="240"/><line x1="110" y1="150" x2="140" y2="150"/><line x1="260" y1="150" x2="290" y2="150"/>
+      <line x1="140" y1="90" x2="158" y2="112"/><line x1="260" y1="90" x2="242" y2="112"/><line x1="140" y1="210" x2="158" y2="188"/><line x1="260" y1="210" x2="242" y2="188"/></g>
+    <!-- 竖瞳 -->
+    <path d="M200 58 Q214 150 200 242 Q186 150 200 58 Z" fill="#010604"/>
+    <path d="M200 78 Q206 150 200 222 Q194 150 200 78 Z" fill="#000" />
+    <ellipse cx="196" cy="120" rx="4" ry="10" fill="#bfeecb" opacity="0.5"/>
+    <!-- 水面 -->
+    <rect x="0" y="288" width="400" height="52" fill="#020706"/>
+    <g stroke="#14463a" stroke-width="1.2" opacity="0.5"><line x1="0" y1="296" x2="400" y2="296"/><line x1="0" y1="312" x2="400" y2="312"/><line x1="0" y1="328" x2="400" y2="328"/></g>
+    <rect x="196" y="288" width="8" height="52" fill="#1f6a4e" opacity="0.25"/>
+  </svg>`,
+
+  // 涨潮池——半浸海水里，无数苍白蹼手贴着池壁、仰起的脸
+  pool: `<svg viewBox="0 0 360 320" preserveAspectRatio="xMidYMid slice">
+    <defs>
+      <linearGradient id="pw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#12262a"/><stop offset="1" stop-color="#03090c"/></linearGradient>
+      <radialGradient id="pgl" cx="50%" cy="30%" r="70%"><stop offset="0" stop-color="#2a4a4e" stop-opacity="0.5"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
+    </defs>
+    <rect width="360" height="320" fill="#05090b"/>
+    <!-- 石壁 -->
+    <rect width="360" height="150" fill="#0a0e10"/><rect y="70" width="360" height="1" fill="#141a1c"/><rect x="120" width="1" height="150" fill="#141a1c"/><rect x="250" width="1" height="150" fill="#141a1c"/>
+    <!-- 挂着的旧衣 -->
+    <path d="M60 40 L52 110 L74 110 Z" fill="#161010" opacity="0.85"/><path d="M150 34 L140 96 L164 96 Z" fill="#12140f" opacity="0.8"/><path d="M270 42 L262 104 L286 104 Z" fill="#141010" opacity="0.8"/>
+    <!-- 水面 -->
+    <rect y="150" width="360" height="170" fill="url(#pw)"/>
+    <ellipse cx="180" cy="150" rx="220" ry="60" fill="url(#pgl)"/>
+    <g stroke="#1c4046" stroke-width="1" opacity="0.5"><line x1="0" y1="166" x2="360" y2="166"/><line x1="0" y1="186" x2="360" y2="186"/><line x1="0" y1="212" x2="360" y2="212"/></g>
+    <!-- 水下仰起的脸（模糊苍白） -->
+    <g opacity="0.5"><ellipse cx="110" cy="210" rx="20" ry="24" fill="#5f7169"/><ellipse cx="104" cy="205" rx="4" ry="6" fill="#0a1010"/><ellipse cx="118" cy="205" rx="4" ry="6" fill="#0a1010"/></g>
+    <g opacity="0.35"><ellipse cx="240" cy="230" rx="18" ry="22" fill="#54655e"/><ellipse cx="234" cy="226" rx="3.5" ry="5" fill="#0a1010"/><ellipse cx="247" cy="226" rx="3.5" ry="5" fill="#0a1010"/></g>
+    <!-- 贴壁的苍白蹼手 -->
+    <g fill="#93a69d" stroke="#0c1412" stroke-width="1">
+      <g transform="translate(150 158)"><path d="M0 0 Q-2 -26 4 -30 M8 0 Q8 -30 12 -34 M18 0 Q20 -28 24 -30 M28 2 Q34 -22 36 -24 M0 0 Q18 -6 30 2 Z"/></g>
+      <g transform="translate(60 172) scale(0.85)"><path d="M0 0 Q-2 -24 4 -28 M8 0 Q8 -28 12 -32 M18 0 Q20 -26 24 -28 M26 2 Q32 -20 34 -22 M0 0 Q16 -6 28 2 Z"/></g>
+      <g transform="translate(268 176) scale(0.8)"><path d="M0 0 Q-2 -24 4 -28 M8 0 Q8 -28 12 -32 M18 0 Q20 -26 24 -28 M26 2 Q32 -20 34 -22 M0 0 Q16 -6 28 2 Z"/></g>
+    </g>
+  </svg>`,
+
+  // 塞缪尔·里德——调查员本人（还是个人，暖色，与怪物形成对照）
+  samuel: `<svg viewBox="0 0 300 360" preserveAspectRatio="xMidYMid slice">
+    <defs><radialGradient id="sbg" cx="50%" cy="40%" r="70%"><stop offset="0" stop-color="#1a1610"/><stop offset="1" stop-color="#060505"/></radialGradient>
+      <linearGradient id="sskin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c79a72"/><stop offset="1" stop-color="#7c5638"/></linearGradient></defs>
+    <rect width="300" height="360" fill="url(#sbg)"/>
+    <!-- 风衣肩 -->
+    <path d="M36 360 L58 262 Q150 232 242 262 L264 360 Z" fill="#2a2216"/>
+    <path d="M120 250 L124 300 L150 288 L176 300 L180 250 Z" fill="#1a140c"/>
+    <rect x="150" y="250" width="2" height="110" fill="#3a2e1c" opacity=".5"/>
+    <!-- 脖/领 -->
+    <path d="M126 250 Q150 262 174 250 L172 210 L128 210 Z" fill="url(#sskin)"/>
+    <!-- 脸 -->
+    <ellipse cx="150" cy="150" rx="60" ry="74" fill="url(#sskin)"/>
+    <!-- 礼帽 -->
+    <path d="M78 118 Q150 66 222 118 L222 128 Q150 96 78 128 Z" fill="#241d13"/>
+    <ellipse cx="150" cy="94" rx="60" ry="20" fill="#2c2416"/><path d="M96 94 Q150 60 204 94 Q150 78 96 94 Z" fill="#1c160d"/>
+    <!-- 眉眼（疲惫、警觉） -->
+    <path d="M104 138 Q124 130 140 138" stroke="#3a2818" stroke-width="3" fill="none"/><path d="M160 138 Q176 130 196 138" stroke="#3a2818" stroke-width="3" fill="none"/>
+    <ellipse cx="122" cy="150" rx="10" ry="6" fill="#fff" opacity=".85"/><circle cx="124" cy="150" r="4" fill="#241a12"/>
+    <ellipse cx="178" cy="150" rx="10" ry="6" fill="#fff" opacity=".85"/><circle cx="176" cy="150" r="4" fill="#241a12"/>
+    <path d="M112 148 Q122 144 132 148" stroke="#5a3e28" stroke-width="1" fill="none" opacity=".5"/>
+    <!-- 鼻 -->
+    <path d="M150 152 L143 180 Q150 184 158 180 Z" fill="#8a6040" opacity=".7"/>
+    <!-- 嘴（抿紧、坚定） -->
+    <path d="M126 198 Q150 206 174 198" stroke="#4a3020" stroke-width="3" fill="none"/>
+    <!-- 胡茬 -->
+    <path d="M116 196 Q150 224 184 196 Q150 214 116 196 Z" fill="#2a1c12" opacity=".45"/>
+    <!-- 记者证挂绳 -->
+    <path d="M120 254 L138 320" stroke="#4a3a24" stroke-width="2"/><rect x="130" y="316" width="24" height="16" fill="#241d12" stroke="#4a3a24"/><rect x="134" y="320" width="16" height="3" fill="#8a7a5a" opacity=".6"/>
+  </svg>`,
+
+  // 旅馆老妇人——枯瘦、眼白发黄、渔线缠指、藏着恐惧
+  oldwoman: `<svg viewBox="0 0 300 360" preserveAspectRatio="xMidYMid slice">
+    <defs><radialGradient id="obg" cx="50%" cy="40%" r="70%"><stop offset="0" stop-color="#141310"/><stop offset="1" stop-color="#050505"/></radialGradient>
+      <linearGradient id="oskin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b7ad86"/><stop offset="1" stop-color="#7f7452"/></linearGradient></defs>
+    <rect width="300" height="360" fill="url(#obg)"/>
+    <!-- 披肩 -->
+    <path d="M30 360 L54 250 Q150 214 246 250 L270 360 Z" fill="#181712"/>
+    <path d="M54 250 Q150 220 246 250 L240 280 Q150 250 60 280 Z" fill="#0f0e0a"/>
+    <!-- 瘦脖 -->
+    <path d="M128 250 Q150 258 172 250 L170 206 L130 206 Z" fill="url(#oskin)"/>
+    <g stroke="#5f5540" stroke-width="1.5" opacity=".5"><path d="M136 214 q14 6 28 0"/><path d="M138 224 q12 5 24 0"/></g>
+    <!-- 脸（凹陷） -->
+    <path d="M92 150 Q86 78 150 72 Q214 78 208 150 Q210 200 150 224 Q90 200 92 150 Z" fill="url(#oskin)"/>
+    <path d="M110 168 Q100 150 108 132" stroke="#6a5f46" stroke-width="2" fill="none" opacity=".5"/><path d="M190 168 Q200 150 192 132" stroke="#6a5f46" stroke-width="2" fill="none" opacity=".5"/>
+    <!-- 灰发 束起 -->
+    <path d="M92 120 Q150 60 208 120 L208 96 Q150 74 92 96 Z" fill="#3a382e"/>
+    <g stroke="#4a4638" stroke-width="2" fill="none" opacity=".7"><path d="M100 100 Q96 130 104 150"/><path d="M200 100 Q204 130 196 150"/></g>
+    <!-- 眼白发黄，眼神惊惧 -->
+    <ellipse cx="124" cy="150" rx="14" ry="9" fill="#c9c07a"/><circle cx="126" cy="150" r="5" fill="#3a3018"/><circle cx="126" cy="150" r="2" fill="#0a0805"/>
+    <ellipse cx="176" cy="150" rx="14" ry="9" fill="#c9c07a"/><circle cx="174" cy="150" r="5" fill="#3a3018"/><circle cx="174" cy="150" r="2" fill="#0a0805"/>
+    <path d="M108 138 Q124 132 140 138" stroke="#5a5038" stroke-width="2" fill="none"/><path d="M160 138 Q176 132 192 138" stroke="#5a5038" stroke-width="2" fill="none"/>
+    <!-- 鼻、抿唇 -->
+    <path d="M150 152 L144 182 Q150 186 156 182 Z" fill="#8a7f5a" opacity=".6"/>
+    <path d="M128 198 Q150 202 172 198" stroke="#4a4030" stroke-width="2.5" fill="none"/>
+    <!-- 渔线缠指的手（下缘，抓着） -->
+    <g fill="url(#oskin)" stroke="#5a5038" stroke-width="1">
+      <rect x="120" y="300" width="60" height="30" rx="8"/><rect x="120" y="300" width="10" height="30" rx="4"/><rect x="134" y="298" width="10" height="32" rx="4"/><rect x="148" y="298" width="10" height="32" rx="4"/><rect x="162" y="300" width="10" height="30" rx="4"/></g>
+    <g stroke="#8a7a4a" stroke-width="1" opacity=".7"><line x1="122" y1="308" x2="180" y2="306"/><line x1="122" y1="316" x2="180" y2="314"/><line x1="124" y1="324" x2="178" y2="322"/></g>
+  </svg>`,
+
+  // 港务长——和蔼笑脸下的青灰皮肤与颈侧鳃裂
+  harbormaster: `<svg viewBox="0 0 300 360" preserveAspectRatio="xMidYMid slice">
+    <defs><radialGradient id="hbg" cx="50%" cy="40%" r="70%"><stop offset="0" stop-color="#0f1512"/><stop offset="1" stop-color="#040605"/></radialGradient>
+      <linearGradient id="hskin2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9aa891"/><stop offset="1" stop-color="#5e6f5c"/></linearGradient></defs>
+    <rect width="300" height="360" fill="url(#hbg)"/>
+    <!-- 体面外套 + 高领 -->
+    <path d="M24 360 L52 250 Q150 214 248 250 L276 360 Z" fill="#161c18"/>
+    <path d="M108 252 L150 300 L192 252 L186 232 Q150 250 114 232 Z" fill="#0d120f"/>
+    <rect x="118" y="238" width="64" height="18" fill="#20261f"/>
+    <!-- 粗脖 + 鳃裂 -->
+    <path d="M116 250 Q150 264 184 250 L182 200 L118 200 Z" fill="url(#hskin2)"/>
+    <g stroke="#2a1518" stroke-width="4" opacity=".9"><line x1="122" y1="206" x2="140" y2="216"/><line x1="120" y1="220" x2="139" y2="228"/><line x1="120" y1="234" x2="140" y2="240"/></g>
+    <g stroke="#2a1518" stroke-width="4" opacity=".9"><line x1="178" y1="206" x2="160" y2="216"/><line x1="180" y1="220" x2="161" y2="228"/><line x1="180" y1="234" x2="160" y2="240"/></g>
+    <!-- 圆脸 -->
+    <ellipse cx="150" cy="146" rx="68" ry="76" fill="url(#hskin2)"/>
+    <!-- 稀发 -->
+    <path d="M84 120 Q150 74 216 120 L216 104 Q150 86 84 104 Z" fill="#3a4038" opacity=".7"/>
+    <!-- 笑起的眼（水泡、外凸） -->
+    <ellipse cx="120" cy="144" rx="16" ry="12" fill="#dfe6d4"/><circle cx="122" cy="146" r="7" fill="#3a4a3a"/><circle cx="122" cy="146" r="3" fill="#0a0f0a"/>
+    <ellipse cx="180" cy="144" rx="16" ry="12" fill="#dfe6d4"/><circle cx="178" cy="146" r="7" fill="#3a4a3a"/><circle cx="178" cy="146" r="3" fill="#0a0f0a"/>
+    <path d="M104 130 Q120 124 136 130" stroke="#2a3228" stroke-width="2" fill="none"/><path d="M164 130 Q180 124 196 130" stroke="#2a3228" stroke-width="2" fill="none"/>
+    <!-- 鼻 -->
+    <path d="M150 148 L142 178 Q150 184 158 178 Z" fill="#4e5c4c" opacity=".7"/>
+    <!-- 咧开的和蔼笑（太宽了一点） -->
+    <path d="M108 196 Q150 224 192 196 Q150 210 108 196 Z" fill="#1a221a"/>
+    <path d="M116 198 Q150 216 184 198" stroke="#0a0f0a" stroke-width="2" fill="none"/>
+    <g fill="#c8cdb8"><rect x="132" y="200" width="5" height="6"/><rect x="146" y="202" width="5" height="7"/><rect x="160" y="200" width="5" height="6"/></g>
+  </svg>`,
+
+  // 守塔人——半透明、蹼手，却还留着一双人的、疲惫怜悯的眼
+  // 托马斯·金博尔——忧心的委托人（道格拉斯之侄，1922 体面青年，非记者）
+  thomas: `<svg viewBox="0 0 300 360" preserveAspectRatio="xMidYMid slice">
+  <defs><radialGradient id="thbg" cx="50%" cy="38%" r="72%"><stop offset="0" stop-color="#17140f"/><stop offset="1" stop-color="#050403"/></radialGradient>
+    <linearGradient id="thskin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d3ab84"/><stop offset="1" stop-color="#9a6f4c"/></linearGradient></defs>
+  <rect width="300" height="360" fill="url(#thbg)"/>
+  <!-- 炭灰西装肩 -->
+  <path d="M26 360 L58 258 Q150 226 242 258 L274 360 Z" fill="#20242b"/>
+  <path d="M58 258 Q150 230 242 258 L236 286 Q150 258 64 286 Z" fill="#171a20"/>
+  <!-- 翻领 -->
+  <path d="M122 254 L98 340 L120 340 L142 270 Z" fill="#191c22"/>
+  <path d="M178 254 L202 340 L180 340 L158 270 Z" fill="#191c22"/>
+  <!-- 白衬衫领 V -->
+  <path d="M132 250 L150 280 L168 250 L164 306 L136 306 Z" fill="#cbc8bd"/>
+  <path d="M132 250 L150 280 L168 250" fill="none" stroke="#a7a496" stroke-width="1" opacity=".6"/>
+  <!-- 深色领带 -->
+  <path d="M144 262 L156 262 L160 278 L150 342 L140 278 Z" fill="#3a2a22"/>
+  <path d="M146 266 L154 266 L157 278 L150 306 L143 278 Z" fill="#4c362a" opacity=".7"/>
+  <!-- 脖 -->
+  <path d="M128 256 Q150 266 172 256 L170 212 L130 212 Z" fill="url(#thskin)"/>
+  <!-- 脸 -->
+  <ellipse cx="150" cy="150" rx="58" ry="72" fill="url(#thskin)"/>
+  <!-- 侧分抹油短发 -->
+  <path d="M92 134 Q88 78 150 72 Q212 78 210 136 Q210 104 150 96 Q104 100 96 134 Z" fill="#2a2016"/>
+  <path d="M150 74 Q118 82 98 120" stroke="#1c150d" stroke-width="2" fill="none" opacity=".6"/>
+  <path d="M150 76 L145 100" stroke="#5a4530" stroke-width="1.5" fill="none" opacity=".5"/>
+  <!-- 忧虑眉（内端上挑） -->
+  <path d="M104 143 Q122 132 138 137" stroke="#2e2012" stroke-width="3.5" fill="none"/>
+  <path d="M162 137 Q178 132 196 143" stroke="#2e2012" stroke-width="3.5" fill="none"/>
+  <!-- 眼（略睁、疲惫） -->
+  <ellipse cx="122" cy="153" rx="11" ry="7" fill="#f0ece0"/><circle cx="123" cy="154" r="4.5" fill="#3a2a1a"/><circle cx="123" cy="154" r="2" fill="#0a0805"/><circle cx="125" cy="151" r="1.3" fill="#fff" opacity=".7"/>
+  <ellipse cx="178" cy="153" rx="11" ry="7" fill="#f0ece0"/><circle cx="177" cy="154" r="4.5" fill="#3a2a1a"/><circle cx="177" cy="154" r="2" fill="#0a0805"/><circle cx="179" cy="151" r="1.3" fill="#fff" opacity=".7"/>
+  <!-- 眼下疲惫暗影 -->
+  <path d="M112 163 Q122 167 134 163" stroke="#8a6144" stroke-width="1.5" fill="none" opacity=".5"/>
+  <path d="M166 163 Q178 167 188 163" stroke="#8a6144" stroke-width="1.5" fill="none" opacity=".5"/>
+  <!-- 鼻 -->
+  <path d="M150 155 L143 183 Q150 188 158 183 Z" fill="#8a6040" opacity=".65"/>
+  <!-- 抿紧微下垂的嘴 -->
+  <path d="M130 201 Q150 196 170 201" stroke="#5a3a28" stroke-width="3" fill="none"/>
+  <path d="M138 206 Q150 211 162 206" stroke="#7a5238" stroke-width="1.5" fill="none" opacity=".5"/>
+  <!-- 胸袋方巾（体面、克制） -->
+  <path d="M96 300 L120 296 L118 306 L98 310 Z" fill="#2a2e36"/>
+  <path d="M100 301 L114 299" stroke="#3c414b" stroke-width="1.5" opacity=".7"/>
+</svg>`,
+  // 奥黛尔夫人——势利、重仪容的老邻居（夹鼻镜/蕾丝领/胸针，挑剔你的穿着）
+  odell: `<svg viewBox="0 0 300 360" preserveAspectRatio="xMidYMid slice">
+  <defs><radialGradient id="odbg" cx="50%" cy="38%" r="72%"><stop offset="0" stop-color="#13141a"/><stop offset="1" stop-color="#040506"/></radialGradient>
+    <linearGradient id="odskin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cabfa6"/><stop offset="1" stop-color="#8f8168"/></linearGradient></defs>
+  <rect width="300" height="360" fill="url(#odbg)"/>
+  <!-- 深色高领裙肩 -->
+  <path d="M34 360 L58 256 Q150 224 242 256 L266 360 Z" fill="#1a1c22"/>
+  <path d="M58 256 Q150 226 242 256 L238 284 Q150 256 62 284 Z" fill="#111318"/>
+  <!-- 白蕾丝领（扇贝边） -->
+  <path d="M120 250 Q150 268 180 250 L176 292 Q150 306 124 292 Z" fill="#cfc9bd"/>
+  <g fill="#e2ddd2"><circle cx="126" cy="292" r="5"/><circle cx="138" cy="298" r="5"/><circle cx="150" cy="300" r="5"/><circle cx="162" cy="298" r="5"/><circle cx="174" cy="292" r="5"/></g>
+  <path d="M132 258 Q150 272 168 258" stroke="#b3ac9e" stroke-width="1" fill="none" opacity=".6"/>
+  <!-- 浮雕胸针 -->
+  <ellipse cx="150" cy="286" rx="9" ry="11" fill="#7a5a3a"/><ellipse cx="150" cy="286" rx="6" ry="8" fill="#d8c4a0"/><circle cx="150" cy="284" r="3" fill="#8a6a48"/>
+  <!-- 瘦脖 + 皱纹 -->
+  <path d="M130 252 Q150 260 170 252 L168 210 L132 210 Z" fill="url(#odskin)"/>
+  <g stroke="#7a6e54" stroke-width="1.2" opacity=".5" fill="none"><path d="M138 218 q12 5 24 0"/><path d="M140 228 q10 4 20 0"/></g>
+  <!-- 脸（略凹） -->
+  <path d="M94 150 Q90 82 150 76 Q210 82 206 150 Q208 196 150 220 Q92 196 94 150 Z" fill="url(#odskin)"/>
+  <path d="M120 172 Q112 186 120 198" stroke="#8a7c60" stroke-width="1.5" fill="none" opacity=".45"/>
+  <path d="M180 172 Q188 186 180 198" stroke="#8a7c60" stroke-width="1.5" fill="none" opacity=".45"/>
+  <!-- 灰发（整齐盘起） -->
+  <path d="M92 118 Q150 62 208 118 Q208 92 150 84 Q92 92 92 118 Z" fill="#9a938a"/>
+  <path d="M92 116 Q150 70 208 116" stroke="#b8b1a6" stroke-width="2" fill="none" opacity=".6"/>
+  <g stroke="#8a8278" stroke-width="1.5" fill="none" opacity=".7"><path d="M104 96 Q120 88 138 92"/><path d="M162 92 Q180 88 196 96"/></g>
+  <ellipse cx="150" cy="80" rx="20" ry="12" fill="#8f887e"/>
+  <!-- 审视的眉（右高＝挑剔） -->
+  <path d="M106 140 Q122 131 140 137" stroke="#7a7058" stroke-width="2.5" fill="none"/>
+  <path d="M162 132 Q178 126 194 134" stroke="#7a7058" stroke-width="2.5" fill="none"/>
+  <!-- 眼（眯起、下睨） -->
+  <path d="M110 151 Q124 146 138 151 Q124 157 110 151 Z" fill="#efe9da"/><circle cx="126" cy="152" r="4" fill="#5a4a30"/><circle cx="126" cy="152" r="1.8" fill="#0a0805"/>
+  <path d="M162 151 Q176 146 190 151 Q176 157 162 151 Z" fill="#efe9da"/><circle cx="174" cy="152" r="4" fill="#5a4a30"/><circle cx="174" cy="152" r="1.8" fill="#0a0805"/>
+  <!-- 夹鼻眼镜 -->
+  <g stroke="#b8a85a" stroke-width="1.5" fill="none" opacity=".85"><ellipse cx="124" cy="152" rx="15" ry="10"/><ellipse cx="176" cy="152" rx="15" ry="10"/><path d="M139 152 Q150 149 161 152"/></g>
+  <path d="M176 152 Q198 158 198 178" stroke="#a89a50" stroke-width="1" fill="none" opacity=".55"/>
+  <!-- 鼻 -->
+  <path d="M150 153 L144 183 Q150 187 156 183 Z" fill="#8a7c5c" opacity=".6"/>
+  <!-- 抿起挑剔的小嘴（嘴角下） -->
+  <path d="M136 201 Q150 198 164 201" stroke="#6a4a3a" stroke-width="2.5" fill="none"/>
+  <path d="M136 201 Q133 205 131 207" stroke="#6a4a3a" stroke-width="1.5" fill="none" opacity=".6"/>
+  <path d="M164 201 Q167 205 169 207" stroke="#6a4a3a" stroke-width="1.5" fill="none" opacity=".6"/>
+  <!-- 珍珠耳环 -->
+  <circle cx="90" cy="170" r="4" fill="#e8e4d8"/><circle cx="210" cy="170" r="4" fill="#e8e4d8"/><circle cx="89" cy="168" r="1.3" fill="#fff" opacity=".8"/><circle cx="209" cy="168" r="1.3" fill="#fff" opacity=".8"/>
+</svg>`,
+  keeper: `<svg viewBox="0 0 300 360" preserveAspectRatio="xMidYMid slice">
+    <defs><radialGradient id="kbg" cx="50%" cy="40%" r="70%"><stop offset="0" stop-color="#0c1412"/><stop offset="1" stop-color="#030605"/></radialGradient>
+      <linearGradient id="kskin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8ea59c" stop-opacity=".92"/><stop offset="1" stop-color="#3f544c" stop-opacity=".85"/></linearGradient></defs>
+    <rect width="300" height="360" fill="url(#kbg)"/>
+    <!-- 背后透出的暗 -->
+    <g opacity=".5" stroke="#0a1a18" stroke-width="2"><line x1="70" y1="120" x2="66" y2="360"/><line x1="150" y1="150" x2="150" y2="360"/><line x1="230" y1="120" x2="234" y2="360"/></g>
+    <!-- 佝偻的肩 -->
+    <path d="M50 360 L74 256 Q150 226 226 256 L250 360 Z" fill="#0e1613" opacity=".9"/>
+    <!-- 半透明脖 -->
+    <path d="M124 256 Q150 266 176 256 L174 208 L126 208 Z" fill="url(#kskin)"/>
+    <!-- 半透明的头（背景隐约透出） -->
+    <ellipse cx="150" cy="150" rx="60" ry="74" fill="url(#kskin)"/>
+    <ellipse cx="150" cy="150" rx="60" ry="74" fill="#0a1a18" opacity=".25"/>
+    <!-- 稀疏湿发 -->
+    <g stroke="#12201c" stroke-width="2" fill="none" opacity=".7"><path d="M108 92 Q104 130 110 160"/><path d="M150 84 Q150 120 150 150"/><path d="M192 92 Q196 130 190 160"/></g>
+    <!-- 一双还留着人性的、疲惫怜悯的眼 -->
+    <ellipse cx="124" cy="150" rx="13" ry="8" fill="#e8efe6"/><circle cx="124" cy="151" r="5" fill="#4a5a54"/><circle cx="124" cy="151" r="2.4" fill="#0a100e"/>
+    <ellipse cx="176" cy="150" rx="13" ry="8" fill="#e8efe6"/><circle cx="176" cy="151" r="5" fill="#4a5a54"/><circle cx="176" cy="151" r="2.4" fill="#0a100e"/>
+    <path d="M108 140 Q124 134 138 140" stroke="#2a3a34" stroke-width="2" fill="none"/><path d="M162 140 Q176 134 192 140" stroke="#2a3a34" stroke-width="2" fill="none"/>
+    <!-- 眼下疲惫的暗 -->
+    <path d="M112 160 Q124 164 136 160" stroke="#26362f" stroke-width="2" fill="none" opacity=".6"/><path d="M164 160 Q176 164 188 160" stroke="#26362f" stroke-width="2" fill="none" opacity=".6"/>
+    <!-- 鼻、下垂的嘴 -->
+    <path d="M150 152 L143 182 Q150 186 157 182 Z" fill="#3a4a44" opacity=".7"/>
+    <path d="M126 200 Q150 194 174 200" stroke="#2a3a34" stroke-width="2.5" fill="none"/>
+    <!-- 抬起的一只蹼手（求告/怜悯） -->
+    <g fill="url(#kskin)" stroke="#2a3a34" stroke-width="1">
+      <path d="M96 320 Q92 286 100 280 M108 318 Q108 280 114 276 M122 318 Q124 282 130 280 M136 320 Q142 288 146 288 M96 320 Q120 310 142 322 Z"/></g>
+    <path d="M100 296 Q104 300 108 296 M112 292 Q116 296 120 292 M124 294 Q128 298 132 294" stroke="#1a2a24" stroke-width="1" fill="none" opacity=".6"/>
+  </svg>`
+};
+
+/* ============ 角色数据 ============ */
+const PC = {
+  name:"漫特沃夫·埃大伯里", job:"语言学教授 · 密斯卡托尼克大学",
+  san:65, sanMax:99, hp:11, hpMax:11,
+  skills:{ "图书馆使用":80,"母语·英语":85,"拉丁语":60,"说服":60,"心理学":60,"历史":65,"侦查":50,"聆听":45,"话术":40,"魅惑":30,"恐吓":25,"神秘学":30,"急救":30,"闪避":22,"手枪":20 },
+  inv:["托马斯·金博尔的委托信","黄铜放大镜与钢笔","一本磨损的拉丁语词典","老花镜与怀表","一根紫檀木手杖","31 美元"]
+};
+
+/* ============ 剧本（手作分支 · 第一幕垂直切片） ============
+   node: { banner, loc, text:[{t,cls}], choices:[{label,tag,goto,check,once,if,set}] , onEnter }
+   check: {skill, target, hard, onSuccess(node), onFail(node)}
+================================================================ */
+const flags = {};
+const S = {}; // scenes
+
+/* ============ 《追书人》剧本 · 按模组功能忠实实现 · 叙事原创 ============ */
+S.arrival = {
+  banner:"room", loc:"家 · 书房 · 周六上午",
+  text:[
+    {t:"昨夜你睡得极不安稳。整宿的梦潮水般涌来又退去，醒来只剩满脑子的混沌——细想又抓不住任何一个画面，只隐约觉得，那些梦和最近的什么事有关。", cls:"amber"},
+    {t:"1920 年代，阿卡姆。今天是周六，怀表的指针指向上午九点。窗外秋阳惨白，屋里还有些没做完的杂务，和一封该回的信。你是漫特沃夫·埃大伯里，密斯卡托尼克大学的语言学教授——一个以死文字和古怪符号为业的人。", cls:"amber"},
+    {t:"九点半，邮差把一叠东西塞进门缝：几张传单、几笔账单，还有一个巴掌大的小包裹，和一封信。寄件人是马修·宾夏——你的同事，也是为数不多称得上『密友』的人。", cls:"amber"},
+    {t:"你先拆了那个包裹。棉纸层层裹着的，是一枚沉甸甸的吊坠：黄金铸成，中央嵌着一块乌黑发亮的石头，石面上镌着一个你从未在任何字母表里见过的符号。指尖触到它的那一刻，屋里的光仿佛暗了一瞬。", cls:"amber"},
+    {t:"你展开宾夏的信——", cls:"amber"},
+    {t:"「我亲爱的朋友：很抱歉这一周都没能见你，我病了一场。可就在这段日子里，我遇上了一件怪事，想请你帮我找找答案。随信的这枚吊坠，是我从历史系的彼得·凯利那儿得来的——一个隐士在本地一处叫『普多克之林』的地方掘出了它。凯利认不出，我也对上头的字符做过语言学比对，一无所获。也许你的路子正好能帮上忙。研究完了，周一或往后哪天带它来我办公室还我便是。祝你好运。——你的朋友，马修·宾夏。」", cls:"dlg"},
+    {t:"信末还添了一行小字：「又：你若碰巧遇见凯利，别提我把它给了你。这物件本不该外借，可它实在太蹊跷，我不想放过弄清它的机会。」", cls:"dlg"}
+  ],
+  set:{money:31, has_sign:true},
+  choices:[
+    {label:"把吊坠拿到窗前，仔细端详那个符号。", tag:"端详", goto:"act1_examine"},
+    {label:"先撂下它，去做手头的杂务。", tag:"▸", goto:"act1_examine"}
+  ]
+};
+S.act1_examine = {
+  banner:"room", loc:"家 · 书房",
+  text:[
+    {t:"你把吊坠举到窗前的天光下。那符号由几道断续的、彼此不相接的线构成，透着一种说不出的『错误』——像一个被故意画歪、好教人认不出的字。你越看，越觉得那些线条并非静止，而是在你视线的边缘，极缓慢地游动。", cls:"amber"},
+    {t:"一阵寒意顺着脊背爬上来。你放下吊坠，揉了揉眼。就在这一瞬，你忽然『看见』了——不是用眼睛：窗外走过的邮差，脸上浮起一层几乎要溢出来的疲惫与怨怼；对街太太隔窗张望的目光里，裹着一丝连她自己都未必察觉的妒意。仿佛有什么，替你揭开了人们脸上那层叫作『体面』的皮。", cls:"amber"}
+  ],
+  san:{loss:2, reason:"触碰黄衣之印后，开始看见旁人灵魂里赤裸的情绪"},
+  set:{sign_active:true},
+  choices:[ {label:"（你把这归为没睡好的错觉，勉强打起精神。）", tag:"▸", goto:"act1_radio"} ]
+};
+S.act1_radio = {
+  banner:"room", loc:"家 · 书房 · 上午十点半",
+  text:[
+    {t:"十点半，你拧开收音机，想驱一驱屋里的静。熟悉的节目却在半句里被掐断，插进一条播报——", cls:"amber"},
+    {t:"「……密斯卡托尼克大学历史系副教授彼得·凯利博士，今晨于普利茅斯城外因车祸不幸身亡，事发时他正驱车前往一场会议。目击者称，一名身着灰色大衣、体型异常庞大的男子径直走上公路、停在他车前；凯利博士急打方向盘避让，车子冲出路面撞上了电线杆。肇事者尚未寻获……」", cls:"amber"},
+    {t:"你怔在原地。凯利——就是宾夏信里提到的那个凯利。就在他把这枚吊坠转手之后。你掌心里的黄金，忽然凉得像一块冰。", cls:"amber"}
+  ],
+  san:{loss:1, reason:"意识到吊坠的上一任持有者，刚刚离奇横死"},
+  set:{clue_kelly_dead:true},
+  choices:[ {label:"这绝不是巧合。你得弄清这枚吊坠到底是什么——趁天黑之前。", tag:"▸", goto:"act1_todo"} ]
+};
+S.act1_todo = {
+  banner:"dark", loc:"调查开始", end:true,
+  text:[
+    {t:"—— 《活神之手》· v0.1 开场到此。", cls:"amber"},
+    {t:"接下来：给宾夏、凯利打电话；搜查宾夏与凯利的住处；去密大图书馆、历史学会查『黄衣之印』的来历；驱车前往隐士石谷的拖车与普多克之林，掘出巫师以西洁·菲尔普斯的日记——那里藏着让『黄衣之印的守护者』停手的唯一办法。而这一切，都必须赶在今夜守护者登门之前完成。", cls:"amber"},
+    {t:"完整的调查线、阿卡姆地图与结局正在建设中。引擎（角色卡 / 理智 / 3D 骰 / 时间 / 地图 / CoC 机制 / 音乐）已就绪，复用自《追书人》。", cls:"amber"}
+  ],
+  choices:[ {label:"↻ 回到开头", tag:"重玩", goto:"__restart"} ]
+};
+
+/* ---------------- 调查枢纽：六个方向，自由选、可回访 ---------------- */
+S.hub = {
+  banner:"harbor", loc:"阿诺兹堡 · 调查中",
+  text:[
+    {t:"阿诺兹堡是那种火车只肯停两分钟的小城：一条主街，一家报馆，一座图书馆，一间警局，城东一片上了年头的公墓。十月的风把街上的落叶卷得沙沙响，天色永远像下午四点半。", cls:"amber"},
+    {t:"你在心里摊开这桩案子的几条线头。一个只偷书的贼，一个失踪一年的爱书人，一栋塞满藏书的房子。——从哪儿查起，由你定。"}
+  ],
+  onEnter:()=>{ if(flags.money===undefined) flags.money=31; },
+  choices:[
+    {label:"在金博尔家附近走访邻居，打听道格拉斯这个人。", tag:"走访", goto:"neighbors", if:()=>!flags.did_neighbors},
+    {label:"去城东公墓——托马斯说，叔叔生前总爱去那儿看书。", tag:"前往", goto:"graveyard_day"},
+    {label:"去公共图书馆，翻一翻本地的旧新闻。", tag:"前往", goto:"library", if:()=>!flags.clue_article},
+    {label:"去警局，问问入室盗窃报案和可疑人员。", tag:"前往", goto:"police", if:()=>!flags.did_police},
+    {label:"去《阿诺兹堡广告报》报馆，查旧刊。", tag:"前往", goto:"newspaper", if:()=>!flags.clue_clipping},
+    {label:"回金博尔宅，仔细搜查道格拉斯的书房。", tag:"前往", goto:"study", if:()=>!flags.clue_diary},
+    {label:"（禁酒令年头）想法子在镇上弄一瓶威士忌。", tag:"办事", goto:"whiskey", if:()=>!flags.has_whiskey && !flags.whiskey_done},
+    {label:"天黑后，蹲守金博尔宅或公墓，守那个夜里来的『贼』。", tag:"蹲守", goto:"stakeout", if:()=>flags.clue_jefferson_figure||flags.clue_diary||flags.clue_window||flags.clue_footprints},
+    {label:"白天再去公墓，检查道格拉斯最爱的那块墓碑。", tag:"追查", goto:"headstone", if:()=>flags.clue_headstone && !flags.found_tomb},
+    {label:"下到那条地下隧道里去。", tag:"探入", goto:"tunnels", if:()=>flags.found_tunnel && !flags.did_tunnels}
+  ]
+};
+
+/* ---------------- 线 1 · 询问附近居民（外貌/信用 二选一） ---------------- */
+S.neighbors = {
+  banner:"harbor", loc:"艾尔特伯里大街 · 邻里",
+  text:[
+    {t:"金博尔宅附近的住家不多——这一带离公墓太近，房子卖不上价。步行五分钟，你只数出几栋还亮着炊烟的屋子。敲了两家门，邻居们对『盗贼』一无所知，对道格拉斯的印象也淡得像隔了一层毛玻璃。", cls:"amber"},
+    {t:"就在你打算收工时，一位披着灰呢披肩的老妇人正沿街走来，手里拎着一小篮鸡蛋。她上下打量你的眼神，像在给一件旧家具估价。"}
+  ],
+  choices:[
+    {label:"整了整衣冠，用教授的体面和礼数上前攀谈。（外貌或信用，取高者）", tag:"信用评级", check:{skill:"信用评级",target:70,success:"odell_ok",fail:"odell_fail"}}
+  ]
+};
+S.odell_ok = {
+  banner:"harbor", loc:"艾尔特伯里大街 · 奥黛尔夫人",
+  portrait:"odell", pcap:"奥 黛 尔 夫 人",
+  text:[
+    {t:"你的呢子大衣、你的手杖、你谈吐里那股大学讲席的从容，让老妇人的眼神从『估价』变成了『赏识』。她自称莉拉·奥黛尔，在这条街上住了大半辈子。", cls:"amber"},
+    {t:"「金博尔家的老先生？记得，怎么不记得。」她压低声音，像分享一件体己事，「顶和气的一个人，就是闷。大多数日子里，都能看见他胳膊底下夹着本书，往墓地那边走。他总在读书。刮风下雨都去。」", cls:"dlg"},
+    {t:"「说来，我有好几年没见着他了。」她想了想，补了一句，「他是过世了吗？我瞧他侄子如今住着那房子。」她并不真的等你回答——道了声好运，便拎着篮子走了。", cls:"dlg"},
+    {t:"【线索】道格拉斯生前几乎天天去公墓读书——去墓地找找看。", cls:"amber"}
+  ],
+  set:{did_neighbors:true, clue_neighbor:true, clue_headstone_hint:true},
+  choices:[ {label:"回到调查。", tag:"▸", goto:"hub"} ]
+};
+S.odell_fail = {
+  banner:"harbor", loc:"艾尔特伯里大街",
+  text:[
+    {t:"也许是你赶了半天路、大衣皱了，也许是老妇人今天心气不顺——她只瞥了你一眼，便加快脚步从你身边绕了过去，鸡蛋篮子护得紧紧的，仿佛你是个上门推销圣经的。", cls:"amber"},
+    {t:"这条街上再没别的人肯多聊。这条线，暂时断在这儿。"}
+  ],
+  set:{did_neighbors:true},
+  choices:[ {label:"回到调查。", tag:"▸", goto:"hub"} ]
+};
+
+/* ---------------- 线 2 · 公墓（白天）：守墓人杰弗逊 ---------------- */
+S.graveyard_day = {
+  banner:"graveyard", loc:"阿诺兹堡公墓 · 白日",
+  text:[
+    {t:"公墓比你想的老得多。铁艺大门锈出深褐色的泪痕，两侧的石柱上蹲着风化到五官模糊的石鸟。进了门，高大的橡树和榆树把天光筛成碎片，洒在一列列墓碑上——有的碑新，有的碑已经被苔藓吃掉了名字。植被繁盛，却修剪得体：有人在用心照料这片死者的园子。", cls:"amber"},
+    {t:"越往里走，你越说不清哪里不对劲。空气里除了湿土和落叶的气味，还浮着一丝极淡的、甜腻的腥气，仿佛从地缝深处渗上来。几只乌鸦落在碑顶，歪着头看你，却一声不叫。而你踩过的某几处草地，回音闷得异样——像脚下并非实心的土，而是空的。", cls:"amber"},
+    {t:"墓地深处传来铁铲刮土的声音。一个高个子、穿打补丁工装的男人正在清理杂草，五十多岁，胳膊粗得像船缆。听见你的脚步，他直起腰，转过身来——没有笑，也没有不笑，只是拄着铲子等你开口。"}
+  ],
+  set:{visited_graveyard:true},
+  choices:[
+    {label:"上前，与守墓人攀谈——怎么开口、用什么路数，由你。", tag:"交谈", talk:"jefferson"},
+    {label:"不去打扰他，自己在墓碑间转一转。", tag:"侦查", goto:"graveyard_stroll"}
+  ]
+};
+S.graveyard_stroll = {
+  banner:"graveyard", loc:"阿诺兹堡公墓 · 白日",
+  text:[
+    {t:"你沿着碎石小径慢慢走。这片公墓大得出奇，越往深处，墓碑越老，橡树的影子越沉。你注意到一片区域的杂草明显被反复踩伏过——不是园艺的痕迹，是有人常来。", cls:"amber"},
+    {t:"若不是熟悉这里的人指点，你很难说清哪一块碑、哪一条径，藏着这桩案子的线头。也许该跟那位守墓人谈谈。"}
+  ],
+  choices:[
+    {label:"去和守墓人谈谈。", tag:"交谈", talk:"jefferson"},
+    {label:"回到调查。", tag:"▸", goto:"hub"}
+  ]
+};
+
+/* ---------------- 线 3 · 图书馆（图书馆使用 + 孤注一掷=锁馆过夜） ---------------- */
+S.library = {
+  banner:"post", loc:"阿诺兹堡公共图书馆",
+  text:[
+    {t:"图书馆是栋红砖小楼，进门一股旧纸、地板蜡和暖气片烤尘土的味道。管理员是个戴夹鼻眼镜的瘦小男人，听说你要查本地旧闻，朝地下室努了努嘴：合订本都在下面，自己找，闭馆前上来。", cls:"amber"},
+    {t:"地下室里，《阿诺兹堡广告报》的合订本按年码了整整两面墙。灰尘在灯泡的光柱里悬浮。要在这纸山里捞出和公墓、和金博尔家有关的只言片语，是件考验章法的活儿——好在，这正是你吃饭的本事。"}
+  ],
+  choices:[
+    {label:"按年份、按版面，系统地检索旧报。", tag:"图书馆使用", check:{skill:"图书馆使用",target:80,success:"library_ok",fail:"library_fail"}}
+  ]
+};
+S.library_ok = {
+  banner:"post", loc:"图书馆 · 地下档案室",
+  text:[
+    {t:"两个多小时后，你在一册十多年前的合订本里停住了手。一则不起眼的边栏报道，标题的铅字都磨花了：", cls:"amber"},
+    {t:"报道说，有人深夜路过城东公墓，声称看见『一群显然未着寿衣的人』在毗邻金博尔宅的墓地里狂欢嬉戏，形骸放浪，直至月沉。警察接报赶到，搜遍了整片公墓，没有找到任何人——但在几处松软的泥地上，留下了一串串形状怪异的脚印，赤足，而足尖处……不似人趾。", cls:"amber"},
+    {t:"你把这段读了两遍。作为一个和死文字打了半辈子交道的人，你太熟悉这种笔调了——记者一边记录，一边急着替自己、也替读者，把它解释过去：醉汉的眼花，孩子的恶作剧，道具鞋。可那些赤足的、足尖分成两瓣的脚印，是圆不回去的。它们只是安静地印在泥里，等着十几年后某个不肯移开目光的人。", cls:"amber"},
+    {t:"报道用一句『恶作剧者的道具鞋』草草收了尾。你把那页折了个角，坐在灯下良久。十几年前，就有『他们』了。", cls:"amber"},
+    {t:"【线索】十多年前的旧报：公墓夜半有『未着寿衣者』群聚嬉戏，遗留怪异足印。", cls:"amber"}
+  ],
+  set:{clue_article:true},
+  san:{loss:0, reason:""},
+  choices:[ {label:"合上合订本，回到调查。", tag:"▸", goto:"hub"} ]
+};
+delete S.library_ok.san;
+S.library_fail = {
+  banner:"post", loc:"图书馆 · 地下档案室",
+  text:[
+    {t:"合订本太多、索引太乱，几个小时过去，你的指尖沾满黑灰，眼睛发花，还是没捞到有用的东西。楼上传来管理员收拾东西的响动——快闭馆了。", cls:"amber"},
+    {t:"你可以就此收手，改日再来；也可以孤注一掷，赌上整晚——但天黑之后的图书馆，可未必肯轻易放你走。"}
+  ],
+  choices:[
+    {label:"【孤注一掷】豁出去，通宵翻完它。", tag:"图书馆使用", check:{skill:"图书馆使用",target:80,success:"library_push_ok",fail:"library_locked"}},
+    {label:"今天到此为止，回到调查。", tag:"▸", goto:"hub"}
+  ]
+};
+S.library_push_ok = {
+  banner:"post", loc:"图书馆 · 地下档案室 · 入夜",
+  text:[
+    {t:"你赶在管理员锁门前打了声招呼，多赖了一个钟头——然后在最后一摞合订本的倒数第二册里，翻到了它。", cls:"amber"},
+    {t:"十多年前的边栏报道：深夜的公墓，『一群未着寿衣的人』在墓碑间狂欢，警察搜查无果，只在泥地上找到成串怪异的赤足脚印——足尖处，不似人趾。", cls:"amber"},
+    {t:"【线索】十多年前的旧报：公墓夜半有『未着寿衣者』群聚，遗留怪足印。", cls:"amber"}
+  ],
+  set:{clue_article:true},
+  choices:[ {label:"揣着抄录离开，回到调查。", tag:"▸", goto:"hub"} ]
+};
+S.library_locked = {
+  banner:"dark", loc:"图书馆 · 深夜 · 被反锁",
+  text:[
+    {t:"等你从纸堆里抬起头，四周静得可怕。灯泡在头顶嗡嗡作响。你摸上楼——大门紧锁，管理员早走了，压根没想起地下室里还有个你。", cls:"amber"},
+    {t:"深夜的图书馆没有一点人味。书架在黑暗里连成一片沉默的森林，风从某扇没关严的气窗钻进来，吹得纸页簌簌作响，像整栋楼在低声读着什么。你得想法子出去——或者，认命在这儿熬到早上八点。"}
+  ],
+  san:{loss:1, reason:"深夜被反锁在空无一人的图书馆里"},
+  choices:[
+    {label:"找一扇旧窗，用力抬开它爬出去。", tag:"力量", check:{skill:"力量",target:45,success:"library_escape",fail:"library_stuck"}},
+    {label:"在门边使劲敲打呼喊，赌有巡夜的警察路过。", tag:"幸运", check:{skill:"幸运",target:55,success:"library_rescued",fail:"library_stuck"}},
+    {label:"认命。找个亮灯的角落，用旧报纸盖着腿熬一夜。", tag:"▸", goto:"library_overnight"}
+  ]
+};
+S.library_escape = {
+  banner:"dark", loc:"图书馆 · 后窗",
+  text:[{t:"后廊有扇老式提拉窗，锁舌早锈松了。你运了两口气，双掌托住窗框往上一扛——木框呻吟着让了步。你腿脚并用爬出窗台，落进后巷的落叶堆里，拍拍大衣上的灰。教授的体面掉了点儿，人倒是全须全尾。", cls:"amber"}],
+  choices:[ {label:"回去休息，明天继续。", tag:"▸", goto:"hub"} ]
+};
+S.library_rescued = {
+  banner:"dark", loc:"图书馆 · 正门",
+  text:[{t:"你敲了约莫二十分钟，正门外终于晃来一柄手电。巡夜的警员隔着玻璃打量你半天，才摇着头开了锁：『教授，图书馆可不管晚饭。』他把你放出来，顺手在小本子上记了一笔——语气里的笑意多过怀疑。", cls:"amber"}],
+  choices:[ {label:"道过谢，回去休息。", tag:"▸", goto:"hub"} ]
+};
+S.library_stuck = {
+  banner:"dark", loc:"图书馆 · 深夜",
+  text:[
+    {t:"窗框纹丝不动，街上也始终没人应你。你的喊声被空荡荡的书库吞掉，只惊起了自己的回音。", cls:"amber"},
+    {t:"你只好认命，在借阅台后寻了把椅子，用旧报纸盖着腿，就着一盏台灯熬到天亮。整夜，你都觉得书架深处有极轻的、纸页翻动的声音——你没敢去看。"}
+  ],
+  san:{loss:1, reason:"在窸窣作响的黑暗书库里独自熬了一夜"},
+  choices:[ {label:"八点整，管理员开门时被吓了一跳。你顶着黑眼圈离开。", tag:"▸", goto:"library_morning"} ]
+};
+S.library_overnight = {
+  banner:"dark", loc:"图书馆 · 熬夜",
+  text:[
+    {t:"你把大衣裹紧，在借阅台后守着一盏孤灯。凌晨最深的时候，书库深处传来极轻的窸窣，像有谁在逐页翻一本很旧的书。你告诉自己那是风。你没有去看。", cls:"amber"}
+  ],
+  san:{loss:1, reason:"在窸窣作响的黑暗书库里独自熬了一夜"},
+  choices:[ {label:"熬到开馆，离开。", tag:"▸", goto:"library_morning"} ]
+};
+S.library_morning = {
+  banner:"post", loc:"图书馆 · 清晨",
+  text:[
+    {t:"晨光里的图书馆又恢复了旧纸和地板蜡的老实气味。折腾了一夜，倒也不算全无收获——你顺手把没翻完的那几册标了签，下回再来，能省下不少功夫。", cls:"amber"}
+  ],
+  set:{library_bonus:true},
+  choices:[
+    {label:"（改日）再来把旧报翻完。", tag:"图书馆使用", check:{skill:"图书馆使用",target:80,success:"library_ok",fail:"library_fail"}},
+    {label:"回到调查。", tag:"▸", goto:"hub"}
+  ]
+};
+
+/* ---------------- 线 4 · 警局（教授身份 + 说服） ---------------- */
+S.police = {
+  banner:"hall", loc:"阿诺兹堡警局",
+  text:[
+    {t:"警局前厅弥漫着煤炉、皮革和隔夜咖啡的味道。值班警官是个下巴刮得发青的中年人，正用两根手指头笨拙地敲一台打字机。他抬眼看你：一位穿呢大衣、拄手杖、口音斯文的大学教授，在这种小城警局里，比盗书贼还稀罕。", cls:"amber"},
+    {t:"好在，教授的身份天然比游方汉多三分体面——但要让一个忙碌的警官放下打字机翻旧档，还得看你怎么开口。"}
+  ],
+  choices:[
+    {label:"出示大学聘书与金博尔的委托，条理分明地说明来意。", tag:"说服", check:{skill:"说服",target:60,success:"police_ok",fail:"police_fail"}},
+    {label:"摆出学界名流的谱，希望对方卖个面子。", tag:"魅惑", check:{skill:"魅惑",target:30,success:"police_ok",fail:"police_fail"}}
+  ]
+};
+S.police_ok = {
+  banner:"hall", loc:"警局 · 档案与闲谈",
+  text:[
+    {t:"警官被你说动了，给你倒了半杯浓得发苦的咖啡，翻着记录本，有一搭没一搭地跟你聊了小半个钟头。你从里面淘出四条干货：", cls:"amber"},
+    {t:"其一：这一片已经很久没有入室盗窃的报案了——上一桩还在一年多以前，罪犯是个诨名『六指』的惯偷，早就抓着归了案，如今还在牢里蹲着。"},
+    {t:"其二：近来没有任何关于生面孔或形迹古怪之人的报告。这镇子小得任何新鲜事都藏不住。"},
+    {t:"其三：大约六七年前，曾有人报案说公墓深夜传出怪声。之后巡警把公墓纳入了巡逻线，但从没人亲眼见过异常。『那里安静得就像座坟墓！』警官自己先笑了。", cls:"dlg"},
+    {t:"其四：他记得道格拉斯·金博尔的寻人启事——照片贴过、也传过，可这个人就像蒸发了一样，始终没有找到。", cls:"amber"},
+    {t:"【线索】警方口径：没有贼、没有生人；公墓的『怪声』传闻在多年前就有。", cls:"amber"}
+  ],
+  set:{did_police:true, clue_police:true},
+  choices:[ {label:"谢过警官，回到调查。", tag:"▸", goto:"hub"} ]
+};
+S.police_fail = {
+  banner:"hall", loc:"警局",
+  text:[
+    {t:"「教授，我这儿礼拜一到礼拜六都是案子。」警官朝打字机努努嘴，语气不坏，但送客的意思明明白白，「盗书？书能值几个钱。明天再来吧，明天兴许清闲。」", cls:"dlg"},
+    {t:"你被不冷不热地请了出来。改日换个说法，或许还有机会。"}
+  ],
+  choices:[
+    {label:"改日再来，换个路数说明来意。", tag:"说服", check:{skill:"说服",target:60,success:"police_ok",fail:"police_fail2"}},
+    {label:"先回到调查。", tag:"▸", goto:"hub"}
+  ]
+};
+S.police_fail2 = {
+  banner:"hall", loc:"警局",
+  text:[{t:"这一回，警官连头都懒得抬了。这条线，怕是要另想办法——或者，先从别处把案子查出个眉目，再拿着实据来敲这扇门。", cls:"amber"}],
+  set:{did_police:true},
+  choices:[ {label:"回到调查。", tag:"▸", goto:"hub"} ]
+};
+
+/* ---------------- 线 5 · 报馆（进资料室 + 图书馆使用 → 沃德手记） ---------------- */
+S.newspaper = {
+  banner:"post", loc:"《阿诺兹堡广告报》报馆",
+  text:[
+    {t:"报馆挤在主街一栋窄楼里，进门就是油墨与铅字的气味，一台印刷机在里间哐当作响。前台的编辑袖子上套着黑色护袖，用一种『又来一个订报的』的眼神打量你。", cls:"amber"},
+    {t:"你说明来意：想查阅旧刊资料室。编辑挑了挑眉毛——你不是记者，也不是作家，这间资料室并不对闲人开放。"}
+  ],
+  choices:[
+    {label:"以学者研究地方史为由，正式提出请求。", tag:"说服", check:{skill:"说服",target:60,success:"news_in",fail:"news_out"}},
+    {label:"恭维他的报纸办得体面，套套近乎。", tag:"魅惑", check:{skill:"魅惑",target:30,success:"news_in",fail:"news_out"}},
+    {label:"暗示你正替金博尔家办一件要紧事，语焉不详地抬出点来头。", tag:"话术", check:{skill:"话术",target:40,success:"news_in",fail:"news_out"}}
+  ]
+};
+S.news_out = {
+  banner:"post", loc:"报馆前台",
+  text:[{t:"编辑客气而坚决地摇了头：「资料室不外借、不外开，先生。您要研究地方史，图书馆有合订本。」他重新低头改他的稿子。这扇门，今天是敲不开了。", cls:"amber"}],
+  choices:[
+    {label:"改日再来试试别的说法。", tag:"▸", goto:"hub"},
+  ]
+};
+S.news_in = {
+  banner:"post", loc:"报馆 · 资料室",
+  text:[
+    {t:"编辑领你进了后屋。资料室比图书馆的地下室还挤：过刊、剪报、没发出去的通讯稿，按一种只有本馆员工才懂的秩序堆叠着。「别把顺序弄乱，」他丢下这句就回了前台。", cls:"amber"},
+    {t:"在这种私家档案里找东西，讲究的还是那套学院功夫。"}
+  ],
+  choices:[
+    {label:"检索与公墓、金博尔家有关的旧刊与剪报。", tag:"图书馆使用", check:{skill:"图书馆使用",target:80,success:"news_ok",fail:"news_fail"}}
+  ]
+};
+S.news_ok = {
+  banner:"post", loc:"报馆 · 资料室",
+  text:[
+    {t:"你在一只贴着『未刊登』标签的纸匣里，翻到了一位老记者留下的采访手记。其中一段，与公墓有关——被红笔划了又划，终究没敢见报：", cls:"amber"},
+    {t:"受访者名叫希尔达·沃德，如今 64 岁，长年失眠。她声称，二十多年间，时常在后半夜看见『魔鬼的子嗣』出没于墓地附近。它们的轮廓像人，她却言之凿凿：那些东西生着犬类的相貌，足部呈蹄状，浑身沾满腐烂的泥土。", cls:"amber"},
+    {t:"记者在页边写：『沃德女士已经搬去了底特律，她所指认的邻居谁也不曾见过此类东西，但她本人始终不曾改口，且承认曾上希尔达所谓的《魔鬼子嗣》当。』——最后这句被划掉了，改成一行小字：不予刊发。", cls:"amber"},
+    {t:"【线索】沃德手记：二十余年间，夜半墓地有犬面、蹄足、沾满墓土的『魔鬼子嗣』出没。", cls:"amber"}
+  ],
+  set:{clue_clipping:true},
+  choices:[ {label:"把手记放回纸匣，回到调查。", tag:"▸", goto:"hub"} ]
+};
+S.news_fail = {
+  banner:"post", loc:"报馆 · 资料室",
+  text:[
+    {t:"堆叠的『本馆秩序』彻底击败了你——三小时过去，你连年份都没能对齐。前台的编辑探头进来看了两回，第三回时终于开口：「先生，我们要下班了。」", cls:"amber"}
+  ],
+  choices:[
+    {label:"【孤注一掷】请求再宽限一小时，拼了。", tag:"图书馆使用", check:{skill:"图书馆使用",target:80,success:"news_ok",fail:"news_kicked"}},
+    {label:"改日再来。", tag:"▸", goto:"hub"}
+  ]
+};
+S.news_kicked = {
+  banner:"post", loc:"报馆 · 打烊",
+  text:[{t:"宽限的一小时里你依旧一无所获，反而碰乱了一摞通讯稿。编辑黑着脸把你送出门，礼貌里透着『下不为例』。短时间内，这间资料室不会再对你开门了。", cls:"amber"}],
+  set:{news_burned:true},
+  choices:[ {label:"回到调查。", tag:"▸", goto:"hub"} ]
+};
+
+/* ---------------- 弄酒（知识/教育 → 幸运兜底；给杰弗逊的贿赂道具） ---------------- */
+S.whiskey = {
+  banner:"harbor", loc:"阿诺兹堡 · 主街之后",
+  text:[
+    {t:"1922 年，禁酒令的年头。烈酒是违法的——但『违法』和『买不着』从来是两码事。问题只在于：像你这样一位体面教授，知不知道该往哪条后巷拐、对哪扇门敲三下半。", cls:"amber"}
+  ],
+  choices:[
+    {label:"凭学识与见闻，推断这镇上私酒该藏在什么行当后头。", tag:"教育", check:{skill:"教育",target:85,success:"whiskey_ok",fail:"whiskey_luck"}}
+  ]
+};
+S.whiskey_ok = {
+  banner:"harbor", loc:"主街之后 · 某家药房的里间",
+  text:[
+    {t:"你的推断没让你失望：药房。柜台后的伙计听你说明『用途』，会意地掀开门帘。两美元，一品脱『药用』威士忌，用牛皮纸包得方方正正，像一部字典。", cls:"amber"},
+    {t:"【获得道具】一品脱威士忌（-$2）——某些喉咙，得用这个才润得开。", cls:"amber"}
+  ],
+  onEnter:()=>{ flags.money=(flags.money||31)-2; PC.inv.push("一品脱威士忌（牛皮纸包）"); renderSheet(); },
+  set:{has_whiskey:true, whiskey_done:true},
+  choices:[ {label:"揣好纸包，回到调查。", tag:"▸", goto:"hub"} ]
+};
+S.whiskey_luck = {
+  banner:"harbor", loc:"主街之后",
+  text:[
+    {t:"你拐错了巷子，敲错了门——门后是一位面色不善的壮汉，上下打量你这身行头，眼神很不友好。街角，一名巡警恰好踱了过来。", cls:"amber"}
+  ],
+  choices:[
+    {label:"面不改色，扮成迷路的教书先生，从容离开。", tag:"幸运", check:{skill:"幸运",target:55,success:"whiskey_slip",fail:"whiskey_caught"}}
+  ]
+};
+S.whiskey_slip = {
+  banner:"harbor", loc:"主街",
+  text:[{t:"巡警的目光在你身上停了两秒，被你手杖和老花镜的组合说服了——世上没有哪个私酒贩子长这样。他碰了碰帽檐走开。你惊出一后背薄汗，决定这瓶酒改日再想办法。", cls:"amber"}],
+  set:{whiskey_done:true},
+  choices:[ {label:"回到调查。", tag:"▸", goto:"hub"} ]
+};
+S.whiskey_caught = {
+  banner:"dark", loc:"警局 · 拘留室",
+  text:[
+    {t:"事情没能从容起来。壮汉的一嗓子和巡警的哨声几乎同时响。整个下午加一整晚，你在拘留室的板凳上，就着一盏昏灯，接受了一场关于『体面人也不该知法犯法』的严肃训导。", cls:"amber"},
+    {t:"第二天一早，你被无罪释放。警官送你出门时的眼神，让你此后在这间警局的每一句话，都得多费三分力气。"}
+  ],
+  set:{whiskey_done:true, police_annoyed:true},
+  choices:[ {label:"整整衣冠，回到调查。", tag:"▸", goto:"hub"} ]
+};
+
+/* ---------------- 线 6 · 金博尔宅书房（窗闩 + 侦查找日记） ---------------- */
+S.study = {
+  banner:"room", loc:"金博尔宅 · 道格拉斯的书房",
+  text:[
+    {t:"托马斯搬进了这栋房子的每一个房间，唯独没动书房。他说他不敢动。推开门，一股旧纸和皮革封面的气味涌出来——四面墙从地到顶全是书，大小不一、装帧各异，内容涵盖天上地下，唯一的共同点，是它们都被主人用了大心思去善待。", cls:"amber"},
+    {t:"书架上有一处缺口格外扎眼：少了约莫六本书，留下的空当像掉了牙。托马斯说不清具体丢了哪几本——只有道格拉斯自己数得清。"}
+  ],
+  choices:[
+    {label:"先查窗户和门锁，弄清『贼』是怎么进来的。", tag:"侦查", check:{skill:"侦查",target:50,success:"study_window",fail:"study_window_f"}},
+    {label:"系统地搜遍整间书房，找找叔叔留下的东西。（费时）", tag:"侦查", check:{skill:"侦查",target:50,success:"study_diary",fail:"study_diary_f",onExtreme:"study_diary_x",push:{fore:"你可以豁出去，把整间书房翻个底朝天——只是手脚一乱，难免磕碰摔坏东西。",fail:"study_clumsy"}}},
+    {label:"暂时离开书房。", tag:"▸", goto:"hub"}
+  ]
+};
+S.study_window = {
+  banner:"room", loc:"书房 · 窗前",
+  text:[
+    {t:"门锁完好，没有撬动的痕迹。可当你俯身查看那扇朝后院的窗，答案就摆在眼前：窗闩早已被岁月磨松，轻轻一挑就开，从外面用一把小刀甚至一根手指就能拨动。这不是破门而入——这是一个熟门熟路、知道这扇窗几十年前就锁不严的人。", cls:"amber"},
+    {t:"【线索】贼从后窗进出，且深谙此窗年久失修——像个『家里人』。", cls:"amber"}
+  ],
+  set:{clue_window:true},
+  choices:[
+    {label:"接着搜书房。", tag:"侦查", check:{skill:"侦查",target:50,success:"study_diary",fail:"study_diary_f"}},
+    {label:"离开书房。", tag:"▸", goto:"hub"}
+  ]
+};
+S.study_window_f = {
+  banner:"room", loc:"书房 · 窗前",
+  text:[{t:"你查了门锁和窗户，一时没看出破绽——夜里进来的人，似乎没留下强行闯入的痕迹。这本身就有点古怪。", cls:"amber"}],
+  choices:[
+    {label:"搜书房，找叔叔的遗物。", tag:"侦查", check:{skill:"侦查",target:50,success:"study_diary",fail:"study_diary_f"}},
+    {label:"离开书房。", tag:"▸", goto:"hub"}
+  ]
+};
+S.study_diary = {
+  banner:"room", loc:"书房 · 一整天的翻检",
+  text:[
+    {t:"搜遍这样一间塞满书的屋子，花了你整整一天。就在你几乎要放弃时，一本硬皮日记从一排大部头背后滑了出来——道格拉斯·金博尔的字迹，工整而潦草地记着他生命最后几年的心事。", cls:"amber"},
+    {t:"大多数条目是读书笔记和牢骚：厌烦访客，厌烦应酬，厌烦一切打断他读书的人和事。可越往后翻，字里行间越渗出别的东西——他反复提到夜里在墓地『遇见的朋友』，提到墓碑底下『一片望不到头的地下』。", cls:"amber"},
+    {t:"最后一条，写于他失踪的前一夜，只有短短两行，墨迹却重得几乎划破纸背：『我已经做出决定了。今晚，我去找我在地下的朋友们。别为我难过——我从没这样期待过任何一次远行。』", cls:"amber"},
+    {t:"【线索】道格拉斯的日记：他自愿在失踪前夜『下到地下』去投奔墓地里的『朋友』。", cls:"amber"}
+  ],
+  san:{loss:1, reason:"读到一个人平静地、满怀期待地记录自己走向某种非人的归宿"},
+  set:{clue_diary:true},
+  choices:[ {label:"合上日记，回到调查。", tag:"▸", goto:"hub"} ]
+};
+S.study_diary_x = {
+  banner:"room", loc:"书房 · 一整天的翻检",
+  text:[
+    {t:"你不只翻到了那本日记——凭着老练的眼力，你还从夹在书里滑落的一张干枯书签上，认出一小片压平褪色的白色小花，正是公墓那种常见的墓地花。他往墓地去，从来不只是为了清静。", cls:"amber"},
+    {t:"日记最后一条写于他失踪前夜，墨迹重得几乎划破纸背：『我已经做出决定了。今晚，我去找我在地下的朋友们。别为我难过——我从没这样期待过任何一次远行。』", cls:"amber"},
+    {t:"【线索】道格拉斯的日记（自愿『下到地下』）+ 他与公墓那株花的隐秘牵连——线头比你预想的更清晰。", cls:"amber"}
+  ],
+  san:{loss:1, reason:"读到一个人平静地、满怀期待地记录自己走向某种非人的归宿"},
+  set:{clue_diary:true},
+  choices:[ {label:"合上日记，回到调查。", tag:"▸", goto:"hub"} ]
+};
+S.study_diary_f = {
+  banner:"room", loc:"书房",
+  text:[
+    {t:"你翻了大半天，书太多、线索太杂，一无所获，反倒累得腰酸背痛。要不要豁出去，把整间书房掀个底朝天？——只是手脚一乱，难免磕碰。", cls:"amber"}
+  ],
+  choices:[
+    {label:"【孤注一掷】不管不顾，翻个底朝天。", tag:"侦查", check:{skill:"侦查",target:50,success:"study_diary",fail:"study_clumsy"}},
+    {label:"改日再细搜。", tag:"▸", goto:"hub"}
+  ]
+};
+S.study_clumsy = {
+  banner:"room", loc:"书房 · 狼藉",
+  text:[
+    {t:"你到底还是找到了那本日记——代价是撞翻了一摞书，还碰碎了壁炉台上一只描金的花瓶。闻声进来的托马斯脸色很难看，说这是他母亲的遗物，末了闷闷地补一句：『这个……得从您的酬劳里扣五块。』", cls:"amber"},
+    {t:"（日记内容同上：道格拉斯自愿下到地下投奔『朋友』。）"},
+    {t:"【线索】道格拉斯的日记：他自愿在失踪前夜『下到地下』。", cls:"amber"}
+  ],
+  onEnter:()=>{ if(!flags.vase_broken){ flags.vase_broken=true; flags.money=(flags.money||31)-5; } },
+  san:{loss:1, reason:"读到一个人平静地走向非人的归宿"},
+  set:{clue_diary:true},
+  choices:[ {label:"回到调查。", tag:"▸", goto:"hub"} ]
+};
+
+/* ---------------- 收束 A · 检查最爱的墓碑 → 陵墓 → 隧道 ---------------- */
+S.headstone = {
+  banner:"graveyard", loc:"公墓 · 那块矮墓碑",
+  text:[
+    {t:"循着守墓人（或邻居）的指点，你找到了那块道格拉斯最爱的矮墓碑。它饱经风霜，碑面被磨得温润光滑，早已认不出碑主是谁——却正好是个背靠着读书的绝佳位置。你几乎能想象一个爱书的老人，年复一年坐在这里，直到夕阳沉进林梢。", cls:"amber"},
+    {t:"你俯身查看墓碑四周的泥地。"}
+  ],
+  choices:[
+    {label:"仔细勘查墓碑周围的地面。", tag:"侦查", check:{skill:"侦查",target:50,success:"headstone_ok",fail:"headstone_f"}}
+  ]
+};
+S.headstone_ok = {
+  banner:"graveyard", loc:"公墓 · 那块矮墓碑",
+  text:[
+    {t:"就在松软的泥地上，你看清了它们：一串脚印。赤足，却又不像人足——足尖处并非五趾，而是分开的、近乎蹄状的两瓣。脚印从墓碑边一路延伸，绕过几座陵墓，通向墓地更深、更暗的角落。", cls:"amber"},
+    {t:"你顺着这串怪印走去，尽头是一座半塌的家族陵墓。青铜门虚掩着，门缝里，渗出一股说不出的、又腥又甜的腐味。", cls:"amber"}
+  ],
+  san:{loss:1, reason:"确认那些非人的足印真实存在，且就在你脚边"},
+  set:{clue_footprints:true},
+  choices:[
+    {label:"用力推开那扇陵墓的门。", tag:"力量", check:{skill:"力量",target:45,success:"tomb_open",fail:"tomb_stuck"}},
+    {label:"暂时退开，回去准备准备。", tag:"▸", goto:"hub"}
+  ]
+};
+S.headstone_f = {
+  banner:"graveyard", loc:"公墓 · 那块矮墓碑",
+  text:[{t:"你在墓碑四周找了半天，泥地被落叶盖着，什么也没看出来。也许换个天光，或者带上放大镜再来。", cls:"amber"}],
+  set:{clue_headstone_checked:true},
+  choices:[ {label:"回到调查。", tag:"▸", goto:"hub"} ]
+};
+S.tomb_stuck = {
+  banner:"graveyard", loc:"陵墓门前",
+  text:[{t:"青铜门锈死了，你一个教书先生的力气，推得它纹丝不动。你想起守墓人的工具棚——取一把铁铲当撬棍，兴许能行。", cls:"amber"}],
+  choices:[
+    {label:"取来铁铲，撬开它。", tag:"▸", set:{has_lever:true}, goto:"tomb_open"}
+  ]
+};
+S.tomb_open = {
+  banner:"dark", loc:"陵墓 · 门开",
+  text:[
+    {t:"门轴发出一声长长的呻吟，让开了。一股在门缝里积蓄已久的、浓得能挂住舌头的腐臭迎面扑来——那是腐肉、湿泥、和某种更古老的东西混在一起的味道。", cls:"amber"}
+  ],
+  choices:[
+    {label:"赶紧屏住呼吸，捂住口鼻。", tag:"意志", set:{held_breath:true}, goto:"tomb_inside"},
+    {label:"来不及了，硬着头皮往里看。", tag:"体质", check:{skill:"体质",target:50,success:"tomb_inside",fail:"tomb_faint"}}
+  ]
+};
+S.tomb_faint = {
+  banner:"tomb", loc:"陵墓 · 昏厥",
+  text:[
+    {t:"那股恶臭像一记闷拳。你眼前一黑，膝盖一软，靠着冰凉的石棺滑坐下去，失去了知觉。", cls:"amber"},
+    {t:"再醒来时，天已经黑透。你头痛欲裂地爬起来——陵墓深处，一条黑黢黢的、显然是徒手挖出来的隧道，正朝着地底张着口。"}
+  ],
+  san:{loss:1, reason:"在腐臭中昏厥，独自醒来于漆黑的陵墓"},
+  set:{found_tunnel:true, night_now:true},
+  choices:[
+    {label:"就着火柴的光，下到隧道里去。", tag:"探入", goto:"tunnels"},
+    {label:"先退出去，回去准备。", tag:"▸", goto:"hub"}
+  ]
+};
+S.tomb_inside = {
+  banner:"tomb", loc:"陵墓 · 内",
+  text:[
+    {t:"陵墓内部比外面还冷。破碎的石棺盖歪在一边，棺里空空如也。真正让你头皮发麻的，是墙角——那里的石板被人（或别的什么）撬开、掘断，露出一条向下、向着无边黑暗延伸的隧道。它不是任何工程队挖的，坑壁上满是一道道抓挠的痕迹，像是有什么东西，用『手』，一点点抠出了这条通往地底的路。", cls:"amber"}
+  ],
+  san:{loss:1, reason:"目睹一条被『手』抠挖出的、通往地底的隧道"},
+  set:{found_tunnel:true},
+  choices:[
+    {label:"就着火柴的光，下到隧道里去探个究竟。", tag:"探入", goto:"tunnels"},
+    {label:"退出陵墓，回去准备（比如天黑后来蹲守）。", tag:"▸", goto:"hub"}
+  ]
+};
+S.tunnels = {
+  banner:"tomb", loc:"墓地之下 · 隧道网",
+  text:[
+    {t:"你划亮一根火柴，弯着腰下到隧道里。往下没几步，通道就分了岔，又分岔——你很快明白，这不是一条隧道，而是一整张盘踞在整片公墓底下的地下迷宫，湿冷的泥壁上处处是抓挠的沟痕。火柴的微光只能照亮眼前三尺，身后是无边的、仿佛在呼吸的黑。", cls:"amber"},
+    {t:"泥壁不是天然的。你伸手摸过去，指腹陷进一道道平行的深沟——那是指甲抓挠的痕迹，无数只手、经年累月，一寸一寸把这片地底抠挖出来。有些沟痕里还嵌着断裂的、灰白的碎片，你没敢细看是不是指甲。空气稠得像糖浆，每一次呼吸都尝得到泥土和某种陈年的腐甜。", cls:"amber"}
+  ],
+  san:{loss:2, reason:"独自置身墓地之下、由无数抓痕构成的地底迷宫"},
+  choices:[
+    {label:"凭方向感，尽量记住来路，往深处走。", tag:"导航", check:{skill:"导航",target:30,success:"tunnels_deep",fail:"tunnels_lost"}}
+  ]
+};
+S.tunnels_deep = {
+  banner:"tomb", loc:"墓地之下 · 深处",
+  text:[
+    {t:"你小心地数着岔口，在一处稍稍开阔的土室里停下。这里像是某种起居之所：石壁的凹龛里，竟整整齐齐码着一摞摞书——受潮发胀、却被人（某种东西）用心地一本本抹平、垒好。你认出其中几本的书脊：正是金博尔宅书房里失窃的那几本。", cls:"amber"},
+    {t:"你抽出一本，借火光翻开——潮气把纸页黏在一起，可页边的空白处，是密密麻麻、你在书房日记里见过的同一种字迹：在批注，在争辩，在与早已作古的作者，隔着阴阳讨论一个句读的对错。一个念头让你脊背发凉：他在这下面，过得很好。", cls:"amber"},
+    {t:"就在这时，通道深处传来响动。有什么正朝这边、不紧不慢地过来。你还没来得及躲，一盏微光转过弯——你和它，撞了个正着。", cls:"amber"}
+  ],
+  set:{did_tunnels:true, saw_ghoul_lair:true},
+  choices:[ {label:"举起火柴，看清来者。", tag:"▸", goto:"meet_douglas"} ]
+};
+S.tunnels_lost = {
+  banner:"tomb", loc:"墓地之下 · 迷路",
+  text:[
+    {t:"你很快就分不清东南西北了。每一条岔道都一模一样，每一次转弯都通向新的黑暗。火柴一根根用尽，时间在地底失去了刻度，你在原地打转，直到双腿发软、不得不靠着泥壁喘息。", cls:"amber"},
+    {t:"当你终于摸索着找到一线向上的微光、跌跌撞撞往外爬时，一个身影，在返回地面的通道口，与你不期而遇。", cls:"amber"}
+  ],
+  san:{loss:1, reason:"在无边的地底迷宫里迷失、耗竭"},
+  set:{did_tunnels:true},
+  choices:[ {label:"举起最后一根火柴，看清来者。", tag:"▸", goto:"meet_douglas"} ]
+};
+
+/* ---------------- 收束 B · 监视屋子或墓地（每晚幸运） ---------------- */
+S.stakeout = {
+  banner:"dark", loc:"金博尔宅 · 后院 · 夜",
+  text:[
+    {t:"你决定守株待兔。入夜后，你熄了灯，裹着大衣，守在能同时望见书房后窗和墓地方向的暗处，怀表在手心里滴答。夜风穿过墓地，送来一阵阵泥土和落叶的气息。", cls:"amber"}
+  ],
+  choices:[
+    {label:"熬过这一夜，看那个『贼』会不会来。", tag:"幸运", check:{skill:"幸运",target:55,success:"stakeout_hit",fail:"stakeout_miss"}}
+  ]
+};
+S.stakeout_miss = {
+  banner:"dark", loc:"金博尔宅 · 后院 · 拂晓",
+  text:[{t:"这一夜风平浪静。你熬到东方泛白，眼皮打架，那个『贼』始终没有露面。也许他不是每夜都来——再守一晚？还是从别处逼近真相？", cls:"amber"}],
+  choices:[
+    {label:"再守一晚。", tag:"幸运", check:{skill:"幸运",target:55,success:"stakeout_hit",fail:"stakeout_miss2"}},
+    {label:"白天先去别处查（回到调查）。", tag:"▸", goto:"hub"}
+  ]
+};
+S.stakeout_miss2 = {
+  banner:"dark", loc:"金博尔宅 · 后院 · 拂晓",
+  text:[{t:"又是一个空夜。你困得几乎坐着睡着。看来得换个法子——也许该主动下到墓地那条隧道里去，把他堵在窝里。", cls:"amber"}],
+  choices:[ {label:"回到调查，另想办法。", tag:"▸", goto:"hub"} ]
+};
+S.stakeout_hit = {
+  banner:"dark", loc:"金博尔宅 · 后院 · 深夜",
+  text:[
+    {t:"后半夜最深的时候，墓地那边的黑暗里，剥离出一个佝偻的身影。它不走大路，贴着树影、坟茔，无声地、径直地朝金博尔宅摸来，动作里有一种说不出的、非人的柔韧。", cls:"amber"},
+    {t:"它熟练地摸到书房后窗前，指头一挑，那扇松了几十年的窗闩应声而开——它侧身钻了进去。片刻之后，它抱着一摞书重新翻出窗台，转身要往墓地退回。就是现在。", cls:"amber"}
+  ],
+  set:{clue_window:true},
+  choices:[
+    {label:"猛地扑上去，抓住它、制住它。", tag:"扑击", goto:"attack_figure"},
+    {label:"举枪，喝令它站住。", tag:"举枪", goto:"attack_figure"},
+    {label:"不动手，只低声喊出一个名字：「道格拉斯·金博尔。」", tag:"交谈", goto:"talk_figure"}
+  ]
+};
+
+/* ---------------- 高潮 · 遭遇道格拉斯 ---------------- */
+S.meet_douglas = {
+  banner:"tomb", loc:"墓地之下 · 面对面",
+  text:[
+    {t:"火光里，站着一个佝偻的身影。它抱着几本书，浑身沾着墓土，在你举起的火柴前眯起了眼——那双眼睛，浑浊、疲惫，却分明还残留着一点人的东西。它没有扑向你，只是歪着头，静静地打量你，像在辨认一件很久以前见过的旧物。", cls:"amber"}
+  ],
+  choices:[
+    {label:"这是那个『贼』。扑上去制住它。", tag:"扑击", goto:"attack_figure"},
+    {label:"低声试探地喊出：「道格拉斯·金博尔？」", tag:"交谈", goto:"talk_figure"}
+  ]
+};
+S.attack_figure = {
+  banner:"tomb", loc:"与人影搏斗",
+  text:[
+    {t:"你不再犹豫，扑了上去（或扣动了扳机）。那身影反应快得不像话，一个侧闪，几乎要带着书遁入黑暗——", cls:"amber"}
+  ],
+  choices:[
+    {label:"拼尽全力，抓住它、按倒它。", tag:"斗殴", check:{skill:"斗殴",target:25,success:"see_face_down",fail:"figure_flees"}},
+    {label:"举枪瞄准，扣下扳机。", tag:"手枪", check:{skill:"手枪",target:20,success:"see_face_down",fail:"figure_flees"}}
+  ]
+};
+S.figure_flees = {
+  banner:"tomb", loc:"追逐",
+  text:[
+    {t:"你到底还是慢了半拍。它像一头受惊的野兽，带着满怀的书，几个起落就窜进了墓地的黑暗，径直往那座陵墓、往地下的入口奔去。你追了上去——在那块熟悉的矮墓碑前，它忽然停住了脚。", cls:"amber"},
+    {t:"它没有再逃。它转过身，在墓碑上坐了下来，仿佛认命，又仿佛，一直在等你追上来。"}
+  ],
+  choices:[ {label:"喘着气，走近它。", tag:"▸", goto:"talk_figure_sit"} ]
+};
+S.see_face_down = {
+  banner:"tomb", loc:"人影倒地",
+  text:[
+    {t:"你的一击奏了效。那身影闷哼一声，栽倒在地，怀里的书哗啦散了一地。你借着火光，第一次看清了它的脸——", cls:"amber"},
+    {t:"赤裸的身体沾满泥土和霉斑，长着一张犬类般的脸，巨大的獠牙，本该是鼻子的地方拱起一截近乎兽类的口吻。可最让你如坠冰窟的，是这张脸——它与你在寻人启事照片上见过的道格拉斯·金博尔，有着惊人的、无法否认的相似。", cls:"amber"}
+  ],
+  choices:[ {label:"（你的理智，在这一刻遭受两重冲击……）", tag:"理智", goto:"sanity_double_1"} ]
+};
+S.sanity_double_1 = {
+  banner:"dark", loc:"两重冲击 · 其一",
+  text:[{t:"第一重：你面对的，是一头传说中才有的食尸鬼——真实、就在你脚边、还带着你亲手造成的伤。", cls:"amber"}],
+  choices:[
+    {label:"稳住心神。（理智检定）", tag:"理智", check:{skill:"理智",target:65,success:"sanity_double_2",fail:"sanity_double_1_f"}}
+  ]
+};
+S.sanity_double_1_f = {
+  banner:"dark", loc:"两重冲击 · 其一",
+  text:[{t:"恐惧攫住了你，你踉跄后退，撞翻了身后的墓碑，几乎握不住手里的火柴。", cls:"amber"}],
+  san:{loss:6, reason:"直面一头真实存在、就在脚边的食尸鬼"},
+  choices:[ {label:"（第二重冲击袭来……）", tag:"▸", goto:"sanity_double_2" } ]
+};
+S.sanity_double_2 = {
+  banner:"dark", loc:"两重冲击 · 其二",
+  text:[{t:"第二重，更重：这头食尸鬼的脸——是失踪的道格拉斯·金博尔。委托你寻找的那个人，你要带回消息的那个人。他没有死，他变成了这个。", cls:"amber"}],
+  choices:[
+    {label:"承受这个认知。（理智检定）", tag:"理智", check:{skill:"理智",target:65,success:"ghoul_swarm",fail:"sanity_double_2_f"}}
+  ]
+};
+S.sanity_double_2_f = {
+  banner:"dark", loc:"两重冲击 · 其二",
+  text:[{t:"一个念头在你脑中炸开：这就是道格拉斯。你替他侄子来找的叔叔。你发出一声自己都没听出是谁的尖叫。", cls:"amber"}],
+  san:{loss:4, reason:"认出这头食尸鬼，就是失踪的道格拉斯·金博尔"},
+  set:{temp_madness:true},
+  choices:[ {label:"（就在这时，四周的黑暗开始蠕动……）", tag:"▸", goto:"ghoul_swarm"} ]
+};
+S.ghoul_swarm = {
+  banner:"dark", loc:"墓地 · 群影涌来",
+  portrait:"douglas", pcap:"食 尸 鬼",
+  text:[
+    {t:"你站在倒地的道格拉斯身旁，听见四面八方的黑暗里，传来细碎而密集的脚步声。你举起火柴——", cls:"amber"},
+    {t:"数十头食尸鬼，正从夜色里、从每一座陵墓的阴影里，缓慢地、无声地，朝你围拢过来。一双双浑浊发亮的眼睛，在黑暗里连成一片。它们不急，因为它们知道你无处可逃。", cls:"amber"},
+    {t:"它们里头有高有矮，有的还挂着腐烂的殓衣，有的赤条条沾满泥浆；有一两头的脸上，隐约还留着几分曾经是人的模样。它们并不扑上来，只是围成一个缓缓收紧的圈，喉咙里发出满足而期待的咕噜声——像一群终于等到开饭的食客。", cls:"amber"}
+  ],
+  san:{loss:2, reason:"目睹数十头食尸鬼从夜色中围拢而来"},
+  set:{},
+  choices:[
+    {label:"开枪、拼命——杀出一条血路。", tag:"手枪", goto:"ending_taken"},
+    {label:"扔下一切，发疯般地逃。", tag:"逃", goto:"ending_sanatorium"}
+  ]
+};
+S.talk_figure = {
+  banner:"dark", loc:"喊出那个名字",
+  text:[
+    {t:"你没有动手。你只是低声、清清楚楚地，喊出了那个名字：「道格拉斯·金博尔。」", cls:"amber"},
+    {t:"那身影猛地顿住了。它没有回头，抱着书的姿势僵了一瞬——然后，它极缓慢地转过身，也不解释，只是拖着脚步，一步一步往墓地深处、往那块矮墓碑走去。走两步，回一下头，像是在等你，要你跟上。", cls:"dlg"}
+  ],
+  choices:[ {label:"跟上去。", tag:"▸", goto:"talk_figure_sit"} ]
+};
+S.talk_figure_sit = {
+  banner:"graveyard", loc:"那块矮墓碑 · 月下",
+  portrait:"douglas", pcap:"道 格 拉 斯 · 金 博 尔",
+  text:[
+    {t:"它走到那块饱经风霜的矮墓碑前，轻车熟路地坐了上去，把怀里的书在膝头码好，像一个终于回到自己老位置的读者。月光落下来，照清了它的模样：犬类的脸，蹄状的足，胶质般泛光的皮肤——可那双眼睛，那副坐姿，分明还是个爱书的老人。", cls:"amber"},
+    {t:"当你走近，它抬起头，用一种含混、湿润、却奇异地平静的嗓音，对你说：", cls:"amber"},
+    {t:"「你好。」", cls:"dlg"}
+  ],
+  san:{loss:2, reason:"在月下认出：这头食尸鬼，就是失踪的道格拉斯·金博尔"},
+  choices:[
+    {label:"稳住颤抖的声音，与他交谈——你想问什么，都由你。", tag:"交谈", talk:"douglas"}
+  ]
+};
+
+/* ---------------- 尾声与结局 ---------------- */
+S.ending_talk = {
+  banner:"graveyard", loc:"尾声 · 各得其所", end:true,
+  text:[
+    {t:"道格拉斯说完最后一句，向你微微颔首，抱起他的书，转身钻进了那座陵墓。你听见地下传来沉重的摩擦声——他正把一块巨大的石板，从里面拖来，一点一点封住这个通往地底的入口。然后，一切归于寂静。他回到了那个于他而言比人间可爱得多的世界里去了。", cls:"amber"},
+    {t:"你在墓碑边站了很久，直到东方泛白。你带着一个哀伤而完整的真相，走出了公墓：那个偷书的『贼』，就是托马斯的叔叔；他没有死，他只是……换了一种活法，去过他一直想过的、不被打扰的读书日子。", cls:"amber"},
+    {t:"晨光一点点漫过碑林，露水打湿了你的裤脚，你却没觉出冷。你研究了一辈子古人写下的文字，追问过无数早已无人能答的谜——今夜，你却亲耳听一个谜，用活人的语气，对你说了声『你好』。有些答案，你宁可从未得到；可它既已给了你，就再也放不下了。", cls:"amber"},
+    {t:"回到金博尔宅，你要替这桩委托，画上一个句号——", cls:"amber"}
+  ],
+  choices:[
+    {label:"把真相如实告诉托马斯（他叔叔还『在』，但已非人）。", tag:"抉择", goto:"epilogue_tell"},
+    {label:"隐瞒真相，只说贼已不会再来、叔叔恐已不在人世。", tag:"抉择", goto:"epilogue_hide"}
+  ]
+};
+S.epilogue_tell = {
+  banner:"post", loc:"尾声 · 告知", end:true, ending:{id:'truth',name:'真相'},
+  text:[
+    {t:"你把你所见、所知，尽可能温和地告诉了托马斯。他听完，久久没有说话，脸上是震惊、恶心、又夹着一丝古怪的释然——至少，叔叔不是被人害了；至少，叔叔在他自己选择的地方，还『读着书』。他谢过你，付清了酬劳。此后金博尔宅再没丢过一本书。", cls:"amber"},
+    {t:"那天之后，你多留了一日才离开阿诺兹堡。托马斯送你到车站，气色比你初见时好了些，却又像是老了几岁。他说他大概不会再去公墓了，但会照旧把书房收拾干净——万一哪天，叔叔想起还落下了哪本书。他说这话时努力笑了笑，你也努力笑了笑。火车开动，小城连同它地下的秘密，一起退进了十月的雾里。", cls:"amber"},
+    {t:"—— 结局【真相】· 你揭开了这桩案子哀伤的谜底，并把它交给了托马斯去背负。", cls:"amber"}
+  ],
+  onEnter:()=>{ if(flags.temp_madness) flags.mythos=(flags.mythos||0)+5; },
+  choices:[ {label:"↻ 重新调查这桩案子", tag:"重玩", goto:"__restart"} ]
+};
+S.epilogue_hide = {
+  banner:"post", loc:"尾声 · 隐瞒", end:true, ending:{id:'lie',name:'善意的谎'},
+  text:[
+    {t:"你想了很久，终究没忍心把那个真相，压到托马斯肩上。你只对他说：贼已经不会再来了，而他的叔叔，恐怕早已不在人世。托马斯轻轻叹了口气，付了酬劳，说他早有预感。他从此睡了几年来第一个安稳觉。有些真相，也许烂在你一个人心里，比说出口要仁慈。", cls:"amber"},
+    {t:"这个真相，你独自守了下来。往后许多年，每逢深秋翻开书页，你偶尔会想起那张月光下犬类的脸，和那声平静的『你好』；会想起地底某处，一个爱书的老人，正就着不知什么样的光，读着不知什么样的书，安逸而满足。这算不算一种圆满？你答不上来。你只知道托马斯睡着了，而有些仁慈，只能以谎言的形状递出去。", cls:"amber"},
+    {t:"—— 结局【善意的谎】· 你独自背下了道格拉斯的秘密，还了托马斯一个安眠。", cls:"amber"}
+  ],
+  onEnter:()=>{ if(flags.temp_madness) flags.mythos=(flags.mythos||0)+5; },
+  choices:[ {label:"↻ 重新调查这桩案子", tag:"重玩", goto:"__restart"} ]
+};
+S.ending_sanatorium = {
+  banner:"dark", loc:"尾声 · 疗养院", end:true, ending:{id:'survivor',name:'幸存者'},
+  text:[
+    {t:"你扔下火柴和倒地的道格拉斯，发了疯地朝那点向上的微光奔去。身后是密不透风的脚步声。你不记得自己是怎么爬出墓地的了。", cls:"amber"},
+    {t:"再有记忆时，你已躺在阿诺兹堡疗养院的病床上，昏睡了整整一周。发现你的人说，你当时正语无伦次地嚷着墓地里有一群怪物。托马斯听见过一声凄厉的尖叫，循声找到了瘫在草地上的你，慌忙叫了救护车。等你能下床时，公墓一切如常，没有任何食尸鬼、也没有道格拉斯留下的痕迹——它们连同他，一起消失在了地下。", cls:"amber"},
+    {t:"出院之后，你回到讲台、回到故纸堆，日子表面上一切如常。只是从此，你再不能安然听见铁铲刮土的声音，再不敢在入夜后独自走过任何一片墓地。有些夜里，你会毫无征兆地惊醒，确信自己听见了地板下极轻极密的脚步——数十双赤足，正不紧不慢地，从很深很深的地方，朝上走来。", cls:"amber"},
+    {t:"—— 结局【幸存者】· 你带着一身冷汗和一段永远无法向人证实的记忆，活了下来。托马斯感激你赶跑了『贼』，付了酬劳；至于真相，随你要不要说。", cls:"amber"}
+  ],
+  onEnter:()=>{ flags.mythos=(flags.mythos||0)+5; },
+  choices:[ {label:"↻ 重新调查这桩案子", tag:"重玩", goto:"__restart"} ]
+};
+S.ending_missed = {
+  banner:"tomb", loc:"尾声 · 错过", end:true, ending:{id:'missed',name:'错过'},
+  text:[
+    {t:"你在这座小城里盘桓得太久了。某个清晨，托马斯脸色发白地把你叫醒——他说昨夜公墓那边整宿都有动静，今早去看，那座半塌的家族陵墓，入口已被人从里头用一整块巨大的石板严严实实地封死了。任你怎么撬，纹丝不动。", cls:"amber"},
+    {t:"你隐约明白了：地下的『读者们』察觉了你的靠近，赶在你之前弃用并封死了这处出口——连同那个抱着书、本可以让你寻到的老人，一起迁往了地底更深、更远、你永远够不到的地方。", cls:"amber"},
+    {t:"你替托马斯查明了『贼』再不会来，却终究没能弄清他叔叔的下落。有些门，一旦错过那道缝隙，就永远地合上了。", cls:"amber"},
+    {t:"—— 结局【错过】· 你来得太迟，地下的世界在你眼前合拢；道格拉斯的秘密，随那块石板一同永埋。", cls:"amber"}
+  ],
+  choices:[ {label:"↻ 重新调查这桩案子", tag:"重玩", goto:"__restart"} ]
+};
+S.ending_taken = {
+  banner:"dark", loc:"尾声 · 沉入地下", end:true, ending:{id:'taken',name:'新读者'},
+  text:[
+    {t:"你举枪射击，撂倒了扑在最前面的一头。可子弹能解决的东西，从来不是最该怕的那种——数十头食尸鬼一拥而上，无数冰冷的、蹼状的手抓住了你，把你连人带枪，拖向那座陵墓、拖向地底无边的黑暗。", cls:"amber"},
+    {t:"你最后看见的，是倒在一旁的道格拉斯，正被同类小心地扶起。他浑浊的眼睛望着被拖走的你，那眼神里，竟有一丝近乎歉意的悲悯。地下的世界那么大，有那么多可去、可读、可写的东西——也许，用不了多少年，你也会习惯的。", cls:"amber"},
+    {t:"起初的日子，你在黑暗里哭喊、绝食、一次次徒劳地扑向那点永远够不着的微光。可地下的时间是另一种时间，它磨钝一切。不知过了多久，某一天，一头同类默默在你面前放下了一本书——书页早已霉烂发胀，可你竟鬼使神差地，就着那片无边的黑，翻开了第一页。", cls:"amber"},
+    {t:"—— 结局【新读者】· 你没能走出那片公墓。阿诺兹堡从此又添了一桩无解的失踪案。", cls:"amber"}
+  ],
+  choices:[ {label:"↻ 重新调查这桩案子", tag:"重玩", goto:"__restart"} ]
+};
+
+/* ============ 氛围音（Web Audio 实时合成 · 无音频文件 · 零成本） ============ */
+const Sound = (function(){
+  let ctx, master, bed=[], muted=false, heartT=null, dripT=null, hornT=null, motifT=null, tickT=null, tense=false, started=false;
+  function init(){
+    if(started) return; started=true;
+    try{ ctx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return; }
+    master = ctx.createGain(); master.gain.value = 0; master.connect(ctx.destination);
+    ramp(master.gain, muted?0:0.55, 2);
+    scheduleHeart();
+  }
+  function ramp(p,v,t){ if(!ctx)return; p.cancelScheduledValues(ctx.currentTime); p.setValueAtTime(p.value,ctx.currentTime); p.linearRampToValueAtTime(v, ctx.currentTime+t); }
+  function noiseSrc(){ const b=ctx.createBuffer(1,ctx.sampleRate*3,ctx.sampleRate); const d=b.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1; const s=ctx.createBufferSource(); s.buffer=b; s.loop=true; return s; }
+  function lfo(target, rate, depth, center){ const o=ctx.createOscillator(); o.frequency.value=rate; const g=ctx.createGain();
+    g.gain.value=depth; o.connect(g); g.connect(target); target.value=center; o.start(); bed.push(o); }
+  // 低频嗡鸣（不安的持续音）
+  function drone(freqs, vol, cutoff){ const mg=ctx.createGain(); mg.gain.value=0; const lp=ctx.createBiquadFilter();
+    lp.type='lowpass'; lp.frequency.value=cutoff||300; mg.connect(lp); lp.connect(master);
+    freqs.forEach(f=>{ const o=ctx.createOscillator(); o.type='sine'; o.frequency.value=f; const g=ctx.createGain(); g.gain.value=0.5;
+      o.connect(g); g.connect(mg); o.start(); bed.push(o); });
+    ramp(mg.gain, vol, 3); const l=ctx.createOscillator(); l.frequency.value=0.06; const lg=ctx.createGain(); lg.gain.value=vol*0.4;
+    l.connect(lg); lg.connect(mg.gain); l.start(); bed.push(l,mg); return mg; }
+  // 海风 / 潮声（带通噪声 + 缓慢起伏）
+  function wind(band, q, vol){ const s=noiseSrc(); const bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=band;
+    bp.Q.value=q; const g=ctx.createGain(); g.gain.value=0; s.connect(bp); bp.connect(g); g.connect(master); s.start();
+    ramp(g.gain, vol, 4); const l=ctx.createOscillator(); l.frequency.value=0.09; const lg=ctx.createGain(); lg.gain.value=vol*0.7;
+    l.connect(lg); lg.connect(g.gain); l.start(); bed.push(s,l,g); return g; }
+  function stopBed(){ bed.forEach(n=>{ try{ if(n.stop) n.stop(ctx.currentTime+2); if(n.gain) ramp(n.gain,0,1.5);}catch(e){} }); bed=[]; }
+  // 雾角 / 远处呼唤（偶发低音扫落）
+  function horn(){ if(!ctx||muted) return; const o=ctx.createOscillator(); o.type='sine'; const g=ctx.createGain();
+    o.connect(g); g.connect(master); const t=ctx.currentTime; o.frequency.setValueAtTime(120,t); o.frequency.exponentialRampToValueAtTime(70,t+3.5);
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.18,t+0.8); g.gain.linearRampToValueAtTime(0,t+3.5); o.start(t); o.stop(t+3.6); }
+  // 滴水
+  function drip(){ if(!ctx||muted) return; const s=noiseSrc(); const bp=ctx.createBiquadFilter(); bp.type='bandpass';
+    bp.frequency.value=1400+Math.random()*800; bp.Q.value=8; const g=ctx.createGain(); s.connect(bp); bp.connect(g); g.connect(master);
+    const t=ctx.currentTime; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.12,t+0.005); g.gain.exponentialRampToValueAtTime(0.0001,t+0.18);
+    s.start(t); s.stop(t+0.2); }
+  // 心跳（越紧张越快）
+  function thump(){ if(!ctx||muted||!tense) return; const t=ctx.currentTime;
+    [0,0.19].forEach((off,i)=>{ const o=ctx.createOscillator(); o.type='sine'; o.frequency.value=52; const g=ctx.createGain();
+      o.connect(g); g.connect(master); g.gain.setValueAtTime(0,t+off); g.gain.linearRampToValueAtTime(i?0.28:0.42,t+off+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001,t+off+0.16); o.start(t+off); o.stop(t+off+0.2); }); }
+  function scheduleHeart(){ const san = (window.PC?PC.san:60);
+    const iv = tense ? Math.max(430, 1300 - (65-san)*14) : 2600; thump(); heartT=setTimeout(scheduleHeart, iv); }
+  // 惊吓音效（不协和音簇 + 噪爆）
+  function stinger(big){ if(!ctx||muted) return; const t=ctx.currentTime; const freqs=big?[180,190,268,401]:[220,233,311];
+    freqs.forEach(f=>{ const o=ctx.createOscillator(); o.type='sawtooth'; o.frequency.value=f; const g=ctx.createGain();
+      const lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=1600; o.connect(g); g.connect(lp); lp.connect(master);
+      g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(big?0.22:0.15,t+0.01); g.gain.exponentialRampToValueAtTime(0.0001,t+(big?1.1:0.6));
+      o.start(t); o.stop(t+(big?1.2:0.7)); });
+    const s=noiseSrc(); const hp=ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=800; const g=ctx.createGain();
+    s.connect(hp); hp.connect(g); g.connect(master); g.gain.setValueAtTime(big?0.25:0.15,t); g.gain.exponentialRampToValueAtTime(0.0001,t+0.4);
+    s.start(t); s.stop(t+0.45); }
+  // 骨石骰子——低沉、有重量的敲击与落定
+  function knock(t, vol, hz){ const s=noiseSrc(); const lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=hz||700; lp.Q.value=1.0;
+    const g=ctx.createGain(); s.connect(lp); lp.connect(g); g.connect(master);
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol,t+0.006); g.gain.exponentialRampToValueAtTime(0.0001,t+0.11);
+    s.start(t); s.stop(t+0.14); }
+  function boom(t, vol, hz){ const o=ctx.createOscillator(); o.type='sine'; const g=ctx.createGain(); o.connect(g); g.connect(master);
+    o.frequency.setValueAtTime(hz,t); o.frequency.exponentialRampToValueAtTime(hz*0.55,t+0.22);
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol,t+0.01); g.gain.exponentialRampToValueAtTime(0.0001,t+0.3);
+    o.start(t); o.stop(t+0.34); }
+  // 缓慢翻滚：稀疏、低沉的骨石相击
+  function dice(){ if(!ctx||muted) return; const t0=ctx.currentTime;
+    [0.02,0.5,0.82,1.05,1.28,1.5].forEach(dt=>knock(t0+dt, 0.10+Math.random()*0.05, 420+Math.random()*380)); }
+  // 沉重落定：闷响 + 骨石撞击 + 低频余韵
+  function diceLand(){ if(!ctx||muted) return; const t=ctx.currentTime;
+    knock(t, 0.26, 520); knock(t+0.01, 0.16, 260); boom(t, 0.34, 66); }
+  // 柔和的出现音（正常 NPC 登场：温暖的两声上行铃音，非惊吓）
+  function chime(){ if(!ctx||muted) return; const t=ctx.currentTime;
+    [[523.25,0],[659.25,0.14]].forEach(([f,dt])=>{
+      const o=ctx.createOscillator(); o.type='triangle'; o.frequency.value=f;
+      const o2=ctx.createOscillator(); o2.type='sine'; o2.frequency.value=f*2; const g2=ctx.createGain(); g2.gain.value=0.2;
+      const g=ctx.createGain(); const lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=2600;
+      o.connect(g); o2.connect(g2); g2.connect(g); g.connect(lp); lp.connect(master);
+      g.gain.setValueAtTime(0,t+dt); g.gain.linearRampToValueAtTime(0.13,t+dt+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t+dt+1.5);
+      o.start(t+dt); o2.start(t+dt); o.stop(t+dt+1.6); o2.stop(t+dt+1.6); }); }
+  /* ---- 旋律层：让氛围里长出"音乐" ---- */
+  // 音乐盒/钟琴般的软音（三角波 + 八度泛音铃感，慢衰减）
+  function bell(freq, when, vol, dur){
+    const d=dur||1.6;
+    const o=ctx.createOscillator(); o.type='triangle'; o.frequency.value=freq;
+    const o2=ctx.createOscillator(); o2.type='sine'; o2.frequency.value=freq*2;
+    const g2=ctx.createGain(); g2.gain.value=0.28;
+    const g=ctx.createGain(); const lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=2800;
+    o.connect(g); o2.connect(g2); g2.connect(g); g.connect(lp); lp.connect(master);
+    g.gain.setValueAtTime(0,when); g.gain.linearRampToValueAtTime(vol,when+0.012); g.gain.exponentialRampToValueAtTime(0.0001,when+d);
+    o.start(when); o2.start(when); o.stop(when+d+0.05); o2.stop(when+d+0.05);
+  }
+  // 弦乐般的哀音（锯齿过低通，慢起慢落）
+  function bow(freq, when, vol, dur){
+    const d=dur||3;
+    const o=ctx.createOscillator(); o.type='sawtooth'; o.frequency.value=freq;
+    const lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=760; lp.Q.value=2;
+    const g=ctx.createGain(); o.connect(lp); lp.connect(g); g.connect(master);
+    g.gain.setValueAtTime(0,when); g.gain.linearRampToValueAtTime(vol,when+0.6);
+    g.gain.linearRampToValueAtTime(vol*0.8,when+d*0.6); g.gain.exponentialRampToValueAtTime(0.0001,when+d);
+    o.start(when); o.stop(when+d+0.1);
+  }
+  // 座钟钟摆的轻响（警局用）
+  function tick(){ if(!ctx||muted) return; const t=ctx.currentTime; const o=ctx.createOscillator(); o.type='sine'; o.frequency.value=880;
+    const g=ctx.createGain(); const lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=1500; o.connect(g); g.connect(lp); lp.connect(master);
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.045,t+0.004); g.gain.exponentialRampToValueAtTime(0.0001,t+0.09); o.start(t); o.stop(t+0.11); }
+  // 音阶（频率表）
+  const SCALE = {
+    book:[440.00,523.25,587.33,659.25,783.99,880.00],   // A小调五声·中高（爱书人主题·音乐盒）
+    bookLow:[220.00,261.63,293.66,329.63,392.00],        // 同主题·低八度（更沉）
+    grave:[164.81,146.83,130.81,110.00,98.00]            // 哀伤下行（公墓·弦乐）
+  };
+  // 旋律动机：从音阶里稀疏、松散节奏地弹奏；随机游走避免立即重复
+  function startMotif(notes, opts){
+    clearTimeout(motifT); const o=opts||{}; const play=o.voice||bell;
+    const gap=o.gap||[3000,5200]; const vol=o.vol!=null?o.vol:0.11; let last=-1;
+    const loop=()=>{
+      if(ctx && !muted){
+        let i; do{ i=Math.floor(Math.random()*notes.length); }while(i===last && notes.length>1); last=i;
+        const when=ctx.currentTime+0.05; play(notes[i], when, vol, o.dur);
+        if(o.harmony && Math.random()<0.4) play(notes[(i+2)%notes.length], when+0.1, vol*0.55, o.dur);  // 偶尔叠三度
+      }
+      motifT=setTimeout(loop, gap[0]+Math.random()*(gap[1]-gap[0]));
+    };
+    motifT=setTimeout(loop, 900+Math.random()*1600);
+  }
+  function startTick(iv){ clearTimeout(tickT); const loop=()=>{ tick(); tickT=setTimeout(loop, iv); }; tickT=setTimeout(loop, iv); }
+
+  const MOODS = {
+    // 小镇黄昏：温暖而寂寥，远处偶有音乐盒般的钟音
+    harbor:()=>{ tense=false; drone([46,55,69],0.42,240); wind(360,0.9,0.10); startMotif(SCALE.bookLow,{voice:bell,vol:0.085,gap:[4400,7200],dur:1.9}); },
+    // 旅馆/暖厅：壁炉边的暖意 + 忧伤的爱书人主题
+    inn:()=>{ tense=false; drone([50,62,74],0.4,240); startMotif(SCALE.book,{voice:bell,vol:0.11,gap:[3200,5400],harmony:true}); },
+    // 金博尔宅客厅：书香与哀戚，音乐盒主题最完整
+    parlor:()=>{ tense=false; drone([49,58,73],0.4,240); wind(520,1.4,0.05); startMotif(SCALE.book,{voice:bell,vol:0.12,gap:[2900,5000],harmony:true,dur:1.9}); },
+    // 图书馆/档案室：干燥的静，稀疏高音（翻检与好奇）
+    post:()=>{ tense=false; drone([48,60,90],0.34,220); wind(600,1.6,0.05); startMotif(SCALE.book,{voice:bell,vol:0.075,gap:[3800,6400],dur:1.4}); startDrip(6000); },
+    // 道格拉斯的书房：书之主题转暗，隐隐不安
+    room:()=>{ tense=true; drone([43,51,64],0.46,190); wind(320,1.5,0.08); startMotif(SCALE.bookLow,{voice:bell,vol:0.085,gap:[3400,5600],dur:2.3}); },
+    // 公墓：开阔清冷，哀伤的弦乐下行
+    graveyard:()=>{ tense=false; drone([41,49,55],0.44,180); wind(280,1.1,0.12); startMotif(SCALE.grave,{voice:bow,vol:0.10,gap:[5200,8200],dur:3.4}); },
+    // 陵墓/地下：压抑的深渊，滴水与地底低鸣，无旋律
+    tomb:()=>{ tense=true; drone([34,40,47,58],0.5,150); wind(220,2.2,0.12); startDrip(1800); startHorn(11000); },
+    // 警局：世俗的公务空间，中性低鸣 + 座钟钟摆
+    hall:()=>{ tense=false; drone([55,66,82],0.34,300); startTick(1900); },
+    // 过场/黑暗：纯粹的不安
+    dark:()=>{ tense=true; drone([38,45,60,92],0.52,160); wind(260,2,0.12); startDrip(2200); }
+  };
+  function startHorn(iv){ clearTimeout(hornT); const loop=()=>{ horn(); hornT=setTimeout(loop, iv+Math.random()*8000); }; hornT=setTimeout(loop, 6000); }
+  function startDrip(iv){ clearTimeout(dripT); const loop=()=>{ drip(); dripT=setTimeout(loop, iv*0.5+Math.random()*iv); }; dripT=setTimeout(loop, 1500); }
+  function stopTimers(){ clearTimeout(hornT); clearTimeout(dripT); clearTimeout(motifT); clearTimeout(tickT); }
+  function setMood(key, climax){ if(!ctx) return; stopBed(); stopTimers();
+    const m = MOODS[key]||MOODS.dark; m();
+    if(climax){ tense=true; drone([33,39,41],0.5,120); startHorn(9000); startMotif(SCALE.grave,{voice:bow,vol:0.08,gap:[7000,11000],dur:4}); ramp(master.gain, muted?0:0.7, 3); }
+    else ramp(master.gain, muted?0:0.55, 3); }
+  function toggle(){ muted=!muted; if(master) ramp(master.gain, muted?0:0.55, 0.4); return muted; }
+  return { init, setMood, stinger, chime, dice, diceLand, toggle, isMuted:()=>muted };
+})();
+
+/* ============ 引擎 ============ */
+const el = id => document.getElementById(id);
+const narr = el('narr'), choicesBox = el('choices'), scroll = el('scroll');
+let cur = null, typing = false, pendingCheck = null, skipType = false;
+scroll.addEventListener('click', e=>{ if(typing && !e.target.closest('#free,#freego')) skipType = true; });
+
+function renderSheet(){
+  el('sanN').textContent = PC.san; el('hpN').textContent = PC.hp;
+  el('sanBar').style.width = Math.max(0,PC.san/PC.sanMax*100)+'%';
+  el('hpBar').style.width = Math.max(0,PC.hp/PC.hpMax*100)+'%';
+  const sk = el('skills'); sk.innerHTML='';
+  for(const k in PC.skills){ sk.insertAdjacentHTML('beforeend',
+    `<div class="row"><span class="sk">${k}</span><span class="n">${PC.skills[k]}</span></div>`); }
+  const inv = el('inv'); inv.innerHTML='';
+  PC.inv.forEach(i=> inv.insertAdjacentHTML('beforeend',`<li>${i}</li>`));
+  const ck=el('clock'); if(ck) ck.textContent = (flags.day!=null)? '调查 · '+timeLabel() : '';
+  const ph=el('phobias'); if(ph) ph.innerHTML = (flags._phobias&&flags._phobias.length)? '⚠ 落下：'+flags._phobias.map(p=>'<b>'+p+'</b>').join('、') : '';
+  renderMini();
+}
+
+function setBanner(key){
+  const b = el('banner');
+  b.querySelector('svg')?.remove();
+  b.insertAdjacentHTML('afterbegin', BANNERS[key]||BANNERS.dark);
+}
+
+async function typeParas(paras){
+  typing = true; skipType = false;
+  for(const p of paras){
+    const div = document.createElement('div');
+    div.className = 'p '+(p.cls||'');
+    narr.appendChild(div);
+    const txt = p.t;
+    for(let i=0;i<txt.length;i++){
+      if(skipType){ div.textContent = txt; scroll.scrollTop = scroll.scrollHeight; break; }
+      div.textContent = txt.slice(0,i+1);
+      scroll.scrollTop = scroll.scrollHeight;
+      await sleep(txt[i].match(/[，。、—！？.…]/)?40:14);
+    }
+    if(!skipType) await sleep(120);
+  }
+  typing = false;
+  const hint = document.getElementById('skiphint'); if(hint) hint.style.opacity = skipType?0:.5;
+}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+function sysLine(text, kind){
+  const d = document.createElement('div');
+  d.className = 'sys '+(kind||'');
+  d.textContent = text; narr.appendChild(d);
+  scroll.scrollTop = scroll.scrollHeight;
+}
+
+function scare(big){
+  Sound.stinger(big);
+  if(reducedMotion) return;   // 减弱动效：跳过红闪与抖屏（音效仍走 stinger，可用 ♪ 单独静音）
+  const f=el('flash'), a=el('app');
+  f.classList.add('hit'); setTimeout(()=>f.classList.remove('hit'), big?150:90);
+  a.classList.remove('shake'); void a.offsetWidth; a.classList.add('shake');
+}
+// 正常（非怪物）NPC：登场用平静揭示，不惊吓。怪物/揭示默认惊吓。
+const CALM_PORTRAITS = new Set(['thomas','jefferson','odell','samuel','keeper']);
+function isCalmReveal(key, obj){
+  if(obj && obj.reveal) return obj.reveal==='soft';   // 场景/NPC 显式覆盖（'soft'|'scare'）
+  return CALM_PORTRAITS.has(key);
+}
+function showPortrait(key, cap, calm){
+  if(!ART[key]) return;
+  const p=el('portrait'), f=p.querySelector('.pframe');
+  f.querySelectorAll('svg').forEach(s=>s.remove());
+  f.insertAdjacentHTML('afterbegin', ART[key]);
+  f.querySelector('.pframe svg')?.classList.add('pbreathe');
+  f.querySelector('.pcap').textContent = cap||'';
+  p.classList.toggle('calm', !!calm);
+  p.style.display='flex'; p.classList.remove('show'); void p.offsetWidth; p.classList.add('show');
+  if(calm){ try{ Sound.chime(); }catch(e){} } else { scare(true); }
+}
+function hidePortrait(){ el('portrait').style.display='none'; }
+el('portrait').onclick = hidePortrait;
+function showMadness(k, t){
+  const m=el('madness'); if(!m) return;
+  const mk=el('madk'); if(mk) mk.textContent = '疯 狂 发 作 · '+k;
+  const mt=el('madt'); if(mt) mt.innerHTML = (t||'').replace(/__(.+?)__/g,'<b>$1</b>').replace(/\n/g,'<br>');
+  m.style.display='flex'; m.classList.remove('show'); void m.offsetWidth; m.classList.add('show');
+  if(!reducedMotion){ try{ Sound.stinger(true); }catch(e){} }
+}
+el('madness') && (el('madness').onclick = ()=>{ el('madness').style.display='none'; });
+function applySAN(loss, reason){
+  PC.san = Math.max(0, PC.san - loss);
+  flags._sanmin = Math.min(flags._sanmin!=null?flags._sanmin:65, PC.san);
+  renderSheet();
+  scare(loss>=6);
+  try{ Atmo.setSan(PC.san); if(cur) Atmo.setScene(cur.banner, !!flags.act3); }catch(e){}
+  sysLine(`▸ 理智检定失守：SAN −${loss}（${reason}）`, 'san');
+  try{ maybeBout(loss, reason); }catch(e){}   // 一次掉 5+ → 智力检定 → 可能临时疯狂
+}
+function applyHP(loss, reason){
+  PC.hp = Math.max(0, PC.hp - loss);
+  renderSheet();
+  sysLine(`▸ 你受伤了：HP −${loss}（${reason}）`, 'bad');
+}
+function clueCount(){ return ['clue_journal','clue_church','clue_hall','clue_well','clue_light'].filter(k=>flags[k]).length; }
+
+async function go(key){
+  if(key==='__restart'){ PC.san=65; PC.hp=11; for(const k in flags) delete flags[k]; backlog=[];
+    renderSheet(); go('arrival'); return; }
+  if(key==='hub'){ enterMap(); return; }   // 枢纽=小镇地图（时间/日夜）
+  cur = S[key];
+  if(!flags._t0) flags._t0=Date.now();
+  choicesBox.innerHTML=''; el('freewrap').style.display = cur.end?'none':'block';
+  setBanner(cur.banner);
+  try{ Sound.setMood(cur.banner, !!flags.act3); }catch(e){}
+  try{ Atmo.setSan(PC.san); Atmo.setScene(cur.banner, !!flags.act3); }catch(e){}
+  const bn=el('banner'); bn.classList.remove('flick'); void bn.offsetWidth; bn.classList.add('flick');
+  el('loc').textContent = cur.loc;
+  narr.innerHTML=''; scroll.scrollTop=0;
+  await typeParas(cur.text);
+  pushBacklog(cur.loc, cur.text);
+  if(cur.portrait) showPortrait(cur.portrait, cur.pcap, isCalmReveal(cur.portrait, cur));
+  if(cur.set) Object.assign(flags, cur.set);
+  if(cur.san) applySAN(cur.san.loss, cur.san.reason);
+  if(cur.hp) applyHP(cur.hp.loss, cur.hp.reason);
+  if(cur.onEnter) try{ cur.onEnter(); }catch(e){}
+  if(cur.ending){ unlockEnding(cur.ending); renderSummary(); }
+  if(clueCount()>0 && !cur.end){ el('loc').textContent = cur.loc + '　· 线索 '+clueCount()+'/5'; }
+  renderChoices();
+  if(cur.end) clearSave(); else save();   // 通关不留可续存档，回标题即为"新游戏"
+}
+
+function renderChoices(){
+  choicesBox.innerHTML='';
+  (cur.choices||[]).forEach(c=>{
+    if(c.if && !c.if()) return;
+    const b = document.createElement('button');
+    b.className='choice';
+    const tagCls = c.check?'tag chk':'tag';
+    b.innerHTML = `<span class="${tagCls}">[${c.tag||'▸'}]</span>${c.label}`;
+    b.onclick = ()=>{ if(typing) return;
+      if(c.talk){ talk(c.talk); }
+      else if(c.check) openDice(c.check);
+      else if(c.set){ Object.assign(flags,c.set); go(c.goto); }
+      else go(c.goto);
+    };
+    choicesBox.appendChild(b);
+  });
+}
+
+/* ---- 骰子 ---- */
+/* ============ CoC 7版机制：奖惩骰 / 推动 / 成功等级 / 疯狂发作+恐惧症 ============ */
+const PC_ATTR = { 力量:45, 体质:50, 体型:60, 敏捷:45, 智力:80, 教育:85 };  // 属性(供疯狂 INT 检定等)
+
+// 奖励/惩罚骰净值：正=奖励骰(取小/好)，负=惩罚骰(取大/坏)
+function diceMods(chk){
+  let b = (typeof chk.bonus==='function' ? chk.bonus() : chk.bonus) || 0;
+  let p = (typeof chk.penalty==='function' ? chk.penalty() : chk.penalty) || 0;
+  if(PC.san < 25) p += 1;                      // 濒临崩溃：全局惩罚骰
+  if(chk.fear && hasPhobia()) p += 1;          // 触及恐惧：惩罚骰
+  return Math.max(-2, Math.min(2, b - p));     // 官方上限 ±2
+}
+
+// 恐惧症 / 狂躁（跨场景持有，写在角色卡；重开清）
+function getPhobias(){ return flags._phobias || (flags._phobias=[]); }
+function hasPhobia(){ return getPhobias().length>0; }
+function addPhobia(name){ const ps=getPhobias(); if(!ps.includes(name)){ ps.push(name); renderSheet(); } }
+
+const BOUTS = [
+  {k:'失忆',   t:'恐惧攫住了你的记忆——有那么一阵，你不记得自己是怎么走到这里的，只记得片刻之前一切还很安宁。'},
+  {k:'躯体症', t:'恐惧化作身体的背叛：你的双腿一阵发软、耳中嗡鸣、视野边缘发白，好半天才重新听见自己的呼吸。'},
+  {k:'惊逃',   t:'一个念头压倒了一切——离开这里，越远越好。你发觉自己已经踉跄退开了好几步，才勉强钉住脚跟。'},
+  {k:'偏执',   t:'四下里每一道阴影都像藏着眼睛。有人在看你，跟着你——你说不清是谁，却再也甩不掉这个念头。'},
+  {k:'歇斯底里', t:'你听见一阵不受控制的笑声（或是抽气），过了一会儿才惊觉，那声音是从你自己喉咙里发出来的。'},
+  {k:'幻觉',   t:'有那么一瞬，眼前的景象扭曲了：熟悉的轮廓渗出不熟悉的东西。你眨了眨眼，它退回了原处——但你不再敢确信自己所见。'}
+];
+// 触发恐惧症的场景关键词 → 具体恐惧症名
+function pickPhobia(reason){
+  if(/尸|食尸|腐/.test(reason||'')) return '恐尸症';
+  if(/隧道|地下|陵墓|封|窄|黑/.test(reason||'')) return '幽闭恐惧';
+  if(/墓|坟/.test(reason||'')) return '墓园恐惧';
+  return '暗夜恐惧';
+}
+
+// 一次掉 5+ SAN → 智力检定：成功=看懂了→临时疯狂发作(可能落下恐惧症)
+function maybeBout(loss, reason){
+  if(loss < 5) return;
+  const intel = PC_ATTR.智力;
+  const roll = Math.floor(Math.random()*100)+1;        // 1..100
+  if(roll <= intel){                                    // 看懂了 → 临时疯狂
+    const b = BOUTS[Math.floor(Math.random()*BOUTS.length)];
+    let extra = '';
+    if(Math.random() < 0.6){ const ph=pickPhobia(reason); addPhobia(ph); extra = `\n从今往后，你落下了__${ph}__——往后触及它时，你会更难保持镇定。`; }
+    flags.temp_madness = true;
+    showMadness(b.k, b.t + extra);
+  }
+  // 失败=心智仁慈地关闭，暂时没疯（不额外处理）
+}
+
+function openDice(chk){
+  pendingCheck = chk;
+  el('dice').style.display='flex';
+  const base = PC.skills[chk.skill];   // 玩家技能值；力量/幸运/信用评级等不在技能表则用场景设定值
+  const tgt = chk.hard ? Math.floor((base||chk.target)/2) : (base||chk.target);
+  chk._tgt = tgt;
+  chk._mod = diceMods(chk);            // 奖励(+)/惩罚(-)骰净值
+  if(chk._pushed===undefined) chk._pushed = false;
+  el('dskill').innerHTML = chk.skill + (base!=null ? ' <span class="sv">'+base+'</span>' : '');
+  let tline = (chk.hard?'困难 · ':'') + '掷 d100 ≤ <b>'+tgt+'</b> 判定成功';
+  if(chk._mod>0) tline += ' <span class="dmod bonus">奖励骰×'+chk._mod+'</span>';
+  else if(chk._mod<0) tline += ' <span class="dmod pen">惩罚骰×'+(-chk._mod)+'</span>';
+  el('dtarget').innerHTML = tline;
+  el('d100').textContent='--'; el('dres').textContent=''; el('dres').className='';
+  const dp=el('dpush'); if(dp) dp.style.display='none';
+  try{ Dice3D.reset(); }catch(e){}
+  el('droll').style.display='inline-block'; el('dcont').style.display='none';
+}
+function thud(){ const b=el('dicebox'); if(!b) return; b.classList.remove('thud'); void b.offsetWidth; b.classList.add('thud'); }
+
+/* ---- 十面骰 d10：真 3D（Canvas + 四元数翻滚 + 落定到面） ---- */
+const Dice3D = (function(){
+  const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]];
+  const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+  const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+  const nrm=a=>{const l=Math.hypot(a[0],a[1],a[2])||1;return[a[0]/l,a[1]/l,a[2]/l];};
+  function qMul(a,b){return[a[3]*b[0]+a[0]*b[3]+a[1]*b[2]-a[2]*b[1],a[3]*b[1]-a[0]*b[2]+a[1]*b[3]+a[2]*b[0],a[3]*b[2]+a[0]*b[1]-a[1]*b[0]+a[2]*b[3],a[3]*b[3]-a[0]*b[0]-a[1]*b[1]-a[2]*b[2]];}
+  function qAxis(ax,ay,az,ang){const s=Math.sin(ang/2);return[ax*s,ay*s,az*s,Math.cos(ang/2)];}
+  function qN(q){const l=Math.hypot(q[0],q[1],q[2],q[3])||1;return[q[0]/l,q[1]/l,q[2]/l,q[3]/l];}
+  function qMat(q){const x=q[0],y=q[1],z=q[2],w=q[3];return[1-2*(y*y+z*z),2*(x*y-z*w),2*(x*z+y*w),2*(x*y+z*w),1-2*(x*x+z*z),2*(y*z-x*w),2*(x*z-y*w),2*(y*z+x*w),1-2*(x*x+y*y)];}
+  const mv=(m,v)=>[m[0]*v[0]+m[1]*v[1]+m[2]*v[2],m[3]*v[0]+m[4]*v[1]+m[5]*v[2],m[6]*v[0]+m[7]*v[1]+m[8]*v[2]];
+  function qSlerp(a,b,t){let d=a[0]*b[0]+a[1]*b[1]+a[2]*b[2]+a[3]*b[3];if(d<0){b=[-b[0],-b[1],-b[2],-b[3]];d=-d;}if(d>0.9995)return qN([a[0]+t*(b[0]-a[0]),a[1]+t*(b[1]-a[1]),a[2]+t*(b[2]-a[2]),a[3]+t*(b[3]-a[3])]);const th=Math.acos(d),s=Math.sin(th);const w1=Math.sin((1-t)*th)/s,w2=Math.sin(t*th)/s;return[w1*a[0]+w2*b[0],w1*a[1]+w2*b[1],w1*a[2]+w2*b[2],w1*a[3]+w2*b[3]];}
+  function qFromTo(v1,v2){const d=dot(v1,v2);if(d>0.999999)return[0,0,0,1];if(d<-0.999999)return qAxis(1,0,0,Math.PI);const c=cross(v1,v2);return qN([c[0],c[1],c[2],1+d]);}
+  // d10 网格（五角十二面锥台 = 十面骰）
+  const V=[[0,0,1.18],[0,0,-1.18]]; const ez=0.30;
+  for(let i=0;i<10;i++){const a=i*Math.PI/5;V.push([Math.cos(a),Math.sin(a),(i%2?-ez:ez)]);}
+  const e=k=>2+((k%10)+10)%10;
+  const FI=[]; for(let i=0;i<5;i++)FI.push([0,e(2*i),e(2*i+1),e(2*i+2)]); for(let i=0;i<5;i++)FI.push([1,e(2*i+3),e(2*i+2),e(2*i+1)]);
+  const F=FI.map((idx,i)=>{const p=idx.map(k=>V[k]);let n=nrm(cross(sub(p[1],p[0]),sub(p[2],p[0])));const c=[(p[0][0]+p[1][0]+p[2][0]+p[3][0])/4,(p[0][1]+p[1][1]+p[2][1]+p[3][1])/4,(p[0][2]+p[1][2]+p[2][2]+p[3][2])/4];if(dot(n,c)<0)n=[-n[0],-n[1],-n[2]];return{idx,num:i,normal:n,uq:qFromTo(n,[0,0,1])};});
+  const LIGHT=nrm([0.3,0.45,0.95]);
+  let cv,ctx,dice=[],raf=null,doneCB=null,t0=0,showNums=false; const TUMBLE=1080,SETTLE=620;
+  function faceQ(num){for(let i=0;i<F.length;i++)if(F[i].num===num)return F[i].uq;return[0,0,0,1];}
+  function initCanvas(){ if(cv)return true; cv=document.getElementById('dcanvas'); if(!cv)return false; ctx=cv.getContext('2d');
+    dice=[{cx:cv.width*0.30,map:v=>String(v*10).padStart(2,'0')},{cx:cv.width*0.70,map:v=>String(v)}];
+    dice.forEach(D=>{D.q=qMul(qAxis(1,0,0,-0.42),qAxis(0,1,0,0.5));D.yoff=0;D.q0=null;}); drawAll(); return true; }
+  function drawDie(D){
+    const S=cv.height*0.28, f=cv.height*2.2, cx=D.cx, cy=cv.height*0.46+D.yoff;
+    const m=qMat(D.q);
+    const P=V.map(v=>{const w=mv(m,v);const per=f/(f-w[2]*S);return{x:cx+w[0]*S*per,y:cy-w[1]*S*per,z:w[2]};});
+    const list=F.map(fc=>({fc,wn:mv(m,fc.normal),az:(P[fc.idx[0]].z+P[fc.idx[1]].z+P[fc.idx[2]].z+P[fc.idx[3]].z)/4}));
+    list.sort((a,b)=>a.az-b.az);
+    list.forEach(o=>{ if(o.wn[2]<=0.02) return;
+      const pts=o.fc.idx.map(k=>P[k]);
+      const sh=0.30+0.70*Math.max(0,dot(o.wn,LIGHT));
+      ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y); for(let i=1;i<4;i++)ctx.lineTo(pts[i].x,pts[i].y); ctx.closePath();
+      ctx.fillStyle=`rgb(${Math.round(44*sh+8)},${Math.round(40*sh+4)},${Math.round(32*sh-2)})`; ctx.fill();
+      ctx.strokeStyle='rgba(6,5,4,0.92)'; ctx.lineWidth=1.4; ctx.stroke();
+      if(showNums && o.wn[2]>0.30){
+        const nx=(pts[0].x+pts[1].x+pts[2].x+pts[3].x)/4, ny=(pts[0].y+pts[1].y+pts[2].y+pts[3].y)/4;
+        const a=Math.min(1,(o.wn[2]-0.24)*1.7), fs=Math.round(S*0.34*(0.7+0.5*o.wn[2]));
+        ctx.font=`bold ${fs}px "Courier New",monospace`; ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.shadowColor='rgba(0,0,0,0.9)'; ctx.shadowBlur=4;
+        ctx.fillStyle=`rgba(215,202,166,${a})`; ctx.fillText(D.map(o.fc.num), nx, ny); ctx.shadowBlur=0;
+      }
+    });
+  }
+  function drawAll(){ if(!ctx)return; ctx.clearRect(0,0,cv.width,cv.height); dice.forEach(drawDie); }
+  function loop(now){ const el=now-t0;
+    dice.forEach(D=>{
+      if(el<TUMBLE){ D.q=qN(qMul(D.spin,D.q)); const p=el/TUMBLE; D.yoff=-64*(1-p)*Math.abs(Math.cos(p*Math.PI*2.5)); }
+      else if(el<TUMBLE+SETTLE){ if(!D.q0)D.q0=D.q; const t=(el-TUMBLE)/SETTLE,te=1-Math.pow(1-t,3); D.q=qSlerp(D.q0,D.tq,te); D.yoff=-5*Math.sin(t*Math.PI)*(1-t); }
+      else { D.q=D.tq; D.yoff=0; }
+    });
+    showNums = el>=TUMBLE*0.82;
+    drawAll();
+    if(el<TUMBLE+SETTLE){ raf=requestAnimationFrame(loop); }
+    else { raf=null; showNums=true; drawAll(); if(doneCB){const cb=doneCB;doneCB=null;cb();} }
+  }
+  function roll(tens,units,cb){ if(!initCanvas()){ if(cb)cb(); return; } doneCB=cb; showNums=false;
+    dice[0].tq=faceQ(tens); dice[1].tq=faceQ(units);
+    dice.forEach(D=>{ D.q0=null; D.q=qN([Math.random()-.5,Math.random()-.5,Math.random()-.5,Math.random()-.5]);
+      const ax=nrm([Math.random()-.5,Math.random()-.5,Math.random()-.5]); D.spin=qAxis(ax[0],ax[1],ax[2],0.30+Math.random()*0.12); });
+    if(raf)cancelAnimationFrame(raf); t0=performance.now(); raf=requestAnimationFrame(loop);
+  }
+  function reset(){ if(!initCanvas())return; if(raf){cancelAnimationFrame(raf);raf=null;} showNums=false;
+    dice.forEach(D=>{D.q=qMul(qAxis(1,0,0,-0.42),qAxis(0,1,0,0.5));D.yoff=0;D.q0=null;}); drawAll(); }
+  return { roll, reset, init:initCanvas };
+})();
+
+el('droll').onclick = ()=>{
+  el('droll').style.display='none';
+  const dp0=el('dpush'); if(dp0) dp0.style.display='none';
+  const d = el('d100'); d.textContent=''; el('dres').textContent=''; el('dres').className='';
+  const units=Math.floor(Math.random()*10);
+  const mod = pendingCheck._mod||0;   // 奖励/惩罚骰：多掷 |mod| 个十位，取优(奖励=小)/劣(惩罚=大)
+  const tensRolls=[]; for(let i=0;i<1+Math.abs(mod);i++) tensRolls.push(Math.floor(Math.random()*10));
+  const tens = mod>=0 ? Math.min(...tensRolls) : Math.max(...tensRolls);
+  let roll = tens*10+units; if(roll===0) roll=100;
+  try{ Sound.dice(); }catch(e){}
+  setTimeout(()=>{ try{ Sound.diceLand(); }catch(e){} thud(); }, 620);
+  setTimeout(()=>{ try{ Sound.diceLand(); }catch(e){} thud(); }, 880);
+  Dice3D.roll(tens, units, ()=>{
+    try{ Sound.diceLand(); }catch(e){} thud();
+    let modNote='';
+    if(mod!==0 && tensRolls.length>1) modNote = ` <span class="dmodnote">[${mod>0?'奖励':'惩罚'}骰 ${tensRolls.map(t=>String(t*10).padStart(2,'0')).join('/')} 取${mod>0?'优':'劣'}]</span>`;
+    d.innerHTML = `${String(tens*10).padStart(2,'0')}<span class="eq">+</span>${units}<span class="eq">=</span><b>${roll}</b>${modNote}`;
+    const tgt = pendingCheck._tgt;
+    let res, cls, ok, level;
+    if(roll===1){res='大 成 功';cls='gr';ok=true;level='extreme';}
+    else if(roll<=Math.floor(tgt/5)){res='极 难 成 功';cls='gr';ok=true;level='extreme';}
+    else if(roll<=Math.floor(tgt/2)){res='困 难 成 功';cls='gr';ok=true;level='hard';}
+    else if(roll<=tgt){res='成 功';cls='ok';ok=true;level='regular';}
+    else if(roll>=96){res='大 失 败';cls='fumble';ok=false;level='fumble';}
+    else {res='失 败';cls='fail';ok=false;level='fail';}
+    el('dres').textContent=res; el('dres').className=cls;
+    if(!ok) try{ Sound.stinger(roll>=96); }catch(e){}
+    pendingCheck._ok = ok; pendingCheck._level = level;
+    flags._ck=(flags._ck||0)+1; if(ok) flags._ckok=(flags._ckok||0)+1;
+    // 推动检定：普通失败(非大失败)、允许推动、且未推过 → 给"推动"选项
+    const dp=el('dpush');
+    if(!ok && level!=='fumble' && pendingCheck.push && !pendingCheck._pushed && dp){
+      dp.style.display='inline-block';
+      const w=el('dwarn'); if(w) w.textContent = pendingCheck.push.fore ? ('⚠ '+pendingCheck.push.fore) : '⚠ 再试一次——但失败会付出代价。';
+    }
+    el('dcont').style.display='inline-block';
+  });
+};
+el('dpush').onclick = ()=>{                 // 推动：提高风险，再掷一次
+  if(!pendingCheck) return;
+  pendingCheck._pushed = true;
+  el('dpush').style.display='none';
+  const w=el('dwarn'); if(w) w.textContent='';
+  el('dres').textContent=''; el('dres').className=''; el('d100').textContent='--';
+  el('dcont').style.display='none'; el('droll').style.display='inline-block';
+  try{ Dice3D.reset(); }catch(e){}
+};
+el('dcont').onclick = ()=>{
+  el('dice').style.display='none';
+  const chk = pendingCheck; pendingCheck=null;
+  if(chk.cb){ chk.cb(chk._ok); return; }   // 对话检定：回调而非跳场景
+  let target;
+  if(chk._ok){                              // 成功等级给更好的结果（未定义则退回普通成功）
+    if(chk._level==='extreme') target = chk.onExtreme || chk.onHard || chk.success;
+    else if(chk._level==='hard') target = chk.onHard || chk.success;
+    else target = chk.success;
+  } else {                                  // 推动后再失败 → 更糟的后果
+    target = (chk._pushed && chk.push && chk.push.fail) ? chk.push.fail : chk.fail;
+  }
+  go(target);
+};
+
+/* ===================== 活镇 · 盘问对话（结构化菜单 · 已烘焙 agent） ===================== */
+const NPC = {
+  thomas: {
+    name:'托马斯·金博尔', portrait:'thomas', banner:'parlor', back:'hub',
+    intro:[
+      {t:"托马斯给你续了茶，双手拢着杯子。他是个客气、疲惫、被这桩事折磨了一年的年轻人。", cls:"amber"},
+      {t:"「您问吧，教授。只要能帮您查清楚，我知道的都告诉您。」", cls:"dlg"}
+    ],
+    topics:[
+      { id:'uncle', tag:'问', once:true, you:"「跟我说说你叔叔道格拉斯，什么样的人？」",
+        say:[{t:"「叔叔是个……书痴。」托马斯苦笑，「一辈子没结婚，就守着满屋子的书。和气，但极闷，谁去看他，坐不了十分钟他就想赶人走，好回去看书。他晚年养了个怪毛病——大半夜的，抱着书往城东公墓跑，说那儿清静。谁也劝不住。」", cls:"dlg"}],
+        set:{clue_uncle:true} },
+      { id:'books', tag:'问', once:true, you:"「被偷的，具体是哪几本书？」",
+        say:[{t:"「这就是怪的地方。」托马斯摊手，「我数不清。叔叔的藏书我根本没整理过，架子上明显空了几处——我估摸着，六本上下。可贼偏偏不动值钱的初版，专挑叔叔生前最常翻的那几本旧书拿。像是……冲着叔叔的书来的。」", cls:"dlg"}],
+        set:{clue_books:true} },
+      { id:'house', tag:'问', once:true, you:"「贼是怎么进来的？有没有撬门的痕迹？」",
+        say:[{t:"「没有。门锁好好的，窗户也没砸。」托马斯压低声音，「所以我才害怕，教授。像是……贼有钥匙，或者，本来就熟门熟路。您要不亲自去叔叔的书房看看？那间屋我一直没敢动。」", cls:"dlg"}],
+        set:{hint_study:true} },
+      { id:'pay', tag:'问', once:true, you:"「报酬的事，我们说清楚。」",
+        say:[{t:"「十美元，事成之后付清。」托马斯认真地说，「我知道不多，可我一个教书的，也只拿得出这些。您住我这儿，管食宿。只求您……让我睡个安稳觉。」", cls:"dlg"}] },
+      { id:'leave', tag:'开始', you:"（你放下茶杯，起身。）「我这就开始查。」",
+        say:[{t:"托马斯如释重负地送你到门口，把书房和空卧室的钥匙都交给了你。「有任何发现，随时找我。」", cls:"amber"}],
+        end:true, goto:'hub' }
+    ]
+  },
+
+  jefferson: {
+    name:'守墓人杰弗逊', portrait:'jefferson', banner:'graveyard', back:'hub',
+    intro:[
+      {t:"守墓人拄着铁铲，上下打量你。五十多岁，一脸风霜，穿着打补丁的工装，眼神里带着一股外乡人少见的、地头蛇式的戒备。", cls:"amber"},
+      {t:"「找我？」他嗓门粗哑，「我这儿忙着呢。有话快说。」", cls:"dlg"}
+    ],
+    topics:[
+      { id:'charm', tag:'魅惑', once:true, gate:(f)=>!f.jeff_talking, you:"（你放低身段，客客气气地寒暄，夸他这片墓地打理得好）",
+        check:{skill:'魅惑',target:30, bonus:()=>flags.has_whiskey?1:0},
+        sayOk:[
+          {t:"你的客气和那句发自内心的夸奖，让老头板着的脸松了些。「哼，还算个识货的。」他靠着铲子，话头打开了，「这片地我守了二十多年。」", cls:"amber"},
+          {t:"提起金博尔家的老先生，他难得地缓和下来：「道格拉斯先生？记得。常年抱着书来这儿坐着看，一坐一下午。」他抬手朝墓地深处一指，「喏，就那块矮墓碑，风化得认不出主人了——他最爱靠着那块读书。」", cls:"dlg"}
+        ], okSet:{jeff_talking:true, did_graveyard:true, clue_headstone:true},
+        sayFail:[{t:"你的恭维没搔到痒处，反倒让他更警觉了。「我看你是没事找事。」他哼了一声，握紧了铲子。", cls:"amber"}], failSet:{jeff_annoyed:true} },
+
+      { id:'persuade', tag:'说服', once:true, gate:(f)=>!f.jeff_talking, you:"（你亮明身份，讲清来意——你在替金博尔家查一桩正经案子）",
+        check:{skill:'说服',target:60, bonus:()=>flags.has_whiskey?1:0},
+        sayOk:[
+          {t:"你条理分明地说明来意，老头听着听着，戒备卸了下来。「金博尔家的事啊。行，我知道的说给你。」他靠着铲子，「道格拉斯先生我熟。常抱着书来，就爱靠那块矮墓碑坐着看——喏，墓地深处那块，风化得认不出字了的。」", cls:"dlg"}
+        ], okSet:{jeff_talking:true, did_graveyard:true, clue_headstone:true},
+        sayFail:[{t:"「案子？跟我一个刨土的有什么相干。」他不耐烦地摆手，显然不信你。", cls:"amber"}], failSet:{jeff_annoyed:true} },
+
+      { id:'intimidate', tag:'恐吓', once:true, gate:(f)=>f.jeff_annoyed && !f.jeff_talking, you:"（你沉下脸，语气里带上了压迫）「老实说，你到底知道些什么。」",
+        check:{skill:'恐吓',target:25},
+        sayOk:[{t:"你的气势镇住了他。老头梗着脖子，到底还是松了口：「……行行行，你横。道格拉斯先生常靠那块矮墓碑读书，喏，深处那块。别的我真不知道。」", cls:"dlg"}],
+        okSet:{jeff_talking:true, did_graveyard:true, clue_headstone:true},
+        sayFail:[{t:"你的威吓彻底激怒了他。「滚出我的墓地！」他扬起铲子铲了一锹土朝你泼来，又冲着空气大喊：「警察！警察！」——虽然四下无人，可你并不敢赌。你只好退了出来。他从此对你怀有敌意，再想套话，难上加难。", cls:"amber"}], failSet:{jeff_hostile:true, did_graveyard:true} },
+
+      { id:'flask', tag:'侦查', once:true, gate:(f)=>f.jeff_talking && !f.saw_flask, you:"（你不动声色地打量他的穿着）",
+        check:{skill:'侦查',target:50},
+        sayOk:[{t:"你瞥见他工装外套的内袋里，露出半截扁酒瓶的轮廓——禁酒令的年头，这可是违禁品。看来这位守墓人，是个离不开一口的人。", cls:"amber"}],
+        okSet:{saw_flask:true},
+        sayFail:[{t:"他把外套裹了裹，你没看出什么。", cls:"amber"}] },
+
+      { id:'psych', tag:'心理学', once:true, gate:(f)=>f.jeff_talking, you:"（你留意他说话时的神情）",
+        check:{skill:'心理学',target:60},
+        sayOk:[{t:"你看得出：这老头还藏着什么。每当话头快要碰到『夜里的墓地』，他就下意识地岔开，眼神往那块矮墓碑瞟一下，又飞快收回。他知道的，比他说的多——但他需要点『润滑』才肯开口。", cls:"amber"}],
+        okSet:{jeff_hiding:true},
+        sayFail:[{t:"他一张风霜脸，喜怒难辨。", cls:"amber"}] },
+
+      { id:'bribe', tag:'递酒', once:true, gate:(f)=>f.jeff_talking && flags.has_whiskey, you:"（你摸出那牛皮纸包的一品脱威士忌，往他手里一塞）「天冷，润润喉。」",
+        say:[
+          {t:"老头的眼睛一下亮了。他就着铲子拧开瓶盖，仰头灌了一大口，长长呼出一口酒气，脸色总算真正松弛下来。", cls:"amber"},
+          {t:"「教授，够意思。」他压低声音，凑近你，「有件事，我没敢跟警察讲，怕人当我喝多了说胡话。这半年，好几个后半夜，我都在那块矮墓碑边上，见着个人影。抱着书，佝偻着背，就跟……就跟道格拉斯先生生前一个样。」他打了个寒噤，「我寻思，那是老先生的鬼魂，舍不得他的书，回来看了。我可不敢上前。」", cls:"dlg"}
+        ], set:{clue_jefferson_figure:true} },
+
+      { id:'leave', tag:'告辞', you:"（你谢过守墓人，转身离开。）",
+        say:[{t:"「慢走。」杰弗逊重新弯下腰去刨他的土，「天黑之后，少往墓地深处去——我说真的。」", cls:"amber"}],
+        end:true, goto:'hub' }
+    ]
+  },
+
+  douglas: {
+    name:'道格拉斯·金博尔', portrait:'douglas', banner:'graveyard', back:'hub', reveal:'soft',
+    intro:[
+      {t:"食尸鬼道格拉斯在墓碑上坐定，把书码在膝头，抬起那张犬类的脸望着你，浑浊的眼里，是一种与这副躯壳格格不入的、读书人的平和。他在等你问。", cls:"amber"}
+    ],
+    topics:[
+      { id:'what', tag:'问', once:true, you:"「你……到底发生了什么？你怎么会变成这样？」",
+        say:[
+          {t:"「变？」他歪了歪头，用那含混湿润的嗓音说，语气里没有一丝痛苦，「是啊，我想是变了。很多年前，一个有月亮的晚上，我在这儿读书，看见那边一座陵墓的门开了，一头……朋友，从里头探出头来，冲我叫了一声。」", cls:"dlg"},
+          {t:"「换了别人，怕是要吓死。可我这个人，一辈子和活人处不来，倒和它们一见如故。这份古怪的交情，处了整整五年。后来有一晚，我跟着它们，下去了。」他说得云淡风轻，仿佛在讲一次愉快的远行。", cls:"dlg"}
+        ], set:{doug_1:true} },
+      { id:'books', tag:'问', once:true, you:"「那些书——是你回你侄子的房子偷的。为什么？」",
+        say:[
+          {t:"「偷？」他第一次露出一点近乎不悦的神色，「那些是我的书。我读了一辈子的书。」他低头摩挲着膝上的书脊，动作温柔，「地下的世界很大，可惜没有书。同一批书，喂不饱一个爱书人一辈子。我只是……回去取回属于我的东西。」", cls:"dlg"},
+          {t:"「而且，今晚是最后一次了。」他抬眼望向陵墓，「同伴们要封掉这个出口了。我得赶在天亮前，把该带的都带走。」", cls:"dlg"}
+        ], set:{doug_2:true} },
+      { id:'life', tag:'问', once:true, you:"「你……不后悔吗？做这样一个东西。」",
+        say:[
+          {t:"「后悔？」他咕噜一声，像是在笑，「里德……不，教授。我再不用为钱发愁，再不用为赴一场无聊的晚宴换衣裳，除了进食的时候，再不必见任何人。我可以随心所欲地读书——白天，黑夜，只要我想。」", cls:"dlg"},
+          {t:"「地下有太多可去、可探、可读的地方了。」他的浑浊眼里，竟闪着一丝真切的向往，「我甚至打算，把我的见闻，写成一本新书。作为一头食尸鬼的生活，教授——甚合我意。」", cls:"dlg"}
+        ], set:{doug_3:true} },
+      { id:'nephew', tag:'问', once:true, gate:(f)=>f.doug_1, you:"「托马斯……你侄子，为你担惊受怕了一整年。我该怎么跟他说？」",
+        say:[
+          {t:"提到侄子，食尸鬼沉默了片刻。那点残存的人性，在他脸上艰难地牵动了一下。", cls:"amber"},
+          {t:"「……请你，别告诉他我还『在』。」他一字一句地说，「让他当我死了吧。这对他，对我，都干净些。一个爱书的老头，安安静静地不见了——这是最好的结局了，不是吗？」他把书抱紧了些，「求你了。」", cls:"dlg"}
+        ], set:{doug_nephew:true} },
+      { id:'leave', tag:'了结', gate:(f)=>f.doug_1&&f.doug_2, you:"（你问完了想问的。夜已深，他也该走了。）",
+        say:[
+          {t:"食尸鬼道格拉斯向你微微颔首，那是一个爱书人对另一个读书人，最体面的告别。他抱起膝上的书，最后看了一眼这片月光下的墓地，转身，钻进了那座陵墓的黑暗里。", cls:"amber"},
+          {t:"你听见地下传来石板沉重的摩擦声。这桩案子哀伤的真相，连同讲述它的人，一起沉入了地底。听完这一切，你的理智受了创，可你的见识，也永远地拓宽了——你窥见了一角人类不该知道的、地底的真实。", cls:"amber"}
+        ],
+        set:{talked_douglas:true},
+        end:true, goto:'ending_talk' }
+    ]
+  }
+};
+let dlg=null;
+
+function talk(key){
+  const npc=NPC[key]; if(!npc) return;
+  flags._asked = flags._asked || {};
+  const asked = flags._asked[key] = flags._asked[key] || {};   // 持久化：NPC 记住你问过/试过什么（跨访问）
+  const met = !!flags['_met_'+key];
+  flags['_met_'+key] = true;
+  dlg={npc, used: asked}; cur=null;
+  choicesBox.innerHTML=''; el('freewrap').style.display='none';
+  setBanner(npc.banner); try{ Sound.setMood(npc.banner,!!flags.act3); }catch(e){} try{ Atmo.setSan(PC.san); Atmo.setScene(npc.banner,!!flags.act3); }catch(e){}
+  el('loc').textContent = npc.name+' · 交谈';
+  narr.innerHTML=''; scroll.scrollTop=0;
+  if(npc.portrait){ const calm=isCalmReveal(npc.portrait, npc); setTimeout(()=>showPortrait(npc.portrait, npc.name, calm), 250); }
+  const intro = (met && npc.reintro) ? npc.reintro : npc.intro;   // 重访：换一段"他记得你"的开场
+  pushBacklog(npc.name+' · 交谈', intro);
+  typeParas(intro).then(dlgMenu);
+}
+function dlgMenu(){
+  choicesBox.innerHTML='';
+  let substantive = 0;
+  dlg.npc.topics.forEach(tp=>{
+    if(tp.once && dlg.used[tp.id]) return;
+    if(tp.gate && !tp.gate(flags)) return;
+    if(!tp.end) substantive++;
+    const b=document.createElement('button'); b.className='choice';
+    const tagCls = tp.check?'tag chk':'tag';
+    b.innerHTML=`<span class="${tagCls}">[${tp.tag||'问'}]</span>${tp.label||tp.you||''}`;
+    b.onclick=()=>{ if(typing) return; dlgPick(tp); };
+    choicesBox.appendChild(b);
+  });
+  if(substantive===0 && !dlg._exhaustedShown){ dlg._exhaustedShown=true; sysLine('（他没有别的要对你说了——该去别处看看了。）', ''); }
+  scroll.scrollTop=scroll.scrollHeight;
+}
+function dlgPick(tp){
+  dlg.used[tp.id]=true;
+  if(tp.you){ const d=document.createElement('div'); d.className='p'; d.style.color='#9fb0c8'; d.textContent='› '+tp.you; narr.appendChild(d); scroll.scrollTop=scroll.scrollHeight; }
+  if(tp.check){ openDice({skill:tp.check.skill, target:tp.check.target, hard:tp.check.hard, cb:(ok)=>dlgDeliver(tp,ok)}); return; }
+  dlgDeliver(tp, true);
+}
+async function dlgDeliver(tp, ok){
+  const lines = tp.check ? (ok? tp.sayOk : tp.sayFail) : tp.say;
+  await typeParas(lines||[]);
+  pushBacklog((dlg&&dlg.npc?dlg.npc.name+' · 交谈':''), (tp.you?[{t:'（你）'+tp.you}]:[]).concat(lines||[]));
+  const eff = tp.check ? (ok? tp.okSet : tp.failSet) : tp.set;
+  if(eff) Object.assign(flags, eff);
+  const sl = tp.check ? (ok? tp.okSan : tp.failSan) : tp.san;
+  if(sl) applySAN(sl.loss, sl.reason);
+  if(tp.end){ const back=tp.goto||dlg.npc.back||'dawn'; dlg=null; go(back); return; }
+  dlgMenu();
+}
+
+/* ---- 自由输入（v0.1 关键词兜底 + KP 说明）---- */
+/* ===== AI 守秘人（Claude Haiku · 直连 Anthropic API · Key 仅本地） ===== */
+const KP = (function(){
+  const MODEL='claude-haiku-4-5-20251001', ENDPOINT='https://api.anthropic.com/v1/messages';
+  let history=[];
+  function key(){ try{ return localStorage.getItem('coc_api_key')||''; }catch(e){ return ''; } }
+  function setKey(k){ try{ localStorage.setItem('coc_api_key',(k||'').trim()); }catch(e){} }
+  function hasKey(){ return !!key(); }
+  function reset(){ history=[]; }
+  const BIBLE =
+`〖世界观圣经·只有你(KP)知道，绝不能直接倒给玩家，只能让他一点点自己拼出来〗
+背景：1922年，密歇根小城阿诺兹堡。托马斯·金博尔雇调查员（语言学教授埃大伯里）查一桩盗书案——被盗的是他一年前失踪的叔叔道格拉斯生前最爱的几本书，酬$10。
+真相：道格拉斯·金博尔是个书痴，多年在城东公墓读书，结识了栖居墓地地下隧道的食尸鬼，五年后自愿加入、自己也化为食尸鬼。那个夜里回旧宅偷书的"贼"就是他——他偷回自己的书，在他最爱的矮墓碑上读。这是哀伤而非血腥的谜底。
+线索链：邻居/守墓人杰弗逊（见过夜里的人影、指出矮墓碑）/旧报（未着寿衣者夜聚墓地）/沃德手记（魔鬼子嗣）/日记（自愿下地）/矮墓碑怪脚印→陵墓→地下隧道。
+氛围铁律：压抑、克制、留白，恐怖来自暗示与哀伤而非血腥。绝不把食尸鬼解释成万能，绝不当有求必应的助手。道格拉斯本人友善、仍存人性，只求不受打扰地读书、请求别向侄子透露他还"在"。`;
+  function sys(){
+    const sk = Object.entries(PC.skills).map(([k,v])=>k+v).join(' ');
+    const now = (typeof cur==='object'&&cur&&cur.text)? cur.text.map(t=>t.t).join(' ').slice(0,240) : '';
+    return `你是《克苏鲁的呼唤》单人跑团的守秘人(KP)。用中文、第二人称"你"，为玩家(调查员·语言学教授埃大伯里)主持《追书人》。
+${BIBLE}
+〖当前状态〗地点：${cur?cur.loc:'阿诺兹堡'}。理智SAN ${PC.san}/99，生命HP ${PC.hp}/11。技能：${sk}。此刻情形：${now}
+〖你的职责〗玩家会用自由文本说出任何行动，你都要合乎情理地接住并推进，而不是把他拉回选项。需要检定时你自己暗掷d100（≤对应技能=成功，反之失败），用一句话交代结果即可，不必报数字。目睹超常/恐怖时扣理智。
+〖输出格式〗2到4段，紧凑有画面感，克制留白。如本回合理智下降，在最后另起一行只输出标记：〔SAN-数字〕（例：〔SAN-4〕）。如受伤，输出：〔HP-数字〕。没有变化就不输出标记。不要解释规则，不要跳出角色，不要写"作为AI"。`;
+  }
+  async function act(playerText){
+    history.push({role:'user', content:playerText});
+    if(history.length>12) history=history.slice(-12);
+    const res = await fetch(ENDPOINT,{ method:'POST',
+      headers:{'content-type':'application/json','x-api-key':key(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body: JSON.stringify({ model:MODEL, max_tokens:640, system:sys(), messages:history }) });
+    if(!res.ok){ let m=res.status; try{ const e=await res.json(); m=(e.error&&e.error.message)||m; }catch(_){}
+      history.pop(); throw new Error(m); }
+    const data=await res.json();
+    const text=(data.content||[]).map(c=>c.text||'').join('').trim();
+    history.push({role:'assistant', content:text});
+    return text;
+  }
+  return { act, hasKey, setKey, key, reset };
+})();
+
+async function typeKP(text){
+  typing=true; skipType=false;
+  const div=document.createElement('div'); div.className='p kp'; narr.appendChild(div);
+  div.innerHTML='<b>〔KP〕</b> ';
+  const base=div.innerHTML;
+  for(let i=0;i<text.length;i++){ if(skipType){ div.innerHTML=base+text; break; }
+    div.innerHTML=base+text.slice(0,i+1); scroll.scrollTop=scroll.scrollHeight;
+    await sleep(text[i].match(/[，。、—！？.…\n]/)?34:13); }
+  typing=false; scroll.scrollTop=scroll.scrollHeight;
+}
+function applyKPtags(text){
+  let clean=text, m;
+  if(m=text.match(/〔?\s*SAN\s*[-−]\s*(\d+)\s*〕?/i)){ const n=+m[1]; clean=clean.replace(m[0],'').trim();
+    setTimeout(()=>applySAN(n,'那一刻，有什么东西在你脑中永久地改变了'), 300); }
+  if(m=text.match(/〔?\s*HP\s*[-−]\s*(\d+)\s*〕?/i)){ const n=+m[1]; clean=clean.replace(m[0],'').trim();
+    setTimeout(()=>applyHP(n,'你受了伤'), 500); }
+  return clean;
+}
+
+el('freego').onclick = doFree;
+el('free').addEventListener('keydown',e=>{ if(e.key==='Enter') doFree(); });
+async function doFree(){
+  if(typing) return;
+  const v = el('free').value.trim(); if(!v) return;
+  el('free').value='';
+  const d=document.createElement('div'); d.className='p'; d.style.color='#8ea0c0';
+  d.textContent = '› '+v; narr.appendChild(d); scroll.scrollTop = scroll.scrollHeight;
+
+  if(!KP.hasKey()){
+    const kp=document.createElement('div'); kp.className='p amber';
+    kp.innerHTML='（守秘人还没上线。点右上角 <b style="color:var(--phos)">⚙ AI</b> 填入 API Key，我就能接住你写的任何行动、真正带你自由探索。）';
+    narr.appendChild(kp); scroll.scrollTop=scroll.scrollHeight; return;
+  }
+  const think=document.createElement('div'); think.className='thinking'; think.innerHTML='守秘人落笔中<i>……</i>';
+  narr.appendChild(think); scroll.scrollTop=scroll.scrollHeight;
+  try{
+    const raw = await KP.act(v);
+    think.remove();
+    const clean = applyKPtags(raw);
+    await typeKP(clean);
+    save();
+  }catch(err){
+    think.remove();
+    const e=document.createElement('div'); e.className='sys bad';
+    e.textContent='▸ 守秘人失联：'+err.message+'（检查 ⚙ AI 里的 Key / 额度 / 网络）';
+    narr.appendChild(e); scroll.scrollTop=scroll.scrollHeight;
+  }
+}
+
+/* ---- AI 设置面板 ---- */
+function refreshAIbtn(){ el('ai').classList.toggle('on', KP.hasKey()); }
+el('ai').onclick = ()=>{ el('kpkey').value = KP.key(); el('kpstatus').textContent=''; el('kpstatus').className='status'; el('kpset').style.display='flex'; el('kpkey').focus(); };
+el('kpclose').onclick = ()=>{ el('kpset').style.display='none'; };
+el('kpset').onclick = (e)=>{ if(e.target===el('kpset')) el('kpset').style.display='none'; };
+el('kpsave').onclick = ()=>{
+  const k=el('kpkey').value.trim();
+  if(!k){ el('kpstatus').textContent='请先填入 Key'; el('kpstatus').className='status err'; return; }
+  KP.setKey(k); KP.reset(); refreshAIbtn();
+  el('kpstatus').textContent='✓ 已启用。现在回到游戏，在输入框写任何行动试试。'; el('kpstatus').className='status ok';
+  setTimeout(()=>el('kpset').style.display='none', 1400);
+};
+
+/* ---- 存档（每游戏独立键：避免与《寒鸦港》共用 hanya_save 互相覆盖）---- */
+const SAVE_KEY = 'huoshen_save';
+function save(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify({cur:findKey(cur),san:PC.san,hp:PC.hp,flags})); }catch(e){} }
+function findKey(node){ for(const k in S) if(S[k]===node) return k; return 'arrival'; }
+function load(){ try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)); if(s&&S[s.cur]){PC.san=s.san;PC.hp=s.hp;Object.assign(flags,s.flags||{});return s.cur;} }catch(e){} return null; }
+function clearSave(){ try{ localStorage.removeItem(SAVE_KEY); }catch(e){} }
+function hasSave(){ try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)); return !!(s && S[s.cur]); }catch(e){ return false; } }
+
+/* ---- 减弱动效（光敏友好；默认跟随系统 prefers-reduced-motion）---- */
+let reducedMotion = (function(){
+  try{ const v=localStorage.getItem('huoshen_reduce_motion'); if(v!==null) return v==='1'; }catch(e){}
+  try{ return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }catch(e){ return false; }
+})();
+function applyReduceMotion(){
+  document.body.classList.toggle('reduce-motion', reducedMotion);
+  const b=el('motion'); if(b){ b.classList.toggle('on', reducedMotion); b.textContent = reducedMotion?'🌀 稳':'🌀 动';
+    b.title = reducedMotion?'动效已减弱——点击恢复闪烁/抖屏':'减弱闪烁/抖屏（光敏友好）'; }
+}
+
+/* ---- 结局图鉴（跨周目收集，重开不清除）---- */
+const ENDINGS = [ {id:'truth',name:'真相'}, {id:'lie',name:'善意的谎'}, {id:'survivor',name:'幸存者'}, {id:'taken',name:'新读者'}, {id:'missed',name:'错过'} ];
+function getEndings(){ try{ return new Set(JSON.parse(localStorage.getItem('huoshen_endings')||'[]')); }catch(e){ return new Set(); } }
+function unlockEnding(e){
+  const s=getEndings(); if(!s.has(e.id)){ s.add(e.id); try{ localStorage.setItem('huoshen_endings', JSON.stringify([...s])); }catch(_){}}
+  try{ sysLine(`▸ 结局解锁：【${e.name}】　· 已见 ${getEndings().size}/${ENDINGS.length}`, 'clue'); }catch(_){}
+}
+function renderEndingDex(){
+  const box=el('endingdex'); if(!box) return; const s=getEndings();
+  const list = ENDINGS.map(e=> s.has(e.id)? `<span class="got">【${e.name}】</span>` : '<span class="lock">【？？？】</span>').join(' ');
+  box.innerHTML = `结局收集 ${s.size}/${ENDINGS.length}　${list}`;
+}
+
+/* ---- 标题：继续 / 新游戏 双入口 ---- */
+function refreshTitleButtons(){
+  const has = hasSave();
+  const sb=el('startBtn'); if(sb) sb.textContent = has ? '继 续 调 查' : '拆 开 包 裹';
+  const ng=el('newgame'); if(ng){ ng.style.display = has ? 'block' : 'none'; const a=ng.querySelector('a'); if(a) a.textContent = '重新开始（清除存档）'; }
+}
+
+/* ================= 时间系统 + 小镇地图（精细时钟 · 交通 · 随机事件） ================= */
+const MAPART = `<svg viewBox="0 0 800 520" preserveAspectRatio="xMidYMid slice" shape-rendering="geometricPrecision">
+  <defs>
+    <radialGradient id="mpg" cx="50%" cy="42%" r="75%"><stop offset="0" stop-color="#1a1712"/><stop offset="1" stop-color="#0b0908"/></radialGradient>
+    <linearGradient id="mriver" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1c2c30"/><stop offset="1" stop-color="#0e181c"/></linearGradient>
+    <filter id="mrough"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.04 0"/><feComposite in2="SourceGraphic" operator="over"/></filter>
+  </defs>
+  <rect width="800" height="520" fill="url(#mpg)"/>
+  <!-- 做旧噪点 -->
+  <rect width="800" height="520" filter="url(#mrough)" opacity="0.5"/>
+  <!-- 边框（老地图） -->
+  <rect x="10" y="10" width="780" height="500" fill="none" stroke="#3a2f22" stroke-width="2"/>
+  <rect x="16" y="16" width="768" height="488" fill="none" stroke="#2a2218" stroke-width="1"/>
+  <!-- 河 / 铁路（北） -->
+  <path d="M-10 70 Q200 100 400 78 Q600 56 810 92" fill="none" stroke="url(#mriver)" stroke-width="18" opacity="0.8"/>
+  <path d="M-10 70 Q200 100 400 78 Q600 56 810 92" fill="none" stroke="#2c4048" stroke-width="1" opacity="0.5"/>
+  <!-- 铁轨（贴河） -->
+  <g stroke="#3a3226" stroke-width="1.5" opacity="0.6"><path d="M-10 118 Q200 146 400 126 Q600 106 810 140" fill="none"/></g>
+  <g stroke="#2a241a" stroke-width="1" opacity="0.5"><line x1="40" y1="122" x2="44" y2="132"/><line x1="120" y1="130" x2="124" y2="140"/><line x1="240" y1="136" x2="244" y2="146"/><line x1="400" y1="126" x2="404" y2="136"/><line x1="560" y1="118" x2="564" y2="128"/><line x1="680" y1="122" x2="684" y2="132"/></g>
+  <!-- 主街：艾尔特伯里大街（横贯） -->
+  <path d="M40 300 L760 268" fill="none" stroke="#2e2820" stroke-width="22" stroke-linecap="round"/>
+  <path d="M40 300 L760 268" fill="none" stroke="#443a2a" stroke-width="20" stroke-linecap="round" opacity="0.5"/>
+  <g stroke="#6a5a3a" stroke-width="1.5" stroke-dasharray="10 12" opacity="0.55"><path d="M40 300 L760 268" fill="none"/></g>
+  <!-- 支路 -->
+  <path d="M300 288 L300 150" fill="none" stroke="#2c261e" stroke-width="12" stroke-linecap="round"/>
+  <path d="M540 278 L560 420" fill="none" stroke="#2c261e" stroke-width="12" stroke-linecap="round"/>
+  <path d="M180 296 L150 430" fill="none" stroke="#2c261e" stroke-width="11" stroke-linecap="round"/>
+  <path d="M640 272 L690 400" fill="none" stroke="#2c261e" stroke-width="11" stroke-linecap="round"/>
+  <!-- 零散民居（暗块） -->
+  <g fill="#171310" stroke="#241d15" stroke-width="1">
+    <rect x="80" y="200" width="26" height="20"/><rect x="130" y="210" width="22" height="18"/><rect x="230" y="196" width="24" height="18"/>
+    <rect x="360" y="210" width="22" height="18"/><rect x="420" y="196" width="26" height="20"/><rect x="470" y="212" width="20" height="16"/>
+    <rect x="330" y="330" width="24" height="18"/><rect x="380" y="345" width="22" height="18"/><rect x="250" y="360" width="22" height="16"/>
+    <rect x="600" y="210" width="24" height="18"/><rect x="90" y="360" width="22" height="18"/>
+  </g>
+  <!-- 城东：公墓区（大片十字架，东侧） -->
+  <rect x="628" y="150" width="150" height="150" fill="#12140f" stroke="#242a1c" stroke-width="1" opacity="0.7"/>
+  <g stroke="#4a4a38" stroke-width="2" opacity="0.75">
+    <path d="M650 190 v18 M644 196 h12"/><path d="M676 178 v18 M670 184 h12"/><path d="M704 192 v18 M698 198 h12"/><path d="M732 180 v16 M726 186 h12"/>
+    <path d="M656 230 v16 M650 236 h12"/><path d="M690 226 v18 M684 232 h12"/><path d="M722 234 v16 M716 240 h12"/><path d="M748 220 v16 M742 226 h12"/>
+    <path d="M666 268 v14 M660 274 h12"/><path d="M700 262 v16 M694 268 h12"/><path d="M736 270 v14 M730 276 h12"/>
+  </g>
+  <!-- 公墓深处的陵墓（小拱） -->
+  <path d="M700 210 a10 10 0 0 1 20 0 v14 h-20 z" fill="#0c0d08" stroke="#2a301e" stroke-width="1"/>
+  <!-- 树 -->
+  <g fill="#12180f" opacity="0.8"><circle cx="600" cy="150" r="12"/><circle cx="588" cy="330" r="14"/><circle cx="120" cy="150" r="12"/><circle cx="700" cy="130" r="10"/></g>
+  <!-- 罗盘（西北角） -->
+  <g transform="translate(66,66)" opacity="0.7"><circle r="20" fill="none" stroke="#4a3f2c" stroke-width="1"/><path d="M0 -18 L4 0 L0 18 L-4 0 Z" fill="#6a5a3a"/><path d="M0 -18 L4 0 L0 0 Z" fill="#8a7a4a"/><text x="0" y="-24" fill="#8a7a4a" font-size="11" text-anchor="middle" font-family="Georgia,serif">N</text></g>
+  <!-- 标题条 -->
+  <text x="400" y="486" fill="#7a6a48" font-size="15" text-anchor="middle" font-family="Georgia,serif" letter-spacing="4" opacity="0.8">A R N O L D ' S &#160; F O R T &#160;·&#160; 1 9 2 2</text>
+</svg>`;
+const DAY_START = 480;    // 08:00 出门
+const NIGHTFALL = 1080;   // 18:00 十月天黑
+const DEADLINE_DAY = 7;
+
+function initClock(){ if(flags.day==null) flags.day=1; if(flags.mins==null) flags.mins=DAY_START; if(flags.loc==null) flags.loc='home'; }
+function fmtClock(m){ m=((Math.round(m)%1440)+1440)%1440; const h=Math.floor(m/60), mm=m%60; return h+':'+String(mm).padStart(2,'0'); }
+function period(m){ m=((m%1440)+1440)%1440; if(m>=NIGHTFALL||m<360) return '夜'; if(m>=1020) return '黄昏'; if(m>=720) return '下午'; return '上午'; }
+function timeLabel(){ initClock(); return `第 ${flags.day} 天 · ${period(flags.mins)} ${fmtClock(flags.mins)}`; }
+function isNight(){ return (flags.mins||DAY_START) >= NIGHTFALL; }
+function advanceMins(n){ initClock(); flags.mins += Math.round(n||0); }
+function toMorning(){ initClock(); flags.day+=1; flags.mins=DAY_START; onNewDay(); }
+function money(){ return flags.money!=null?flags.money:31; }
+function hasTrail(){ return !!(flags.clue_jefferson_figure||flags.clue_diary||flags.clue_window||flags.clue_footprints); }
+function climaxReached(){ return !!(flags.did_tunnels||flags.talked_douglas||flags.stakeout_hit); }
+function onNewDay(){ if(!climaxReached() && flags.day > DEADLINE_DAY){ flags._sealed=true; } }
+
+/* 地点：坐标(%) + 行动（复用原 hub 门控）。act.mins=该行动耗时；when:day/night/any */
+const MAP_NODES = [
+  { id:'home', name:'金博尔宅', x:70, y:60, actions:()=>[
+    {label:'搜查道格拉斯的书房', goto:'study', when:'day', mins:230, show:!flags.clue_diary},
+    {label:'找托马斯说说话', talk:'thomas', when:'any', mins:20, show:true},
+    {label:'夜里蹲守，守那道人影', goto:'stakeout', when:'night', mins:0, show:hasTrail() && !climaxReached()},
+    {label:'回房歇息，等到明天', act:'rest', when:'any', mins:0, show:true},
+  ]},
+  { id:'street', name:'艾尔特伯里大街', x:46, y:56, actions:()=>[
+    {label:'走访邻居，打听道格拉斯', goto:'neighbors', when:'day', mins:45, show:!flags.did_neighbors},
+    {label:'（禁酒令）想法子弄瓶威士忌', goto:'whiskey', when:'day', mins:70, show:!flags.has_whiskey && !flags.whiskey_done},
+  ]},
+  { id:'library', name:'公共图书馆', x:30, y:40, actions:()=>[
+    {label:'系统翻查本地旧报', goto:'library', when:'day', mins:150, show:!flags.clue_article},
+  ]},
+  { id:'news', name:'广告报报馆', x:40, y:30, actions:()=>[
+    {label:'查旧刊 · 沃德手记', goto:'newspaper', when:'day', mins:90, show:!flags.clue_clipping},
+  ]},
+  { id:'police', name:'阿诺兹堡警局', x:20, y:56, actions:()=>[
+    {label:'问入室盗窃报案与可疑人', goto:'police', when:'day', mins:60, show:!flags.did_police},
+  ]},
+  { id:'cemetery', name:'城东公墓', x:88, y:42, actions:()=>[
+    {label:'找守墓人杰弗逊', goto:'graveyard_day', when:'day', mins:50, show:!flags.did_graveyard && !flags.jeff_hostile},
+    {label:'在墓碑间自己转转', goto:'graveyard_stroll', when:'day', mins:40, show:flags.did_graveyard || flags.jeff_hostile},
+    {label:'查道格拉斯最爱的那块矮墓碑', goto:'headstone', when:'day', mins:30, show:flags.clue_headstone && !flags.found_tomb},
+    {label:'夜里蹲守公墓', goto:'stakeout', when:'night', mins:0, show:hasTrail() && !climaxReached()},
+    {label:'下到那条地下隧道', goto:'tunnels', when:'night', mins:0, show:flags.found_tunnel && !flags.did_tunnels},
+  ]},
+];
+function nodeById(id){ return MAP_NODES.find(n=>n.id===id); }
+function nodeDist(a,b){ const p=nodeById(a),q=nodeById(b); if(!p||!q) return 30; return Math.hypot(p.x-q.x,p.y-q.y); }
+
+/* 交通方式：步行(免费/慢) + 出租车($/快)。返回 [{key,name,mins,cost,ok,why}] */
+function transportOptions(fromId, toId){
+  const d = nodeDist(fromId, toId);
+  const walk = Math.max(8, Math.round(d*0.9));            // 步行分钟
+  const taxi = Math.max(5, Math.round(d*0.38));           // 出租车分钟
+  const fare = Math.max(1, Math.round(d/22));             // 车费（美元）
+  const opts = [
+    {key:'walk', name:'步行', mins:walk, cost:0, ok:true},
+    {key:'taxi', name:'叫出租车', mins:taxi, cost:fare, ok:money()>=fare, why:'钱不够车费'}
+  ];
+  return opts;
+}
+
+/* 路上随机事件（融入故事、稀疏；不计入预估时间——不选就遇不到）。返回 {t, mins, set} 或 null */
+const TRAVEL_EVENTS = {
+  cemetery:[
+    {t:'路过公墓的铁栏时，你分明瞥见碑林深处有个佝偻的影子一闪而过。等你定睛去看，只剩风里晃动的枯枝。你后颈发凉，脚步不由得快了几分。', mins:5, san:{loss:0}, set:{}},
+    {t:'一个拎着菜篮的老妇人从公墓那头快步走来，压低声音对你念叨：「天黑前回家，先生。那片地……夜里不干净。」说罢头也不回地去了。', mins:3, set:{}},
+  ],
+  street:[
+    {t:'主街的杂货铺廊下，两个镇民正嚼舌根：「金博尔家那位老先生啊，怪人一个，成天抱着书往坟地钻，末了人就没了……」见你走近，他们讪讪住了口。', mins:4, set:{clue_gossip:true}},
+    {t:'一阵十月的冷风卷着落叶扑面而来，报童的叫卖声、远处教堂的钟声一时都显得空落落的。你莫名觉得，这座小城正屏着呼吸看你。', mins:2, set:{}},
+  ],
+  taxi:[
+    {t:'出租车司机是个健谈的老手，一路替你数落着镇上的新鲜事，末了压低嗓子：「您要去金博尔家附近？嘿，那一带靠着坟地，晚上我可不爱往那儿跑。」', mins:3, set:{}},
+  ],
+  any:[
+    {t:'半道上你有种被人盯着的错觉，猛一回头，街角空无一人，只有一扇窗帘正轻轻落下。也许是你多心了。', mins:2, set:{}},
+  ]
+};
+function pickTravelEvent(toId, mode){
+  if(Math.random() > 0.42) return null;                  // 多数路程平安无事
+  let pool = [];
+  if(mode==='taxi' && TRAVEL_EVENTS.taxi) pool = pool.concat(TRAVEL_EVENTS.taxi);
+  if(TRAVEL_EVENTS[toId]) pool = pool.concat(TRAVEL_EVENTS[toId]);
+  pool = pool.concat(TRAVEL_EVENTS.any);
+  // 去重：同一事件一局只触发一次
+  flags._seenEv = flags._seenEv || [];
+  pool = pool.filter(e=>!flags._seenEv.includes(e.t));
+  if(!pool.length) return null;
+  const e = pool[Math.floor(Math.random()*pool.length)];
+  flags._seenEv.push(e.t);
+  return e;
+}
+
+/* 进入地图（原 hub）。cur 仍指 S.hub，以便存档记 'hub' */
+function enterMap(){
+  initClock();
+  cur = S.hub; hidePortrait();
+  el('freewrap').style.display='none'; choicesBox.innerHTML='';
+  if(flags._sealed && !climaxReached()){ go('ending_missed'); return; }
+  const bkey = isNight() ? 'dark' : 'harbor';
+  setBanner(bkey); try{ Sound.setMood(bkey, false); }catch(e){}
+  try{ Atmo.setSan(PC.san); Atmo.setScene(bkey, false); }catch(e){}
+  el('loc').textContent = '阿诺兹堡 · ' + timeLabel();
+  const bn=el('banner'); bn.classList.remove('flick'); void bn.offsetWidth; bn.classList.add('flick');
+  renderSheet(); showMap(); save();
+}
+
+let mapSel = null;
+function showMap(){
+  narr.innerHTML=''; scroll.scrollTop=0; choicesBox.innerHTML='';
+  const night = isNight();
+  const cur0 = flags.loc || 'home';
+  const pins = MAP_NODES.map(n=>{
+    const acts = n.actions().filter(a=>a.show && (a.when==='any' || (a.when==='night')===night));
+    let cls = acts.length ? 'ok' : 'done';
+    const dayActs = n.actions().filter(a=>a.show && a.when!=='night');
+    if(!acts.length && night && dayActs.length) cls='lock';
+    if(n.id===cur0) cls += ' here';
+    return {n, acts, cls};
+  });
+  const pinHTML = pins.map(p=>`<button class="pin ${p.cls}${mapSel===p.n.id?' sel':''}" data-id="${p.n.id}" style="left:${p.n.x}%;top:${p.n.y}%">
+      <span class="dot"></span><span class="lbl">${p.n.name}${p.n.id===cur0?'（你在此）':''}</span></button>`).join('');
+  const wrap=document.createElement('div'); wrap.className='mapwrap';
+  wrap.innerHTML =
+    `<div class="maphud"><span class="mt">${timeLabel()}</span><span class="mp">${night?'☾ 夜晚':'☀ 白天'} · 天黑约 ${fmtClock(NIGHTFALL)}</span></div>`+
+    `<div class="mapframe">${MAPART}<div class="pinlayer">${pinHTML}</div></div>`+
+    `<div class="mapact" id="mapact"></div>`;
+  narr.appendChild(wrap);
+  wrap.querySelectorAll('.pin').forEach(b=> b.onclick=()=>selectNode(b.dataset.id));
+  const selP = mapSel? pins.find(p=>p.n.id===mapSel) : null;
+  renderMapAct(selP, pins);
+}
+function selectNode(id){ mapSel=id; showMap(); }
+
+function renderMapAct(sel, pins){
+  const box=el('mapact'); if(!box) return;
+  const here = flags.loc || 'home';
+  if(!sel){
+    let hint = isNight()
+      ? '夜幕已合。白天的去处都打烊了——线索够了就去金博尔宅或公墓蹲守；否则回房歇到天亮。'
+      : '你现在在<b>'+nodeById(here).name+'</b>。点地图上的地点安排下一步——先选怎么去（步行或叫车），到了再办事。白天查案、夜晚行动。';
+    if(flags._travelNote){ hint = flags._travelNote + '<br><br>' + hint; }
+    if(hasTrail() && !climaxReached() && (flags.day||1) >= 5)
+      hint += '<br><span class="mwarn">托马斯说这几夜公墓那边动静越来越大，像要连夜搬走什么——你怕是没几天了。</span>';
+    box.innerHTML = `<div class="maptip">${hint}</div>`;
+    return;
+  }
+  // 选中的是当前所在地 → （若刚到，先叙路程+随机事件）再列行动
+  if(sel.n.id === here){
+    let head = '';
+    if(flags._travelNote){ head = `<div class="maptip travnote">${flags._travelNote}</div>`; flags._travelNote=null; }
+    if(!sel.acts.length){ box.innerHTML = head + `<div class="maptip"><b>${sel.n.name}</b>（你在此）　这里眼下没有你要办的事了。</div>`; return; }
+    box.innerHTML = head + `<div class="mactitle">${sel.n.name}　·　你在此</div>` +
+      sel.acts.map((a,i)=>`<button class="machoice" data-i="${i}">${a.when==='night'?'🌙 ':''}${a.label}${a.mins?`　<span class="cost">· 约 ${fmtDur(a.mins)}</span>`:''}</button>`).join('');
+    box.querySelectorAll('.machoice').forEach(b=> b.onclick=()=>doMapAction(sel.acts[+b.dataset.i]));
+    return;
+  }
+  // 选中的是别处 → 先选交通方式
+  const opts = transportOptions(here, sel.n.id);
+  box.innerHTML = `<div class="mactitle">前往 ${sel.n.name}　·　从 ${nodeById(here).name} 出发</div>` +
+    opts.map((o,i)=>`<button class="machoice trav" data-i="${i}" ${o.ok?'':'disabled'}>
+      ${o.key==='walk'?'🚶':'🚕'} ${o.name}　<span class="cost">· 约 ${fmtDur(o.mins)}${o.cost?`　· 车费 $${o.cost}`:'　· 免费'}${o.ok?'':`　· ${o.why}`}</span></button>`).join('') +
+    `<div class="maptip" style="margin-top:8px">预估时间是一路顺当的用时；路上会不会碰上别的事，谁也说不准。</div>`;
+  box.querySelectorAll('.machoice').forEach((b,i)=>{ if(!opts[i].ok) return; b.onclick=()=>doTravel(sel.n.id, opts[i]); });
+}
+function fmtDur(m){ m=Math.round(m); if(m<60) return m+' 分钟'; const h=Math.floor(m/60), mm=m%60; return mm? h+' 小时 '+mm+' 分' : h+' 小时'; }
+
+function doTravel(toId, opt){
+  advanceMins(opt.mins);
+  if(opt.cost){ flags.money = money() - opt.cost; }
+  flags.loc = toId;
+  // 随机事件（不计入预估）
+  const ev = pickTravelEvent(toId, opt.key);
+  let note = `你${opt.key==='walk'?'步行':'搭出租车'}来到 <b>${nodeById(toId).name}</b>（${fmtDur(opt.mins)}${opt.cost?`，车费 $${opt.cost}`:''}）。`;
+  if(ev){ if(ev.mins) advanceMins(ev.mins); if(ev.set) Object.assign(flags, ev.set); if(ev.san) applySAN(ev.san.loss||0, ev.san.reason||'路上'); note += '<br><br>' + ev.t; if(ev.mins) note += `<br><span class="mwarn">（这一段耽搁了约 ${fmtDur(ev.mins)}。）</span>`; }
+  flags._travelNote = note;           // renderMapAct 到达面板顶部展示一次后自清
+  if(flags._sealed && !climaxReached()){ flags._travelNote=null; go('ending_missed'); return; }
+  mapSel = toId;
+  enterMap();                         // 重进地图：位置/时间更新，面板列出到达地行动
+}
+function doMapAction(a){
+  const box=el('mapact');
+  if(a.act==='rest'){ toMorning();
+    if(flags._sealed && !climaxReached()){ go('ending_missed'); return; }
+    mapSel=null; enterMap(); return; }
+  if(a.mins) advanceMins(a.mins);
+  if(flags._sealed && !climaxReached()){ go('ending_missed'); return; }
+  mapSel=null;
+  if(a.talk){ talk(a.talk); return; }
+  if(a.goto){ go(a.goto); return; }
+}
+
+
+/* ---- 回想 backlog（本轮读过的文字，内存态，重开清空）---- */
+let backlog = [];
+function pushBacklog(loc, paras){
+  if(!paras || !paras.length) return;
+  const texts = paras.map(p=> typeof p==='string'? p : p.t).filter(Boolean);
+  if(texts.length) backlog.push({loc: loc||'', texts});
+}
+function openBacklog(){
+  const list = el('bloglist');
+  if(!backlog.length){ list.innerHTML = '<div class="empty">还没有读过任何文字。</div>'; }
+  else { list.innerHTML = backlog.map(e=>
+    `<div class="ent"><div class="loc">${e.loc}</div>${e.texts.map(t=>`<p>${t}</p>`).join('')}</div>`).join(''); }
+  el('backlog').style.display='flex';
+  setTimeout(()=>{ list.scrollTop = list.scrollHeight; }, 0);
+}
+
+/* ---- 通关侦探小结（结案档案）---- */
+const CLUE_DEFS = [
+  ['clue_uncle','托马斯：叔叔是个深居简出的书痴'],
+  ['clue_books','托马斯：贼专挑叔叔常翻的旧书'],
+  ['clue_neighbor','邻居奥黛尔：道格拉斯天天抱书去公墓'],
+  ['clue_article','旧报：十多年前公墓夜半有「未着寿衣者」'],
+  ['clue_clipping','报馆·沃德手记：夜里的怪影'],
+  ['clue_police','警局：走访与旧案'],
+  ['clue_headstone','道格拉斯最爱的那块矮墓碑'],
+  ['clue_jefferson_figure','守墓人：矮墓碑边夜夜出现的人影'],
+  ['clue_window','书房后窗：贼是个「家里人」'],
+  ['clue_diary','道格拉斯日记：自愿「下到地下」'],
+  ['clue_footprints','非人的赤足脚印，通向陵墓']
+];
+function fmtElapsed(ms){ const m=Math.max(1,Math.round(ms/60000)); return m<60? m+' 分钟' : Math.floor(m/60)+' 小时 '+(m%60)+' 分'; }
+function renderSummary(){
+  const found = CLUE_DEFS.filter(([f])=>flags[f]);
+  const sanMin = (flags._sanmin!=null)? flags._sanmin : PC.san;
+  const ck = flags._ck||0, ckok = flags._ckok||0;
+  const path = flags.did_tunnels ? '深入墓地之下的隧道网' : (flags.stakeout_hit ? '夜里蹲守，当场截住那道人影' : '在地面一路追查到底');
+  const dur = flags._t0 ? fmtElapsed(Date.now()-flags._t0) : '—';
+  const div = document.createElement('div'); div.className='summary';
+  div.innerHTML =
+    '<h4>结 案 档 案</h4>'+
+    `<div class="kv"><span class="lab">调查用时</span><span class="val">${dur}</span></div>`+
+    `<div class="kv"><span class="lab">理智 SAN</span><span class="val">起始 65 · 最低 ${sanMin} · 最终 ${PC.san}</span></div>`+
+    `<div class="kv"><span class="lab">技能检定</span><span class="val">通过 ${ckok} / 共 ${ck}</span></div>`+
+    `<div class="kv"><span class="lab">收束路线</span><span class="val">${path}</span></div>`+
+    (flags.talked_douglas?'<div class="kv"><span class="lab">与道格拉斯</span><span class="val">当面交谈、听他讲出真相</span></div>':'')+
+    `<div class="kv"><span class="lab">线索</span><span class="val">${found.length} / ${CLUE_DEFS.length}</span></div>`+
+    (found.length?`<ul class="clues">${found.map(([,d])=>`<li>${d}</li>`).join('')}</ul>`:'');
+  narr.appendChild(div); scroll.scrollTop = scroll.scrollHeight;
+}
+
+/* ---- 移动端：角色卡抽屉 + 顶栏迷你 SAN/HP ---- */
+function toggleSheet(){ el('sheet').classList.toggle('open'); }
+function renderMini(){ const m=el('mini'); if(m) m.innerHTML = (flags.day!=null?`第${flags.day}天 ${fmtClock(flags.mins!=null?flags.mins:480)} · `:'') + `SAN <b>${PC.san}</b> · HP <i>${PC.hp}</i>`; }
+
+/* ---- 大气效果（从寒鸦港母版恢复）---- */
+const Atmo = (function(){
+  let cv, ctx, W, H, dpr, raf=null, t=0;
+  let fog=[], parts=[], grain, sanTint=0, mood='harbor', ptype='dust';
+  const MOOD_TINT = {
+    harbor:[70,90,120], inn:[90,80,70], post:[70,85,95],
+    room:[55,60,80], dark:[40,45,65], climax:[30,60,70]
+  };
+  function make(){
+    cv=document.getElementById('atmo'); if(!cv) return; ctx=cv.getContext('2d');
+    resize(); window.addEventListener('resize', resize);
+    // 雾团
+    fog=[]; for(let i=0;i<7;i++) fog.push({x:Math.random(),y:0.2+Math.random()*0.7,
+      r:0.25+Math.random()*0.35, s:(Math.random()*0.2+0.05)*(Math.random()<.5?-1:1), a:0.05+Math.random()*0.06});
+    spawnParts();
+    // 颗粒噪声瓦片
+    grain=document.createElement('canvas'); grain.width=grain.height=140;
+    const g=grain.getContext('2d'), id=g.createImageData(140,140), d=id.data;
+    for(let i=0;i<d.length;i+=4){ const v=Math.random()*255; d[i]=d[i+1]=d[i+2]=v; d[i+3]=Math.random()*22; }
+    g.putImageData(id,0,0);
+  }
+  function resize(){ if(!cv)return; dpr=Math.min(window.devicePixelRatio||1,1.5);
+    W=cv.width=Math.floor(innerWidth*dpr); H=cv.height=Math.floor(innerHeight*dpr);
+    cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px'; }
+  function spawnParts(){ parts=[]; const n = ptype==='rain'?150:(ptype==='ember'?46:80);
+    for(let i=0;i<n;i++) parts.push(newPart()); }
+  function newPart(){ if(ptype==='rain') return {x:Math.random(),y:Math.random(),v:0.006+Math.random()*0.01,len:8+Math.random()*16,drift:0.0008};
+    if(ptype==='ember') return {x:Math.random(),y:Math.random(),v:-(0.0006+Math.random()*0.0016),sz:1+Math.random()*2,ph:Math.random()*6};
+    return {x:Math.random(),y:Math.random(),v:(Math.random()*0.0006+0.0002)*(Math.random()<.5?-1:1),vy:-(0.0002+Math.random()*0.0005),sz:0.6+Math.random()*1.6,ph:Math.random()*6}; }
+  function loop(){
+    if(!ctx) return; t+=1;
+    ctx.clearRect(0,0,W,H);
+    const base = MOOD_TINT[mood]||MOOD_TINT.dark;
+    // 理智越低越向病态红偏移
+    const rc=[ base[0]+(140-base[0])*sanTint, base[1]*(1-sanTint*0.7), base[2]*(1-sanTint*0.6) ];
+    // 雾
+    ctx.globalCompositeOperation='lighter';
+    fog.forEach(f=>{ f.x += f.s*0.0006; if(f.x>1.3)f.x=-0.3; if(f.x<-0.3)f.x=1.3;
+      const cx=f.x*W, cy=f.y*H, rr=f.r*W*(0.9+0.1*Math.sin(t*0.01+f.y*10));
+      const g=ctx.createRadialGradient(cx,cy,0,cx,cy,rr);
+      const a=f.a*(0.7+0.3*Math.sin(t*0.008+f.x*8));
+      g.addColorStop(0,`rgba(${rc[0]|0},${rc[1]|0},${rc[2]|0},${a})`);
+      g.addColorStop(1,'rgba(0,0,0,0)'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,rr,0,7); ctx.fill(); });
+    // 微粒
+    ctx.globalCompositeOperation='lighter';
+    parts.forEach(p=>{
+      if(ptype==='rain'){ p.y+=p.v; p.x+=p.drift; if(p.y>1){p.y=-0.05;p.x=Math.random();}
+        const x=p.x*W,y=p.y*H; ctx.strokeStyle='rgba(150,170,190,0.14)'; ctx.lineWidth=1*dpr;
+        ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x+2*dpr,y+p.len*dpr); ctx.stroke(); }
+      else { p.x+=p.v; p.y+=(p.vy||p.v); if(p.y<-0.05){p.y=1.05;p.x=Math.random();} if(p.y>1.05){p.y=-0.05;}
+        const x=p.x*W,y=p.y*H, tw=0.5+0.5*Math.sin(t*0.05+p.ph);
+        const col = ptype==='ember'? `rgba(200,${120+40*tw|0},60,${0.5*tw})` : `rgba(180,185,200,${0.28*tw})`;
+        ctx.fillStyle=col; ctx.beginPath(); ctx.arc(x,y,(p.sz||1)*dpr,0,7); ctx.fill(); }
+    });
+    ctx.globalCompositeOperation='source-over';
+    // 胶片颗粒（理智越低越强）
+    if(grain){ const gi=0.5+sanTint*0.9; ctx.globalAlpha=gi; const ox=Math.random()*140,oy=Math.random()*140;
+      for(let y=-oy;y<H;y+=140) for(let x=-ox;x<W;x+=140) ctx.drawImage(grain,x,y); ctx.globalAlpha=1; }
+    raf=requestAnimationFrame(loop);
+  }
+  function start(){ if(!cv) make(); if(!raf) loop(); }
+  function setScene(key, climax){ mood = climax?'climax':(key in MOOD_TINT?key:'dark');
+    const np = (key==='harbor')?'rain':(mood==='climax'?'ember':'dust');
+    if(np!==ptype){ ptype=np; if(ctx) spawnParts(); }
+    const v=document.getElementById('vig'); if(v){ const dark=(mood==='dark'||mood==='room'||mood==='climax');
+      v.style.background=`radial-gradient(130% 130% at 50% 42%, transparent ${dark?32:42}%, rgba(${8+sanTint*40|0},0,0,${0.72+sanTint*0.2}) 100%)`; } }
+  function setSan(san){ sanTint=Math.max(0,Math.min(1,(65-san)/60)); document.body.classList.toggle('low-san',san<=30); }
+  return { start, setScene, setSan };
+})();
+
+/* ---- 启动 ---- */
+renderSheet(); refreshAIbtn();
+try{ Dice3D.init(); }catch(e){}
+// 标题幕背景 = 港口场景 + 大气雾（进游戏前就有氛围）
+try{ el('titlebg').innerHTML = BANNERS.harbor; Atmo.start(); Atmo.setScene('harbor', false); }catch(e){}
+applyReduceMotion(); refreshTitleButtons(); renderEndingDex();
+function enterGame(sceneKey){
+  el('title').style.display='none';
+  try{ el('titlebg').innerHTML=''; }catch(e){}   // 清掉标题幕的港口图，避免与场景图重复 id
+  try{ Sound.init(); }catch(e){}
+  try{ Atmo.start(); }catch(e){}
+  try{ renderSheet(); }catch(e){}
+  go(sceneKey);                                   // 无论音效/大气是否失败，场景一定渲染
+}
+el('startBtn').onclick = ()=>{ let saved=null; if(hasSave()){ try{ saved=load(); }catch(e){} } enterGame(saved || 'arrival'); };
+el('mute').onclick = ()=>{ try{ const m = Sound.toggle(); el('mute').textContent = m?'♪ 静':'♪ 声'; }catch(e){} };
+el('motion').onclick = ()=>{ reducedMotion=!reducedMotion; try{ localStorage.setItem('huoshen_reduce_motion', reducedMotion?'1':'0'); }catch(e){} applyReduceMotion(); };
+el('newgame').onclick = (e)=>{ e.preventDefault(); if(hasSave() && !confirm('确定重新开始？当前调查进度将被清除（结局收集会保留）。')) return; clearSave();
+  PC.san=65; PC.hp=11; for(const k in flags) delete flags[k]; backlog=[]; document.body.classList.remove('low-san');
+  enterGame('arrival'); refreshTitleButtons(); };
+el('log').onclick = openBacklog;
+el('blogclose').onclick = ()=>{ el('backlog').style.display='none'; };
+el('backlog').onclick = (e)=>{ if(e.target===el('backlog')) el('backlog').style.display='none'; };
+el('sheetbtn').onclick = toggleSheet;
+</script>
+</body>
+</html>
